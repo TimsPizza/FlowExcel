@@ -1,12 +1,32 @@
-import Layout from "@/routes/Layout";
-import { createHashRouter, RouteObject } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
+import { WorkspaceListPage } from "@/pages/WorkspaceListPage";
+import WorkspaceEditorPage from "@/pages/WorkspaceEditorPage";
+import FileLibrary from "@/components/workspace/FileLibrary";
+import { FlowEditor } from "@/components/flow";
+// Keep Layout if it's intended to wrap these pages, otherwise remove/adjust
+// import Layout from "./Layout"; // Removed unused import
 
-const routes: RouteObject[] = [
+export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Layout />,
-    children: [{}],
+    element: <WorkspaceListPage />,
   },
-];
-
-export const router = createHashRouter(routes);
+  {
+    path: "/workspace/:workspaceId",
+    element: <WorkspaceEditorPage />,
+    children: [
+      {
+        path: "files-manager",
+        element: <FileLibrary />,
+      },
+      {
+        path: "flow-editor",
+        element: <FlowEditor />,
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: <WorkspaceListPage />,
+  },
+]);

@@ -30,3 +30,9 @@
   min-height: 100vh;
   min-width: 100vw;
 }
+
+@layer utilities {
+  .table-cell-constrained-size {
+    @apply min-w-10 max-w-24 overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+}
