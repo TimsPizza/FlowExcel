@@ -1,17 +1,21 @@
-import { useCallback } from 'react';
-import { FlowNodeProps, IndexSourceNodeData, NodeType } from '@/types/nodes';
-import { BaseNode } from './BaseNode';
-import { Select, Flex, TextField, Button, Text } from '@radix-ui/themes';
-import { invoke } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-dialog';
-import { toast } from 'react-toastify';
-import { useNodeId, useReactFlow } from 'reactflow';
-import { basename } from '@tauri-apps/api/path';
+import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { FlowNodeProps, IndexSourceNodeData } from "@/types/nodes";
+import { CheckboxGroup, Flex, Select, Text } from "@radix-ui/themes";
+import { invoke } from "@tauri-apps/api/core";
+import { useCallback, useEffect } from "react";
+import { useNodeId, useReactFlow } from "reactflow";
+import { useShallow } from "zustand/react/shallow";
+import { BaseNode } from "./BaseNode";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
   const nodeData = data as IndexSourceNodeData;
+  const { files } = useWorkspaceStore(useShallow(fileSelector));
+
+  useEffect(() => {
+    console.log("index source node files", files);
+  }, [files]);
 
   const updateNodeData = useCallback(
     (updates: Partial<IndexSourceNodeData>) => {
@@ -27,85 +31,51 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
             };
           }
           return node;
-        })
+        }),
       );
     },
-    [nodeId, setNodes]
+    [nodeId, setNodes],
   );
 
-  const handleSelectFile = async () => {
+  const handleSelectFile = async (filePath: string) => {
+    console.log("index source node handleSelectFile", filePath);
     try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: 'Excel',
-            extensions: ['xlsx', 'xls', 'csv'],
-          },
-        ],
-      });
-
-      if (selected && typeof selected === 'string') {
-        const filename = await basename(selected);
-        updateNodeData({ sourceFile: selected, error: undefined });
-        
-        // 获取Excel文件的sheet列表
-        const sheets = await invoke('get_excel_sheets', {
-          filePath: selected,
-        });
-
-        // 更新表单选择列表
-        if (Array.isArray(sheets)) {
-          // 如果当前选择的sheet不在列表中，重置选择
-          if (nodeData.sheetName && !sheets.includes(nodeData.sheetName)) {
-            updateNodeData({ sheetName: undefined, columnName: undefined });
-          }
-        }
-      }
+      updateNodeData({ sourceFileID: filePath, error: undefined });
     } catch (error) {
-      toast.error('选择文件失败');
       console.error(error);
     }
   };
 
   const handleSelectSheet = async (sheetName: string) => {
     try {
-      updateNodeData({ sheetName, columnName: undefined, error: undefined });
-      
-      // 获取选定sheet中的列名
-      if (nodeData.sourceFile) {
-        const columns = await invoke('get_excel_columns', {
-          filePath: nodeData.sourceFile,
-          sheetName,
-        });
-        
-        // 这里已获取列信息，可以在UI中展示
-      }
+      updateNodeData({ sheetName, columnNames: undefined, error: undefined });
     } catch (error) {
-      toast.error('获取sheet信息失败');
       console.error(error);
-      updateNodeData({ error: '获取sheet信息失败' });
     }
   };
 
   const testRun = async () => {
     try {
-      if (!nodeData.sourceFile || !nodeData.sheetName || !nodeData.columnName) {
-        updateNodeData({ error: '请完成所有配置后再测试' });
+      if (
+        !nodeData.sourceFileID ||
+        !nodeData.sheetName ||
+        !nodeData.columnNames
+      ) {
+        updateNodeData({ error: "请完成所有配置后再测试" });
         return;
       }
 
       // 调用后端获取索引数据
-      const result = await invoke('get_index_values', {
-        filePath: nodeData.sourceFile,
+      const result = await invoke("get_index_values", {
+        filePath: nodeData.sourceFileID,
         sheetName: nodeData.sheetName,
-        columnName: nodeData.columnName,
+        columnName: nodeData.columnNames,
       });
 
       updateNodeData({ testResult: result, error: undefined });
     } catch (error) {
-      console.error('测试运行失败:', error);
-      updateNodeData({ error: '测试运行失败' });
+      console.error("测试运行失败:", error);
+      updateNodeData({ error: "测试运行失败" });
     }
   };
 
@@ -118,64 +88,90 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     >
       <Flex direction="column" gap="2">
         <Flex align="center" gap="2">
-          <Text size="1" weight="bold">源文件:</Text>
-          <TextField.Root
-            size="1" 
-            style={{ flex: 1 }}
-            placeholder="选择Excel文件..."
-            value={nodeData.sourceFile ? nodeData.sourceFile : ''}
-            readOnly
-          />
-          <Button size="1" onClick={handleSelectFile}>
-            浏览
-          </Button>
+          <Text size="1" weight="bold">
+            源文件:
+          </Text>
+          <Select.Root
+            onValueChange={(v) => handleSelectFile(v)}
+            defaultValue="选择文件"
+          >
+            <Select.Trigger>
+              <Text size="1">{nodeData.sourceFileID ?? "选择文件"}</Text>
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Group>
+                {files && files.length > 0 ? (
+                  files.map((file) => (
+                    <Select.Item value={file.id} key={file.id}>
+                      {file.name}
+                    </Select.Item>
+                  ))
+                ) : (
+                  <Text size="1">暂无文件</Text>
+                )}
+              </Select.Group>
+            </Select.Content>
+          </Select.Root>
         </Flex>
-        
+
         <Flex align="center" gap="2">
-          <Text size="1" weight="bold">工作表:</Text>
-          <Select.Root 
+          <Text size="1" weight="bold">
+            工作表:
+          </Text>
+          <Select.Root
             size="1"
-            value={nodeData.sheetName || ''}
+            value={nodeData.sheetName || ""}
             onValueChange={handleSelectSheet}
+            defaultValue="选择工作表"
           >
-            <Select.Trigger style={{ width: '100%' }} />
+            <Select.Trigger style={{ width: "100%" }} />
             <Select.Content>
               <Select.Group>
-                <Select.Label>选择工作表</Select.Label>
-                {/* 这里会动态填充工作表列表 */}
-                {nodeData.sourceFile && (
-                  <>
-                    <Select.Item value="">-- 请选择 --</Select.Item>
-                    {/* 从后端获取的工作表列表 */}
-                  </>
-                )}
+                {nodeData.sourceFileID &&
+                  files &&
+                  files.length > 0 &&
+                  files
+                    .find((file) => file.id === nodeData.sourceFileID)
+                    ?.sheet_metas?.map((sheet) => (
+                      <Select.Item
+                        value={sheet.sheet_name}
+                        key={sheet.sheet_name}
+                      >
+                        {sheet.sheet_name}
+                      </Select.Item>
+                    ))}
               </Select.Group>
             </Select.Content>
           </Select.Root>
         </Flex>
-        
+
         <Flex align="center" gap="2">
-          <Text size="1" weight="bold">索引列:</Text>
-          <Select.Root 
+          <Text size="1" weight="bold">
+            索引列:
+          </Text>
+          <CheckboxGroup.Root
             size="1"
-            value={nodeData.columnName || ''}
-            onValueChange={(columnName) => updateNodeData({ columnName, error: undefined })}
+            value={nodeData.columnNames ?? []}
+            defaultValue={[]}
+            onValueChange={(columnNames) =>
+              updateNodeData({ columnNames: columnNames, error: undefined })
+            }
           >
-            <Select.Trigger style={{ width: '100%' }} />
-            <Select.Content>
-              <Select.Group>
-                <Select.Label>选择索引列</Select.Label>
-                {nodeData.sheetName && (
-                  <>
-                    <Select.Item value="">-- 请选择 --</Select.Item>
-                    {/* 从后端获取的列名列表 */}
-                  </>
-                )}
-              </Select.Group>
-            </Select.Content>
-          </Select.Root>
+            {nodeData.sheetName &&
+              files &&
+              files.length > 0 &&
+              files
+                .find((file) => file.id === nodeData.sourceFileID)
+                ?.sheet_metas?.map((sheet) => {
+                  return sheet.columns.map((column) => (
+                    <CheckboxGroup.Item value={column} key={column}>
+                      {column}
+                    </CheckboxGroup.Item>
+                  ));
+                })}
+          </CheckboxGroup.Root>
         </Flex>
       </Flex>
     </BaseNode>
   );
-}; 
+};

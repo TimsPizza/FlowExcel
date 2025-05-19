@@ -17,13 +17,13 @@ export interface BaseNodeData {
 }
 
 export interface IndexSourceNodeData extends BaseNodeData {
-  sourceFile?: string;
+  sourceFileID?: string; // file id in workspace
   sheetName?: string;
-  columnName?: string;
+  columnNames?: string[];
 }
 
 export interface SheetSelectorNodeData extends BaseNodeData {
-  targetFile?: string;
+  targetFileID?: string;
   mode: 'auto_by_index' | 'manual';
   manualSheetName?: string;
 }

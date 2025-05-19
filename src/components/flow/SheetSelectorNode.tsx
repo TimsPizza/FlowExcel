@@ -47,7 +47,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
       if (selected && typeof selected === 'string') {
         const filename = await basename(selected);
-        updateNodeData({ targetFile: selected, error: undefined });
+        updateNodeData({ targetFileID: selected, error: undefined });
         
         // 获取Excel文件的sheet列表，用于手动模式的展示
         const sheets = await invoke('get_excel_sheets', {
@@ -69,7 +69,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const testRun = async () => {
     try {
       // 验证必要参数是否已配置
-      if (!nodeData.targetFile) {
+      if (!nodeData.targetFileID) {
         updateNodeData({ error: '请选择目标Excel文件' });
         return;
       }
@@ -89,13 +89,13 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
       if (nodeData.mode === 'auto_by_index') {
         // 自动模式：尝试为每个索引查找匹配的sheet
         result = await invoke('test_sheet_selection_by_index', {
-          filePath: nodeData.targetFile,
+          filePath: nodeData.targetFileID,
           indexes: mockIndexes
         });
       } else {
         // 手动模式：指向固定sheet
         result = await invoke('test_fixed_sheet', {
-          filePath: nodeData.targetFile,
+          filePath: nodeData.targetFileID,
           sheetName: nodeData.manualSheetName
         });
       }
@@ -119,7 +119,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
             size="1" 
             style={{ flex: 1 }}
             placeholder="选择Excel文件..."
-            value={nodeData.targetFile || ''}
+            value={nodeData.targetFileID || ''}
             readOnly
           />
           <Button size="1" onClick={handleSelectFile}>
@@ -157,7 +157,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
               <Select.Content>
                 <Select.Group>
                   <Select.Label>选择工作表</Select.Label>
-                  {nodeData.targetFile && (
+                  {nodeData.targetFileID && (
                     <>
                       <Select.Item value="">-- 请选择 --</Select.Item>
                       {/* 这里会填充从后端获取的sheet列表 */}

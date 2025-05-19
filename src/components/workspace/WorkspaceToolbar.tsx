@@ -77,14 +77,14 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           color={isDirty ? "amber" : "green"}
           size="2"
           onClick={onSave}
-          disabled={isSaving}
+          disabled={isSaving || !isDirty}
         >
           {isSaving ? (
-            <UpdateIcon className="mr-1 animate-spin" />
+            <UpdateIcon className="mr-0.5 animate-spin" />
           ) : (
-            <CheckIcon className="mr-1" />
+            <CheckIcon className="mr-0.5" />
           )}
-          {isSaving ? "保存中..." : "保存工作区"}
+          {isDirty ? (isSaving ? "保存中..." : "保存工作区") : "无更改"}
         </Button>
       </Flex>
     </Flex>

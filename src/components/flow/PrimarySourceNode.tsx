@@ -96,7 +96,7 @@ const PrimarySourceNode: React.FC<NodeProps<PrimarySourceNodeData>> = ({
 
   // Determine displayed file name and index columns for display mode
   const displayFileName =
-    files.find((f) => f.id === data.fileId)?.alias || "N/A";
+    files.find((f) => f.id === data.fileId)?.name || "N/A";
   const displayIndexColumns =
     data.indexColumns && data.indexColumns.length > 0
       ? data.indexColumns.join(", ")
@@ -157,7 +157,7 @@ const PrimarySourceNode: React.FC<NodeProps<PrimarySourceNodeData>> = ({
               <SelectContent className={scrollableClassName}>
                 {files.map((file: FileMeta) => (
                   <SelectItem key={file.id} value={file.id}>
-                    {file.alias}
+                    {file.name}
                   </SelectItem>
                 ))}
               </SelectContent>

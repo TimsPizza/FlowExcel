@@ -24,11 +24,12 @@ export interface ApiResponse<T> {
 export interface SheetMeta {
   sheet_name: string;
   header_row: number;
+  columns: string[];
 }
 
 export interface FileMeta {
   id: string;
-  alias: string;
+  name: string;
   path: string;
   sheet_metas: SheetMeta[];
 }
@@ -102,7 +103,9 @@ export interface WorkspaceState {
   loadWorkspace: (workspace: WorkspaceConfig) => void;
   setCurrentWorkspaceName: (name: string) => void;
   // For addFileToWorkspace, expect columns to be provided externally after backend call
-  addFileToWorkspace: (fileMetaWithFileIdAndColumns: FileMeta) => WorkspaceConfig | null;
+  addFileToWorkspace: (
+    fileMetaWithFileIdAndColumns: FileMeta,
+  ) => WorkspaceConfig | null;
   updateFileMeta: (
     fileId: string,
     updates: Partial<Omit<FileMeta, "id">>,

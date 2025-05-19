@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "concurrently \"yarn dev\" \"yarn start:tailwind\"",
+    "start": "concurrently \"pnpm dev\" \"pnpm start:tailwind\"",
     "start:tailwind": "tailwindcss -i ./src/styles/tailwind.css -o ./src/styles/tailwind.output.css --watch",
     "dev": "vite",
     "build": "tsc -b && vite build",

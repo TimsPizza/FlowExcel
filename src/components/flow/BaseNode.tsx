@@ -1,7 +1,7 @@
-import { Handle, Position } from 'reactflow';
-import { BaseNodeData } from '@/types/nodes';
-import { Card, Flex, Box, Text, Badge } from '@radix-ui/themes';
-import { useState } from 'react';
+import { Handle, Position } from "reactflow";
+import { BaseNodeData } from "@/types/nodes";
+import { Card, Flex, Box, Text, Badge } from "@radix-ui/themes";
+import { useState } from "react";
 
 interface BaseNodeProps {
   data: BaseNodeData;
@@ -19,7 +19,7 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
   onTestRun,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  
+
   return (
     <Card size="2" style={{ minWidth: 240 }}>
       <Flex direction="column" gap="2">
@@ -29,7 +29,7 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
             {onTestRun && (
               <Badge
                 color="blue"
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: "pointer" }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onTestRun();
@@ -40,17 +40,17 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
             )}
             <Badge
               color="gray"
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(!expanded);
               }}
             >
-              {expanded ? '收起' : '展开'}
+              {expanded ? "收起" : "展开"}
             </Badge>
           </Flex>
         </Flex>
-        
+
         {data.error && (
           <Badge color="red" size="1">
             {data.error}
@@ -58,11 +58,11 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
         )}
 
         {expanded && (
-          <Box 
-            style={{ 
-              padding: '8px',
-              backgroundColor: 'var(--accent-2)', 
-              borderRadius: '4px' 
+          <Box
+            style={{
+              padding: "8px",
+              backgroundColor: "var(--accent-2)",
+              borderRadius: "4px",
             }}
           >
             {children}
@@ -71,39 +71,41 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
 
         {data.testResult && expanded && (
           <Box>
-            <Text size="1" weight="bold">测试结果:</Text>
-            <Box 
-              style={{ 
-                padding: '8px',
-                backgroundColor: 'var(--accent-2)', 
-                borderRadius: '4px',
-                maxHeight: '200px',
-                overflow: 'auto'
+            <Text size="1" weight="bold">
+              测试结果:
+            </Text>
+            <Box
+              style={{
+                padding: "8px",
+                backgroundColor: "var(--accent-2)",
+                borderRadius: "4px",
+                maxHeight: "200px",
+                overflow: "auto",
               }}
             >
-              <pre style={{ margin: 0, fontSize: '12px' }}>
+              <pre style={{ margin: 0, fontSize: "12px" }}>
                 {JSON.stringify(data.testResult, null, 2)}
               </pre>
             </Box>
           </Box>
         )}
       </Flex>
-      
+
       {isTarget && (
         <Handle
           type="target"
           position={Position.Top}
-          style={{ background: '#555' }}
+          style={{ background: "#555" }}
         />
       )}
-      
+
       {!isSource && (
         <Handle
           type="source"
           position={Position.Bottom}
-          style={{ background: '#555' }}
+          style={{ background: "#555" }}
         />
       )}
     </Card>
   );
-}; 
+};

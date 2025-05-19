@@ -23,7 +23,6 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
   pageSize = 10,
   className = "",
 }) => {
-  console.log("props", columns, data);
   const [page, setPage] = React.useState(1);
 
   // 计算总页数

@@ -9,7 +9,7 @@ const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <Theme>
+    <Theme appearance="inherit">
       <ReactFlowProvider>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />

@@ -1,3 +1,4 @@
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { ApiResponse, FilePreviewResponse, WorkspaceConfig } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
 import { useMutation, useQuery, UseQueryResult } from "react-query";
@@ -80,19 +81,21 @@ export const useWorkspaceQuery = ({ workspaceID }: { workspaceID: string }) => {
 async function saveWorkspace(
   id: string,
   workspace: WorkspaceConfig,
-): Promise<void> {
+): Promise<WorkspaceConfig | void> {
   const configJson = JSON.stringify(workspace);
   const result = await invoke<string>("save_workspace", {
     workspaceId: id,
     configJson,
   });
-  const parsedResult = JSON.parse(result);
-  if (parsedResult.error_type) {
+  const parsedResult = JSON.parse(result) as ApiResponse<WorkspaceConfig>;
+  if (parsedResult.status === "error") {
     throw new Error(parsedResult.message);
   }
+  return parsedResult.data;
 }
 
 export const useSaveWorkspaceMutation = () => {
+  const resetDirty = useWorkspaceStore((state) => state.resetDirty);
   const { mutateAsync, isLoading, error } = useMutation({
     mutationKey: ["saveWorkspace"],
     mutationFn: async ({
@@ -103,10 +106,13 @@ export const useSaveWorkspaceMutation = () => {
       workspace: WorkspaceConfig;
     }) => {
       console.log("saveWorkspace", id, workspace);
-      return await saveWorkspace(id, workspace);
+      const result = await saveWorkspace(id, workspace);
+      console.log("saveWorkspace result:", result);
+      return result;
     },
     onSuccess: () => {
       toast.success("Workspace saved");
+      resetDirty();
     },
     onError: () => {
       toast.error("Failed to save workspace");
@@ -135,7 +141,13 @@ export const get_excel_preview = async (filePath?: string) => {
     throw new Error(parsedResult.message);
   }
   console.log("parsedResult", parsedResult);
-  return parsedResult.data as FilePreviewResponse;
+  const unemptySheets =
+    parsedResult.data?.sheets.filter((sheet) => sheet.columns.length > 0) ?? [];
+  const sanitizedResult = {
+    sheets: unemptySheets,
+  } as FilePreviewResponse;
+
+  return sanitizedResult;
 };
 
 export const useGetExcelPreview = (filePath?: string) => {

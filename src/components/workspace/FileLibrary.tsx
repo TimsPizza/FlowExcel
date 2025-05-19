@@ -1,18 +1,17 @@
 import AddFileModal from "@/components/workspace/AddFileModal";
-import { useGetExcelPreview } from "@/hooks/workspaceQueries";
-import { FileMeta } from "@/types";
 import { Box, Button, Flex, ScrollArea, Text } from "@radix-ui/themes";
-import React, { useCallback, useMemo, useState } from "react";
-import { toast } from "react-toastify";
-import { v4 as uuidv4 } from "uuid";
+import React from "react";
 import { useShallow } from "zustand/shallow";
 import {
   fileSelector,
   useWorkspaceStore,
 } from "../../stores/useWorkspaceStore";
+import FileMetaEditorModal from "@/components/workspace/FileMetaEditorModal";
 
 const FileLibrary: React.FC = () => {
-  const { files } = useWorkspaceStore(useShallow(fileSelector));
+  const { files, removeFileFromWorkspace } = useWorkspaceStore(
+    useShallow(fileSelector),
+  );
 
   return (
     <Flex direction="column" gap="4" width={"100%"}>
@@ -45,19 +44,19 @@ const FileLibrary: React.FC = () => {
                     >
                       <Flex justify="between" align="center">
                         <Text size="2">
-                          {file.alias} (
-                          {file.path.substring(file.path.lastIndexOf("/") + 1)})
-                          - 表头: {file.header_row}
-                          {file.sheet_name
-                            ? `, 工作表: ${file.sheet_name}`
-                            : ""}
+                          {file.path.substring(file.path.lastIndexOf("/") + 1)}
                         </Text>
                         <Flex gap="1">
                           {/* 编辑和删除按钮 - 待实现 */}
-                          <Button size="1" variant="soft">
-                            编辑
-                          </Button>
-                          <Button size="1" variant="soft" color="red">
+                          <FileMetaEditorModal file={file} />
+                          <Button
+                            size="1"
+                            variant="soft"
+                            color="red"
+                            onClick={() => {
+                              removeFileFromWorkspace(file.id);
+                            }}
+                          >
                             删除
                           </Button>
                         </Flex>

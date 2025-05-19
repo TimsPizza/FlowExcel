@@ -1,7 +1,4 @@
-import {
-  useGetExcelPreview,
-  useSaveWorkspaceMutation,
-} from "@/hooks/workspaceQueries";
+import { useGetExcelPreview } from "@/hooks/workspaceQueries";
 import ExcelPreview from "@/routes/ExcelPreview";
 import {
   fileSelector,
@@ -17,9 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useShallow } from "zustand/shallow";
 const AddFileModal = () => {
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const [fileAlias, setFileAlias] = useState<string>("");
-  const [headerRow, setHeaderRow] = useState<number>(1);
-  const { saveWorkspace, isSaving, saveError } = useSaveWorkspaceMutation();
+  const [fileName, setFilename] = useState<string>("");
   const { previewData, isPreviewLoading, previewError } = useGetExcelPreview(
     selectedFilePath ?? "",
   );
@@ -29,7 +24,7 @@ const AddFileModal = () => {
   const { currentWorkspace } = useWorkspaceStore(useShallow(workspaceSelector));
 
   const handleAddFileToWorkspace = useCallback(() => {
-    if (!selectedFilePath || !fileAlias || !previewData) {
+    if (!selectedFilePath || !fileName || !previewData) {
       toast.error("无法添加文件: 缺少路径、别名或有效的预览数据。");
       return;
     }
@@ -40,46 +35,33 @@ const AddFileModal = () => {
 
     const newFile: FileMeta = {
       id: uuidv4(), // Generate unique ID
-      alias: fileAlias,
+      name: fileName,
       path: selectedFilePath,
       sheet_metas: previewData.sheets.map((sheet) => ({
         sheet_name: sheet.sheet_name,
         header_row: 0,
+        columns: sheet.columns,
       })),
     };
 
     // Check if a file with the same path or alias already exists
     if (files?.some((f) => f.path === newFile.path)) {
-      toast.warning(`文件路径 '${newFile.path}' 已存在于工作区中。`);
-    }
-    if (files?.some((f) => f.alias === newFile.alias)) {
-      toast.warning(`文件别名 '${newFile.alias}' 已存在。请使用唯一的别名。`);
+      toast.warning(`文件 '${newFile.name}' 已存在于工作区中。`);
+      return;
     }
 
     try {
-      const newWorkspace = addFileToWorkspace(newFile);
-      console.log("currentWorkspace", currentWorkspace);
-      if (currentWorkspace) {
-        saveWorkspace({
-          id: currentWorkspace.id,
-          // @ts-ignore as it will never be null
-          workspace: newWorkspace,
-        });
-      } else {
-        toast.error("无法保存工作区: 工作区不存在。这个提示不应该发生");
-        return;
-      }
-      toast.success(`文件 "${newFile.alias}" 添加成功!`);
+      addFileToWorkspace(newFile);
     } catch (error) {
       console.error("Error adding file to workspace:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       toast.error(`添加文件失败: ${errorMsg}`);
     }
-  }, [selectedFilePath, fileAlias, previewData, previewError, currentWorkspace]);
+  }, [selectedFilePath, fileName, previewData, previewError, currentWorkspace]);
 
   const handleFileSelect = useCallback(async () => {
     setSelectedFilePath(null); // Reset path on new selection attempt
-    setFileAlias("");
+    setFilename("");
     try {
       const selected = await open({
         multiple: false,
@@ -93,17 +75,13 @@ const AddFileModal = () => {
       if (typeof selected === "string" && selected !== null) {
         setSelectedFilePath(selected);
         const fileName = selected.substring(selected.lastIndexOf("/") + 1);
-        const aliasSuggestion = fileName.substring(
-          0,
-          fileName.lastIndexOf(".") || fileName.length,
-        );
-        setFileAlias(aliasSuggestion);
+        setFilename(fileName);
         // Automatically preview file with default values
         handlePreviewFile(selected);
       } else {
         // User cancelled dialog
         setSelectedFilePath(null);
-        setFileAlias("");
+        setFilename("");
       }
     } catch (err) {
       console.error("Error selecting file:", err);
@@ -131,7 +109,7 @@ const AddFileModal = () => {
     <Dialog.Root
       onOpenChange={() => {
         setSelectedFilePath(null);
-        setFileAlias("");
+        setFilename("");
       }}
     >
       <Dialog.Trigger>
