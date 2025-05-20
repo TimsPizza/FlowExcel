@@ -3,7 +3,7 @@ import {
   useTryReadHeaderRow,
 } from "@/hooks/workspaceQueries";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { FlowNodeProps, IndexSourceNodeData } from "@/types/nodes";
+import { FlowNodeProps, IndexSourceNodeDataContext } from "@/types/nodes";
 import {
   CheckboxGroup,
   Flex,
@@ -13,16 +13,18 @@ import {
   Text,
 } from "@radix-ui/themes";
 import _ from "lodash";
-import { useCallback, useEffect } from "react";
-import { useNodeId, useReactFlow } from "reactflow";
+import { useEffect } from "react";
+import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 import { BaseNode } from "./BaseNode";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const nodeId = useNodeId();
-  const { setNodes } = useReactFlow();
-  const nodeData = data as IndexSourceNodeData;
+  const nodeId = useNodeId()!;
+  const nodeData = data as IndexSourceNodeDataContext;
   const { files } = useWorkspaceStore(useShallow(fileSelector));
+  const updateIndexSourceNodeData = useWorkspaceStore(
+    (state) => state.updateNodeData,
+  );
   const { headerRow, isHeaderRowLoading, headerRowError } = useTryReadHeaderRow(
     files!.find((file) => file.id === nodeData.sourceFileID)?.path || "",
     nodeData.sheetName || "",
@@ -44,34 +46,13 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     nodeData.columnNames || [],
   );
 
-  useEffect(() => {
-    console.log("index source node files", files);
-  }, [files]);
-
-  const updateNodeData = useCallback(
-    (updates: Partial<IndexSourceNodeData>) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                ...updates,
-              },
-            };
-          }
-          return node;
-        }),
-      );
-    },
-    [nodeId, setNodes],
-  );
-
-  const handleSelectFile = async (filePath: string) => {
-    console.log("index source node handleSelectFile", filePath);
+  const handleSelectFile = async (fileId: string) => {
+    console.log("index source node handleSelectFile", fileId);
     try {
-      updateNodeData({ sourceFileID: filePath, error: undefined });
+      updateIndexSourceNodeData(nodeId, {
+        sourceFileID: fileId,
+        error: undefined,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -79,7 +60,11 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const handleSelectSheet = async (sheetName: string) => {
     try {
-      updateNodeData({ sheetName, columnNames: undefined, error: undefined });
+      updateIndexSourceNodeData(nodeId, {
+        sheetName,
+        columnNames: undefined,
+        error: undefined,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -93,11 +78,11 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         !nodeData.sheetName ||
         !nodeData.columnNames
       ) {
-        updateNodeData({ error: "请完成所有配置后再测试" });
+        updateIndexSourceNodeData(nodeId, { error: "请完成所有配置后再测试" });
         return;
       }
 
-      updateNodeData({
+      updateIndexSourceNodeData(nodeId, {
         testResult: {
           columns: indexValues?.map((item) => item.column) || [],
           data: _.zip(...(indexValues?.map((item) => item.data) || [])),
@@ -106,7 +91,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
       });
     } catch (error) {
       console.error("测试运行失败:", error);
-      updateNodeData({ error: "测试运行失败" });
+      updateIndexSourceNodeData(nodeId, { error: "测试运行失败" });
     }
   };
 
@@ -125,7 +110,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
           </Text>
           <Select.Root
             onValueChange={(v) => handleSelectFile(v)}
-            defaultValue="选择文件"
+            defaultValue={nodeData.sourceFileID || "选择文件"}
           >
             <Select.Trigger />
             <Select.Content>
@@ -185,7 +170,10 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
               value={nodeData.columnNames ?? []}
               defaultValue={[]}
               onValueChange={(columnNames) =>
-                updateNodeData({ columnNames: columnNames, error: undefined })
+                updateIndexSourceNodeData(nodeId, {
+                  columnNames: columnNames,
+                  error: undefined,
+                })
               }
             >
               <Grid columns="2" gap="1">

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { FlowNodeProps, OutputNodeData } from "@/types/nodes";
+import { FlowNodeProps, OutputNodeDataContext } from "@/types/nodes";
 import { BaseNode } from "./BaseNode";
 import {
   Select,
@@ -9,37 +9,37 @@ import {
   Table,
   ScrollArea,
 } from "@radix-ui/themes";
-import { useNodeId, useReactFlow } from "reactflow";
+import { useNodeId } from "reactflow";
 import { CopyIcon, DownloadIcon } from "@radix-ui/react-icons";
-import _ from "lodash";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 
 export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId();
-  const { setNodes } = useReactFlow();
-  const nodeData = data as OutputNodeData;
+  const nodeData = data as OutputNodeDataContext;
 
-  const updateNodeData = useCallback(
-    (updates: Partial<OutputNodeData>) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                ...updates,
-              },
-            };
-          }
-          return node;
-        }),
-      );
+  const updateOutputNodeDataInStore = useWorkspaceStore(
+    (state) => state.updateNodeData,
+  );
+
+  const updateLocalNodeData = useCallback(
+    (updates: Partial<OutputNodeDataContext>) => {
+      if (nodeId && updateOutputNodeDataInStore) {
+        updateOutputNodeDataInStore(nodeId, updates);
+      } else {
+        console.warn(
+          "OutputNode: nodeId or updateFunction in store is not available.",
+          {
+            nodeId,
+            hasUpdater: !!updateOutputNodeDataInStore,
+          },
+        );
+      }
     },
-    [nodeId, setNodes],
+    [nodeId, updateOutputNodeDataInStore],
   );
 
   const handleSelectFormat = (format: string) => {
-    updateNodeData({
+    updateLocalNodeData({
       outputFormat: format as "table" | "csv" | "excel",
       error: undefined,
     });
@@ -47,57 +47,67 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const handleCopyToClipboard = async () => {
     try {
-      if (!nodeData.testResult) {
-        updateNodeData({ error: "没有可复制的数据" });
+      if (!nodeData.testResult || !nodeData.testResult.data) {
+        updateLocalNodeData({
+          error: "没有可复制的数据",
+          testResult: nodeData.testResult,
+        });
         return;
       }
 
-      // 模拟将结果转换为CSV格式
-      const data = nodeData.testResult;
-      const headers = data.columns.join(",");
-      const rows = data.data.map(row => row.join(",")).join("\n");
+      const resultData = nodeData.testResult;
+      const headers = resultData.columns.join(",");
+      const rows = resultData.data
+        .map((row) => row.map((cell) => String(cell)).join(","))
+        .join("\n");
       const csvContent = `${headers}\n${rows}`;
 
-      // 复制到剪贴板
       await navigator.clipboard.writeText(csvContent);
       console.log("已复制到剪贴板");
+      updateLocalNodeData({ error: undefined });
     } catch (error) {
       console.error("复制失败:", error);
-      updateNodeData({ error: "复制数据失败" });
+      updateLocalNodeData({
+        error: "复制数据失败",
+        testResult: nodeData.testResult,
+      });
     }
   };
 
   const handleExport = async () => {
     try {
       if (!nodeData.testResult) {
-        updateNodeData({ error: "没有可导出的数据" });
+        updateLocalNodeData({
+          error: "没有可导出的数据",
+          testResult: nodeData.testResult,
+        });
         return;
       }
-
       console.log(`导出数据为 ${nodeData.outputFormat} 格式`);
-      // 模拟导出操作，实际项目中应调用 Tauri API
+      updateLocalNodeData({ error: undefined });
     } catch (error) {
       console.error("导出失败:", error);
-      updateNodeData({ error: "导出数据失败" });
+      updateLocalNodeData({
+        error: "导出数据失败",
+        testResult: nodeData.testResult,
+      });
     }
   };
 
   const testRun = async () => {
     try {
-      // 模拟从上游节点获取的结果数据
       const mockResult = {
         columns: ["型号", "废料总重", "数量"],
         data: [
           ["A型", 400, 3],
           ["B型", 200, 1],
           ["C型", 600, 4],
-        ]
+        ],
       };
-
-      updateNodeData({ testResult: mockResult, error: undefined });
+      updateLocalNodeData({ testResult: mockResult, error: undefined });
     } catch (error) {
       console.error("测试运行失败:", error);
-      updateNodeData({ error: "测试运行失败" });
+      updateLocalNodeData({ error: "测试运行失败", testResult: undefined });
     }
   };
 

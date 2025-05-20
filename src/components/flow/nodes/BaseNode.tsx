@@ -1,12 +1,12 @@
 import TestRunModal from "@/components/workspace/TestRunModal";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { BaseNodeData } from "@/types/nodes";
+import { CustomNodeBaseData } from "@/types/nodes";
 import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { Handle, Position } from "reactflow";
 
 interface BaseNodeProps {
-  data: BaseNodeData;
+  data: CustomNodeBaseData;
   children: React.ReactNode;
   isSource?: boolean;
   isTarget?: boolean;

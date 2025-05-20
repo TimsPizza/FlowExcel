@@ -2,8 +2,9 @@ import { useCallback, useState } from 'react';
 import { FlowNodeProps, AggregatorNodeData } from '@/types/nodes';
 import { BaseNode } from './BaseNode';
 import { Select, Flex, Text } from '@radix-ui/themes';
-import { useNodeId, useReactFlow } from 'reactflow';
+import { useNodeId } from 'reactflow';
 import _ from 'lodash';
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 
 const AGGREGATION_METHODS = [
   { value: 'sum', label: '求和' },
@@ -15,83 +16,82 @@ const AGGREGATION_METHODS = [
 
 export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId();
-  const { setNodes } = useReactFlow();
   const nodeData = data as AggregatorNodeData;
-  // Mock columns that would come from upstream nodes
   const [availableColumns] = useState<string[]>([
     "型号", "废料重量", "类型", "数量", "金额"
   ]);
 
-  const updateNodeData = useCallback(
+  const updateAggregatorNodeDataInStore = useWorkspaceStore(
+    (state) => state.updateAggregatorNodeData,
+  );
+
+  const updateLocalNodeData = useCallback(
     (updates: Partial<AggregatorNodeData>) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                ...updates,
-              },
-            };
-          }
-          return node;
-        })
-      );
+      if (nodeId && updateAggregatorNodeDataInStore) {
+        updateAggregatorNodeDataInStore(nodeId, updates);
+      } else {
+        console.warn(
+          "AggregatorNode: nodeId or updateFunction in store is not available.",
+          {
+            nodeId,
+            hasUpdater: !!updateAggregatorNodeDataInStore,
+          },
+        );
+      }
     },
-    [nodeId, setNodes]
+    [nodeId, updateAggregatorNodeDataInStore],
   );
 
   const handleSelectColumn = (column: string) => {
-    updateNodeData({ statColumn: column, error: undefined });
+    updateLocalNodeData({ statColumn: column, error: undefined, testResult: undefined });
   };
 
   const handleSelectMethod = (method: string) => {
-    updateNodeData({ 
+    updateLocalNodeData({ 
       method: method as 'sum' | 'avg' | 'count' | 'min' | 'max', 
-      error: undefined 
+      error: undefined, 
+      testResult: undefined 
     });
   };
 
   const testRun = async () => {
     try {
       if (!nodeData.statColumn) {
-        updateNodeData({ error: '请选择要统计的列' });
+        updateLocalNodeData({ error: '请选择要统计的列', testResult: undefined });
         return;
       }
 
       if (!nodeData.method) {
-        updateNodeData({ error: '请选择统计方法' });
+        updateLocalNodeData({ error: '请选择统计方法', testResult: undefined });
         return;
       }
 
-      // 模拟从上游节点获取的数据
       const mockData = [
         { "型号": "型号A", "废料重量": 100, "类型": "废料", "数量": 2, "金额": 500 },
         { "型号": "型号A", "废料重量": 300, "类型": "原料", "数量": 1, "金额": 800 },
         { "型号": "型号B", "废料重量": 150, "类型": "废料", "数量": 3, "金额": 750 },
       ];
       
-      // 执行聚合计算
       const groupedData = _.groupBy(mockData, "型号");
       const result = Object.entries(groupedData).map(([key, values]) => {
         let aggregated: number;
+        const statCol = nodeData.statColumn as string;
         
         switch(nodeData.method) {
           case "sum":
-            aggregated = _.sumBy(values, nodeData.statColumn as string);
+            aggregated = _.sumBy(values, statCol);
             break;
           case "avg":
-            aggregated = _.meanBy(values, nodeData.statColumn as string);
+            aggregated = _.meanBy(values, statCol);
             break;
           case "count":
             aggregated = values.length;
             break;
           case "min":
-            aggregated = _.minBy(values, nodeData.statColumn as string)?.[nodeData.statColumn as string] || 0;
+            aggregated = _.minBy(values, statCol)?.[statCol] || 0;
             break;
           case "max":
-            aggregated = _.maxBy(values, nodeData.statColumn as string)?.[nodeData.statColumn as string] || 0;
+            aggregated = _.maxBy(values, statCol)?.[statCol] || 0;
             break;
           default:
             aggregated = 0;
@@ -99,20 +99,20 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         
         return {
           "索引": key,
-          [nodeData.method + "_" + nodeData.statColumn]: aggregated
+          [nodeData.method + "_" + statCol]: aggregated
         };
       });
 
-      updateNodeData({ 
+      updateLocalNodeData({ 
         testResult: {
-          columns: ["索引", nodeData.method + "_" + nodeData.statColumn],
+          columns: ["索引", nodeData.method + "_" + (nodeData.statColumn || '')],
           data: result
         }, 
         error: undefined 
       });
     } catch (error) {
       console.error('测试运行失败:', error);
-      updateNodeData({ error: '测试运行失败' });
+      updateLocalNodeData({ error: '测试运行失败', testResult: undefined });
     }
   };
 

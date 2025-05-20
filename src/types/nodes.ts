@@ -12,6 +12,7 @@ export enum NodeType {
 
 // Base for the content of the 'data' property of a ReactFlow node
 export interface CustomNodeBaseData {
+  id: string;
   label: string;
   nodeType: NodeType;
   testResult?: SimpleDataframe;

@@ -1,13 +1,13 @@
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import {
+  AggregatorNodeDataContext,
   FlowNodeData,
-  NodeType,
   IndexSourceNodeDataContext,
-  SheetSelectorNodeDataContext,
+  NodeType,
+  OutputNodeDataContext,
   RowFilterNodeDataContext,
   RowLookupNodeDataContext,
-  AggregatorNodeDataContext,
-  OutputNodeDataContext,
+  SheetSelectorNodeDataContext,
 } from "@/types/nodes";
 import { FilePlusIcon, PlayIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Button, Dialog, Flex, Select, Text } from "@radix-ui/themes";
@@ -15,37 +15,34 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import ReactFlow, {
-  addEdge,
   Background,
   Connection,
   Controls,
   Edge,
   Node,
+  NodeChange,
+  NodePositionChange,
+  NodeSelectionChange,
   OnConnect,
   OnEdgesChange,
   OnNodesChange,
   Panel,
   useEdgesState,
   useNodesState,
-  NodeSelectionChange,
-  NodePositionChange,
-  NodeDimensionChange,
-  NodeChange,
-  EdgeChange,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
-import nodeTypes from "./NodeFactory";
+import nodeTypes from "./nodes/sNodeFactory";
 
 function isNodePositionChange(
   change: NodeChange,
 ): change is NodePositionChange {
   return "position" in change;
 }
-function isNodeDimensionChange(
+function isNodeSelectionChange(
   change: NodeChange,
-): change is NodeDimensionChange {
-  return "dimensions" in change;
+): change is NodeSelectionChange {
+  return "selected" in change;
 }
 
 const NODE_TYPES = [
@@ -58,10 +55,11 @@ const NODE_TYPES = [
 ];
 
 // 初始节点默认数据
-const getInitialNodeData = (type: NodeType): FlowNodeData => {
+const getInitialNodeData = (type: NodeType, nodeId: string): FlowNodeData => {
   switch (type) {
     case NodeType.INDEX_SOURCE:
       return {
+        id: nodeId,
         nodeType: NodeType.INDEX_SOURCE,
         label: "索引源",
         sourceFileID: undefined,
@@ -72,6 +70,7 @@ const getInitialNodeData = (type: NodeType): FlowNodeData => {
       } as IndexSourceNodeDataContext;
     case NodeType.SHEET_SELECTOR:
       return {
+        id: nodeId,
         nodeType: NodeType.SHEET_SELECTOR,
         label: "Sheet定位",
         targetFileID: undefined,
@@ -82,6 +81,7 @@ const getInitialNodeData = (type: NodeType): FlowNodeData => {
       } as SheetSelectorNodeDataContext;
     case NodeType.ROW_FILTER:
       return {
+        id: nodeId,
         nodeType: NodeType.ROW_FILTER,
         label: "行过滤",
         conditions: [],
@@ -90,6 +90,7 @@ const getInitialNodeData = (type: NodeType): FlowNodeData => {
       } as RowFilterNodeDataContext;
     case NodeType.ROW_LOOKUP:
       return {
+        id: nodeId,
         nodeType: NodeType.ROW_LOOKUP,
         label: "行查找/列匹配",
         matchColumn: undefined,
@@ -98,6 +99,7 @@ const getInitialNodeData = (type: NodeType): FlowNodeData => {
       } as RowLookupNodeDataContext;
     case NodeType.AGGREGATOR:
       return {
+        id: nodeId,
         nodeType: NodeType.AGGREGATOR,
         label: "统计",
         statColumn: undefined,
@@ -107,6 +109,7 @@ const getInitialNodeData = (type: NodeType): FlowNodeData => {
       } as AggregatorNodeDataContext;
     case NodeType.OUTPUT:
       return {
+        id: nodeId,
         nodeType: NodeType.OUTPUT,
         label: "输出",
         outputFormat: "table",
@@ -141,6 +144,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const [templateName, setTemplateName] = useState("");
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const activelyDraggedNodeId = useRef<string | null>(null);
 
   // 初始化或同步节点和边
   useEffect(() => {
@@ -149,7 +153,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       wsFlowNodes,
     );
     if (wsFlowNodes) {
-      const correctlyTypedNodes = wsFlowNodes.map(node => ({
+      const correctlyTypedNodes = wsFlowNodes.map((node) => ({
         ...node,
         data: node.data,
       }));
@@ -157,7 +161,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     } else {
       setNodes([]);
     }
-  }, [wsFlowNodes]);
+  }, [wsFlowNodes, setNodes]);
 
   useEffect(() => {
     console.log(
@@ -165,12 +169,12 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       wsFlowEdges,
     );
     setEdges(wsFlowEdges || []);
-  }, [wsFlowEdges]);
+  }, [wsFlowEdges, setEdges]);
 
   // 添加节点
   const handleAddNode = useCallback(() => {
     const id = uuidv4();
-    const nodeData = getInitialNodeData(selectedNodeType);
+    const nodeData = getInitialNodeData(selectedNodeType, id);
 
     const randomPosition = {
       x: 100 + Math.random() * 200,
@@ -195,12 +199,30 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       rfOnNodesChange(changes);
 
       changes.forEach((change) => {
-        if (isNodePositionChange(change) && change.position && change.type === "position") {
-          const nodeToUpdate = nodes.find((n) => n.id === change.id);
-          if (nodeToUpdate) {
+        if (
+          isNodePositionChange(change) &&
+          change.position &&
+          change.type === "position"
+        ) {
+          if (
+            change.id === activelyDraggedNodeId.current ||
+            !activelyDraggedNodeId.current
+          ) {
+            const nodeFromRfState = nodes.find((n) => n.id === change.id);
+            if (nodeFromRfState) {
+              const updatedNode: Node<FlowNodeData> = {
+                ...nodeFromRfState,
+                position: change.position,
+              };
+              addFlowNode(updatedNode);
+            }
+          }
+        } else if (isNodeSelectionChange(change)) {
+          const nodeFromRfState = nodes.find((n) => n.id === change.id);
+          if (nodeFromRfState) {
             const updatedNode: Node<FlowNodeData> = {
-              ...nodeToUpdate,
-              position: change.position,
+              ...nodeFromRfState,
+              selected: change.selected,
             };
             addFlowNode(updatedNode);
           }
@@ -329,6 +351,12 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         onConnect={handleOnConnect}
         nodeTypes={nodeTypes}
         fitView
+        onNodeDragStart={(_event, node) => {
+          activelyDraggedNodeId.current = node.id;
+        }}
+        onNodeDragStop={() => {
+          activelyDraggedNodeId.current = null;
+        }}
       >
         <Panel position="top-left">
           <Flex gap="2" align="center">

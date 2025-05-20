@@ -1,45 +1,28 @@
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { FlowNodeProps, SheetSelectorNodeData } from "@/types/nodes";
+import { FlowNodeProps, SheetSelectorNodeDataContext } from "@/types/nodes";
 import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
-import { invoke } from "@tauri-apps/api/core";
-import { useCallback } from "react";
-import { useNodeId, useReactFlow } from "reactflow";
+import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 import { BaseNode } from "./BaseNode";
 
 export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const nodeId = useNodeId();
-  const { setNodes } = useReactFlow();
-  const nodeData = data as SheetSelectorNodeData;
+  const nodeId = useNodeId()!;
+  const nodeData = data as SheetSelectorNodeDataContext;
   const { files } = useWorkspaceStore(useShallow(fileSelector));
-
-  const updateNodeData = useCallback(
-    (updates: Partial<SheetSelectorNodeData>) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                ...updates,
-              },
-            };
-          }
-          return node;
-        }),
-      );
-    },
-    [nodeId, setNodes],
+  const updateSheetSelectorNodeData = useWorkspaceStore(
+    (state) => state.updateNodeData,
   );
 
   const handleSelectFile = async (fileId: string) => {
     try {
-      updateNodeData({ targetFileID: fileId, error: undefined });
+      updateSheetSelectorNodeData(nodeId, {
+        targetFileID: fileId,
+        error: undefined,
+      });
 
       // Reset manual sheet name if file changed
       if (nodeData.mode === "manual" && nodeData.manualSheetName) {
-        updateNodeData({ manualSheetName: undefined });
+        updateSheetSelectorNodeData(nodeId, { manualSheetName: undefined });
       }
     } catch (error) {
       console.error(error);
@@ -47,7 +30,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   const handleSheetModeChange = (mode: "auto_by_index" | "manual") => {
-    updateNodeData({
+    updateSheetSelectorNodeData(nodeId, {
       mode,
       manualSheetName: undefined, // Reset when changing mode
       error: undefined,
@@ -55,53 +38,35 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   const handleSelectSheet = (sheetName: string) => {
-    updateNodeData({ manualSheetName: sheetName, error: undefined });
+    updateSheetSelectorNodeData(nodeId, {
+      manualSheetName: sheetName,
+      error: undefined,
+    });
   };
 
   const testRun = async () => {
+    return; // TODO: implement test run
     try {
       // Validate required fields
       if (!nodeData.targetFileID) {
-        updateNodeData({ error: "请选择目标Excel文件" });
+        updateSheetSelectorNodeData(nodeId, { error: "请选择目标Excel文件" });
         return;
       }
 
       if (nodeData.mode === "manual" && !nodeData.manualSheetName) {
-        updateNodeData({ error: "请选择手动指定的sheet名称" });
+        updateSheetSelectorNodeData(nodeId, {
+          error: "请选择手动指定的sheet名称",
+        });
         return;
       }
 
-      // Call backend API to test sheet selection
-      let result;
-
-      if (nodeData.mode === "auto_by_index") {
-        // Auto mode: Try to find matching sheets for each index
-        result = {
-          matchedSheets: {
-            型号A: "Sheet1",
-            型号B: "Sheet2",
-            型号C: null,
-          },
-          unmatchedIndexes: ["型号C"],
-        };
-      } else {
-        // Manual mode: Use fixed sheet
-        const targetFile = files?.find((f) => f.id === nodeData.targetFileID);
-        const targetSheet = targetFile?.sheet_metas?.find(
-          (s) => s.sheet_name === nodeData.manualSheetName,
-        );
-
-        result = {
-          sheetName: nodeData.manualSheetName,
-          columns: targetSheet?.columns || [],
-          rowCount: 42, // Mock data
-        };
-      }
-
-      updateNodeData({ testResult: result, error: undefined });
+      updateSheetSelectorNodeData(nodeId, {
+        testResult: result,
+        error: undefined,
+      });
     } catch (error) {
       console.error("测试运行失败:", error);
-      updateNodeData({ error: "测试运行失败" });
+      updateSheetSelectorNodeData(nodeId, { error: "测试运行失败" });
     }
   };
 

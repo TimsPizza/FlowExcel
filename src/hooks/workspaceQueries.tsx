@@ -122,6 +122,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         type: reactFlowNode.type || defaultNodeType, // reactFlowNode.type is the string type for RF
         position: reactFlowNode.position || { x: 0, y: 0 },
         data: {
+          id: reactFlowNode.id,
           nodeType: defaultNodeType,
           label: `Recovered Node ${reactFlowNode.id.substring(0, 5)}`,
           // Add other minimal default fields for FlowNodeData if necessary

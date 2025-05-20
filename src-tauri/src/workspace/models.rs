@@ -6,7 +6,7 @@ pub struct FilterCondition {
     pub column: String,
     pub operator: String,
     // Assuming value can be string or number, will be handled by serde_json::Value or specific types
-    pub value: serde_json::Value, 
+    pub value: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logic: Option<String>, // "AND" | "OR"
 }
@@ -18,6 +18,7 @@ pub struct FilterCondition {
 pub enum RustFlowNodeData {
     #[serde(rename = "indexSource")]
     IndexSource {
+        id: String,
         label: String,
         #[serde(rename = "sourceFileID", skip_serializing_if = "Option::is_none")]
         source_file_id: Option<String>,
@@ -32,6 +33,7 @@ pub enum RustFlowNodeData {
     },
     #[serde(rename = "sheetSelector")]
     SheetSelector {
+        id: String,
         label: String,
         #[serde(rename = "targetFileID", skip_serializing_if = "Option::is_none")]
         target_file_id: Option<String>,
@@ -45,6 +47,7 @@ pub enum RustFlowNodeData {
     },
     #[serde(rename = "rowFilter")]
     RowFilter {
+        id: String,
         label: String,
         conditions: Vec<FilterCondition>,
         #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
@@ -54,6 +57,7 @@ pub enum RustFlowNodeData {
     },
     #[serde(rename = "rowLookup")]
     RowLookup {
+        id: String,
         label: String,
         #[serde(rename = "matchColumn", skip_serializing_if = "Option::is_none")]
         match_column: Option<String>,
@@ -64,6 +68,7 @@ pub enum RustFlowNodeData {
     },
     #[serde(rename = "aggregator")]
     Aggregator {
+        id: String,
         label: String,
         #[serde(rename = "statColumn", skip_serializing_if = "Option::is_none")]
         stat_column: Option<String>,
@@ -75,11 +80,10 @@ pub enum RustFlowNodeData {
     },
     #[serde(rename = "output")]
     Output {
+        id: String,
         label: String,
         #[serde(rename = "outputFormat", skip_serializing_if = "Option::is_none")]
         output_format: Option<String>, // "table" | "csv" | "excel"
-        #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
-        test_result: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },
@@ -88,10 +92,10 @@ pub enum RustFlowNodeData {
 /// Represents a node in React Flow: Node<FlowNodeData> from TypeScript.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ReactFlowNode {
-    pub id: String, 
+    pub id: String,
     #[serde(rename = "type")] // This is the React Flow node type string, e.g., "indexSource"
-    pub rf_node_type: String, 
-    pub position: Position, 
+    pub rf_node_type: String,
+    pub position: Position,
     pub data: RustFlowNodeData, // This is our new enum, equivalent to TS FlowNodeData
 }
 
@@ -111,9 +115,7 @@ pub struct WorkspaceConfig {
 /// Sheet metadata
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SheetMeta {
-    #[serde(rename = "sheetName")]
     pub sheet_name: String,
-    #[serde(rename = "headerRow")]
     pub header_row: i32,
 }
 
@@ -123,7 +125,6 @@ pub struct FileMeta {
     pub id: String,
     pub name: String,
     pub path: String,
-    #[serde(rename = "sheetMetas")]
     pub sheet_metas: Vec<SheetMeta>,
 }
 

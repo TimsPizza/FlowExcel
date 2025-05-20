@@ -1,20 +1,19 @@
-import { useCallback, useState } from "react";
-import { FlowNodeProps, RowFilterNodeData } from "@/types/nodes";
-import { BaseNode } from "./BaseNode";
-import {
-  Select,
-  Flex,
-  TextField,
-  Button,
-  Text,
-  IconButton,
-  Grid,
-  ScrollArea,
-} from "@radix-ui/themes";
-import { invoke } from "@tauri-apps/api/core";
-import { useNodeId, useReactFlow } from "reactflow";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { FlowNodeProps, RowFilterNodeDataContext } from "@/types/nodes";
 import { PlusIcon, TrashIcon } from "@radix-ui/react-icons";
-import _ from "lodash";
+import {
+  Button,
+  Flex,
+  Grid,
+  IconButton,
+  ScrollArea,
+  Select,
+  Text,
+  TextField,
+} from "@radix-ui/themes";
+import { useState } from "react";
+import { useNodeId } from "reactflow";
+import { BaseNode } from "./BaseNode";
 
 const OPERATORS = [
   { value: "==", label: "等于" },
@@ -28,37 +27,27 @@ const OPERATORS = [
 ];
 
 export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const nodeId = useNodeId();
-  const { setNodes } = useReactFlow();
-  const nodeData = data as RowFilterNodeData;
+  const nodeId = useNodeId()!;
+  const nodeData = data as RowFilterNodeDataContext;
   const [availableColumns, setAvailableColumns] = useState<string[]>([
-    "型号", "废料重量", "类型", "数量", "时间"
+    "型号",
+    "废料重量",
+    "类型",
+    "数量",
+    "时间",
   ]);
 
-  const updateNodeData = useCallback(
-    (updates: Partial<RowFilterNodeData>) => {
-      setNodes((nodes) =>
-        nodes.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                ...updates,
-              },
-            };
-          }
-          return node;
-        }),
-      );
-    },
-    [nodeId, setNodes],
+  const updateRowFilterNodeDataInStore = useWorkspaceStore(
+    (state) => state.updateNodeData,
   );
 
   const updateCondition = (index: number, field: string, value: any) => {
     const updatedConditions = [...(nodeData.conditions || [])];
     updatedConditions[index] = { ...updatedConditions[index], [field]: value };
-    updateNodeData({ conditions: updatedConditions, error: undefined });
+    updateRowFilterNodeDataInStore(nodeId, {
+      conditions: updatedConditions,
+      error: undefined,
+    });
   };
 
   const addCondition = () => {
@@ -68,7 +57,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       value: "",
       logic: "AND",
     };
-    updateNodeData({
+    updateRowFilterNodeDataInStore(nodeId, {
       conditions: [...(nodeData.conditions || []), newCondition],
       error: undefined,
     });
@@ -77,13 +66,18 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
   const removeCondition = (index: number) => {
     const updatedConditions = [...(nodeData.conditions || [])];
     updatedConditions.splice(index, 1);
-    updateNodeData({ conditions: updatedConditions, error: undefined });
+    updateRowFilterNodeDataInStore(nodeId, {
+      conditions: updatedConditions,
+      error: undefined,
+    });
   };
 
   const testRun = async () => {
     try {
       if (!nodeData.conditions?.length) {
-        updateNodeData({ error: "请至少添加一个过滤条件" });
+        updateRowFilterNodeDataInStore(nodeId, {
+          error: "请至少添加一个过滤条件",
+        });
         return;
       }
 
@@ -93,7 +87,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       );
 
       if (incomplete) {
-        updateNodeData({ error: "过滤条件不完整" });
+        updateRowFilterNodeDataInStore(nodeId, { error: "过滤条件不完整" });
         return;
       }
 
@@ -105,24 +99,41 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       ];
 
       // 应用过滤逻辑
-      const filteredData = mockData.filter(row => {
+      const filteredData = mockData.filter((row) => {
         return nodeData.conditions.every((condition, idx) => {
           const { column, operator, value, logic } = condition;
           const rowValue = row[column];
-          
+
           let matches = false;
-          switch(operator) {
-            case "==": matches = rowValue == value; break;
-            case "!=": matches = rowValue != value; break;
-            case ">": matches = rowValue > value; break;
-            case ">=": matches = rowValue >= value; break;
-            case "<": matches = rowValue < value; break;
-            case "<=": matches = rowValue <= value; break;
-            case "contains": matches = String(rowValue).includes(String(value)); break;
-            case "not_contains": matches = !String(rowValue).includes(String(value)); break;
-            default: matches = false;
+          switch (operator) {
+            case "==":
+              matches = rowValue == value;
+              break;
+            case "!=":
+              matches = rowValue != value;
+              break;
+            case ">":
+              matches = rowValue > value;
+              break;
+            case ">=":
+              matches = rowValue >= value;
+              break;
+            case "<":
+              matches = rowValue < value;
+              break;
+            case "<=":
+              matches = rowValue <= value;
+              break;
+            case "contains":
+              matches = String(rowValue).includes(String(value));
+              break;
+            case "not_contains":
+              matches = !String(rowValue).includes(String(value));
+              break;
+            default:
+              matches = false;
           }
-          
+
           // Apply logic (AND/OR)
           if (idx > 0 && logic === "OR") {
             return matches;
@@ -131,22 +142,22 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
         });
       });
 
-      updateNodeData({ 
+      updateRowFilterNodeDataInStore(nodeId, {
         testResult: {
           columns: Object.keys(mockData[0]),
-          data: filteredData
-        }, 
-        error: undefined 
+          data: filteredData,
+        },
+        error: undefined,
       });
     } catch (error) {
       console.error("测试运行失败:", error);
-      updateNodeData({ error: "测试运行失败" });
+      updateRowFilterNodeDataInStore(nodeId, { error: "测试运行失败" });
     }
   };
 
   return (
-    <BaseNode 
-      data={nodeData} 
+    <BaseNode
+      data={nodeData}
       onTestRun={testRun}
       isSource={false}
       isTarget={true}
