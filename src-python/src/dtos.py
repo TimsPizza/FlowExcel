@@ -17,11 +17,6 @@ class ExcelInfo:
     sheet_info: dict[str, dict[str, list[str]]]
 
 @dataclass
-class PreviewData:
-    columns: list[str]
-    data: list[list[str | int]] 
-
-@dataclass
 class IndexMapping:
     index_source: dict[str, str]
     data_source: dict[str, str]

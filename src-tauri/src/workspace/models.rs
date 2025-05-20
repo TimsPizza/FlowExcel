@@ -9,8 +9,8 @@ pub struct WorkspaceConfig {
     pub files: Vec<FileMeta>,
     #[serde(default)]
     pub flow_nodes: Vec<FlowNode>,
-    // #[serde(default)]
-    // pub flow_edges: Vec<FlowNode>
+    #[serde(default)]
+    pub flow_edges: Vec<FlowEdge>
 }
 
 /// Sheet metadata
@@ -18,8 +18,6 @@ pub struct WorkspaceConfig {
 pub struct SheetMeta {
     pub sheet_name: String,
     pub header_row: i32,
-    #[serde(default)]
-    pub columns: Vec<String>,
 }
 
 /// File metadata
@@ -31,24 +29,67 @@ pub struct FileMeta {
     pub sheet_metas: Vec<SheetMeta>,
 }
 
+/// Flow node types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum NodeType {
+    #[serde(rename = "indexSource")]
+    IndexSource,
+    #[serde(rename = "sheetSelector")]
+    SheetSelector,
+    #[serde(rename = "rowFilter")]
+    RowFilter,
+    #[serde(rename = "rowLookup")]
+    RowLookup,
+    #[serde(rename = "aggregator")]
+    Aggregator,
+    #[serde(rename = "output")]
+    Output,
+}
+
+/// Base node data shared by all node types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaseNodeData {
+    pub id: String,
+    pub label: String,
+    pub error: Option<String>,
+    #[serde(rename = "testResult")]
+    pub test_result: Option<serde_json::Value>,
+}
+
+/// Index source node data
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndexSourceNodeData {
+    #[serde(flatten)]
+    pub base: BaseNodeData,
+    #[serde(rename = "sourceFileID")]
+    pub source_file_id: Option<String>,
+    #[serde(rename = "sheetName")]
+    pub sheet_name: Option<String>,
+    #[serde(rename = "columnNames")]
+    pub column_names: Option<Vec<String>>,
+}
+
 /// Flow node for data processing
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlowNode {
     pub id: String,
+    #[serde(rename = "type")]
     pub node_type: String,
-    pub name: String,
-    pub config: serde_json::Value, // Use generic JSON value for flexibility
     pub position: Position,
-    #[serde(default)]
-    pub inputs: Vec<String>,
-    #[serde(default)]
-    pub outputs: Vec<String>,
+    pub data: serde_json::Value, // Use generic JSON value for flexibility
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct FlowEdge {
-
-// }
+/// Flow edge connecting nodes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlowEdge {
+    pub id: String,
+    pub source: String,
+    pub target: String,
+    #[serde(rename = "sourceHandle")]
+    pub source_handle: Option<String>,
+    #[serde(rename = "targetHandle")]
+    pub target_handle: Option<String>,
+}
 
 /// Position for nodes in the UI
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -20,6 +20,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
 import nodeTypes from "./NodeFactory";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 
 const NODE_TYPES = [
   { value: NodeType.INDEX_SOURCE, label: "索引源" },
@@ -81,9 +82,14 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
   initialEdges = [],
   workspaceId,
 }) => {
-  const [nodes, setNodes, onNodesChange] =
-    useNodesState<FlowNodeData>(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNodeData>(
+    currentWorkspace?.flow_nodes || initialNodes,
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    currentWorkspace?.flow_edges || initialEdges,
+  );
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>(
     NodeType.INDEX_SOURCE,
   );
@@ -110,8 +116,9 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
       data: nodeData,
     };
 
+    addFlowNode(newNode);
     setNodes((nds) => [...nds, newNode]);
-  }, [selectedNodeType, setNodes]);
+  }, [selectedNodeType, addFlowNode]);
 
   // 处理连接
   const onConnect: OnConnect = useCallback(
@@ -249,7 +256,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({
         </Panel>
 
         <Controls />
-        <MiniMap />
+        {/* <MiniMap /> */}
         <Background />
       </ReactFlow>
 

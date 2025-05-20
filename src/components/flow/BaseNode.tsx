@@ -1,7 +1,8 @@
-import { Handle, Position } from "reactflow";
+import TestRunModal from "@/components/workspace/TestRunModal";
 import { BaseNodeData } from "@/types/nodes";
-import { Card, Flex, Box, Text, Badge } from "@radix-ui/themes";
+import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
+import { Handle, Position } from "reactflow";
 
 interface BaseNodeProps {
   data: BaseNodeData;
@@ -9,6 +10,7 @@ interface BaseNodeProps {
   isSource?: boolean;
   isTarget?: boolean;
   onTestRun?: () => void;
+  testable?: boolean;
 }
 
 export const BaseNode: React.FC<BaseNodeProps> = ({
@@ -17,25 +19,26 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
   isSource = false,
   isTarget = true,
   onTestRun,
+  testable = false,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <Card size="2" style={{ minWidth: 240 }}>
-      <Flex direction="column" gap="2">
+    <Card className="min-w-72 max-w-2xl">
+      <Flex direction="column" gap="2" className="">
         <Flex justify="between" align="center" mb="1">
           <Text weight="bold">{data.label}</Text>
           <Flex gap="1">
-            {onTestRun && (
+            {testable && (
               <Badge
                 color="blue"
                 style={{ cursor: "pointer" }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onTestRun();
+                  onTestRun?.();
                 }}
               >
-                测试运行
+                <TestRunModal runResult={data.testResult} />
               </Badge>
             )}
             <Badge
@@ -58,36 +61,7 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
         )}
 
         {expanded && (
-          <Box
-            style={{
-              padding: "8px",
-              backgroundColor: "var(--accent-2)",
-              borderRadius: "4px",
-            }}
-          >
-            {children}
-          </Box>
-        )}
-
-        {data.testResult && expanded && (
-          <Box>
-            <Text size="1" weight="bold">
-              测试结果:
-            </Text>
-            <Box
-              style={{
-                padding: "8px",
-                backgroundColor: "var(--accent-2)",
-                borderRadius: "4px",
-                maxHeight: "200px",
-                overflow: "auto",
-              }}
-            >
-              <pre style={{ margin: 0, fontSize: "12px" }}>
-                {JSON.stringify(data.testResult, null, 2)}
-              </pre>
-            </Box>
-          </Box>
+          <Box className="rounded-md bg-[var(--accent-2)] p-2">{children}</Box>
         )}
       </Flex>
 

@@ -5,11 +5,11 @@ from numpy import nan
 from utils import *
 from dtos import *
 import sys
-from excel_ops import get_excel_preview, get_file_details  # Use relative import if main.py is a module
-from utils import (
-    serialize,
-    recursively_serialize_dict,
-)
+from excel_ops import (
+    get_excel_preview,
+    try_read_header_row,
+)  # Use relative import if main.py is a module
+from models import IndexValues, PreviewData
 
 
 def get_excel_info(file_path) -> PythonResponse[ExcelInfo]:
@@ -29,32 +29,32 @@ def get_excel_info(file_path) -> PythonResponse[ExcelInfo]:
         return PythonResponse(status="error", message=str(e), data=None)
 
 
-def preview_excel_data(
-    file_path, sheet=None, header_row=0, preview_rows=10
-) -> PythonResponse[PreviewData]:
-    """预览Excel文件的内容"""
+def get_index_values(file_path, sheet_name, column_name):
+    """获取指定列的所有唯一值作为索引"""
     try:
-        if sheet is None:
-            # 如果未指定sheet，读取第一个sheet
-            xl = pd.ExcelFile(file_path)
-            sheet = xl.sheet_names[0]
+        # 读取指定sheet的数据
+        df = pd.read_excel(file_path, sheet_name=sheet_name)
 
-        # 读取指定行数的数据
-        df = pd.read_excel(
-            file_path,
-            sheet_name=sheet,
-            header=header_row,
-            nrows=preview_rows + header_row + 1,  # 多读一行以包含header
+        # 检查列是否存在
+        if column_name not in df.columns:
+            return PythonResponse(
+                status="error",
+                message=f"列 '{column_name}' 在工作表 '{sheet_name}' 中不存在",
+                data=None,
+            )
+
+        # 根据选择的列组合构建索引值
+        unique_values = df[column_name].dropna().astype(str).unique().tolist()
+        result = IndexValues(
+            column=column_name,
+            data=unique_values,
         )
 
-        # 转换为可序列化的格式
-        preview_data = PreviewData(
-            columns=df.columns.tolist(),
-            data=df.astype(object).where(pd.notnull(df), None).values.tolist(),
-        )
-        return PythonResponse(status="success", data=preview_data)
+        return PythonResponse(status="success", data=result)
     except Exception as e:
-        return PythonResponse(status="error", message=str(e), data=None)
+        return PythonResponse(
+            status="error", message=f"获取索引值时发生错误: {str(e)}", data=None
+        )
 
 
 def read_excel_file(file_cfg):
@@ -159,6 +159,26 @@ def main():
         "--sheet-name", type=str, default=None, help="Optional sheet name."
     )
 
+    # Command: get-index-values
+    parser_index_values = subparsers.add_parser(
+        "get-index-values", help="Get unique values from specified columns as index."
+    )
+    parser_index_values.add_argument(
+        "--file-path", required=True, type=str, help="Path to the Excel file."
+    )
+    parser_index_values.add_argument(
+        "--sheet-name",
+        required=True,
+        type=str,
+        help="Sheet name containing the columns.",
+    )
+    parser_index_values.add_argument(
+        "--column-names",
+        required=True,
+        type=str,
+        help="Comma-separated list of column names to extract values from.",
+    )
+
     # Command: preview-data
     parser_preview = subparsers.add_parser("preview-data", help="Preview Excel data.")
     parser_preview.add_argument(
@@ -188,55 +208,45 @@ def main():
         help="Preview the processing results without saving.",
     )
 
-    # Command: preview-excel-data
-    parser_preview_excel = subparsers.add_parser(
-        "preview-excel-data", help="Preview Excel data."
+    # Command: try-read-header-row
+    parser_try_read_header_row = subparsers.add_parser(
+        "try-read-header-row", help="Try to read the header row from an Excel file."
     )
-    parser_preview_excel.add_argument(
+    parser_try_read_header_row.add_argument(
         "--file-path", required=True, type=str, help="Path to the Excel file."
     )
-
+    parser_try_read_header_row.add_argument(
+        "--sheet-name", required=True, type=str, help="Sheet name to read."
+    )
+    parser_try_read_header_row.add_argument(
+        "--header-row", required=True, type=int, help="1-based index of the header row."
+    )
     args = parser.parse_args()
 
-    if args.command == "get-details":
-        result_json = get_file_details(
+    if args.command == "get-index-values":
+        column_name = args.column_names  # should be a single column name here
+        result = get_index_values(
             file_path=args.file_path,
-            header_row=args.header_row,
             sheet_name=args.sheet_name,
+            column_name=column_name,
         )
-        print(result_json)  # Print the JSON result to stdout
+        print(normalize_response(result))
+        return
 
     elif args.command == "preview-data":
         result = get_excel_preview(
             file_path=args.file_path,
         )
-        normalized = PythonResponse(
-            status="success",
-            data=[],
-            message="",
-        )
-        if result:
-            normalized.data = result
-        else:
-            normalized.status = "error"
-            normalized.message = "Failed to get excel preview"
-        print(normalize_response(normalized))
+        print(normalize_response(result))
         return
-
-    elif args.command == "process-data":
-        # Load config
-        with open(args.config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-
-        if args.preview:
-            # Preview the mapping
-            result = preview_index_mapping(config["task"], config["files"])
-        else:
-            # Process the data
-            result = run_task(config["task"], config["files"])
-
-        print(json.dumps(result, default=serialize))
-
+    elif args.command == "try-read-header-row":
+        result = try_read_header_row(
+            file_path=args.file_path,
+            sheet_name=args.sheet_name,
+            header_row=args.header_row,
+        )
+        print(normalize_response(result))
+        return
     else:
         parser.print_help()
 

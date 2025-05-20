@@ -24,7 +24,7 @@ export interface ApiResponse<T> {
 export interface SheetMeta {
   sheet_name: string;
   header_row: number;
-  columns: string[];
+  // columns: string[];
 }
 
 export interface FileMeta {
@@ -79,10 +79,24 @@ export interface FilePreviewResponse {
   sheets: SheetInfo[];
 }
 
+export interface SimpleDataframe {
+  columns: string[]; // index column names
+  data: any[][];
+}
+
+export interface IndexValues {
+  column: string;
+  data: any[]; // 1d array of values
+}
+
+export interface TryReadHeaderRowResponse {
+  column_names: string[];
+}
+
 interface SheetInfo {
   sheet_name: string;
   columns: string[];
-  preview_data: Record<string, unknown>[];
+  preview_data: Array<string | null>[];
 }
 
 export interface ErrorResponse {
@@ -114,6 +128,36 @@ export interface WorkspaceState {
 
   // Flow Actions
   addFlowNode: (node: Node<FlowNodeData>) => void;
+  createIndexSourceNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => Node<FlowNodeData>;
+  createSheetSelectorNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => Node<FlowNodeData>;
+  createRowFilterNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => Node<FlowNodeData>;
+  createRowLookupNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => Node<FlowNodeData>;
+  createAggregatorNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => Node<FlowNodeData>;
+  createOutputNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => Node<FlowNodeData>;
   updateNodeData: (nodeId: string, data: Partial<FlowNodeData>) => void;
   removeFlowNode: (nodeId: string) => void;
 

@@ -1,16 +1,18 @@
 import { useCallback, useState } from "react";
 import { FlowNodeProps, RowLookupNodeData } from "@/types/nodes";
 import { BaseNode } from "./BaseNode";
-import { Select, Flex, Text, Checkbox } from "@radix-ui/themes";
-import { invoke } from "@tauri-apps/api/core";
-import { toast } from "react-toastify";
+import { Select, Flex, Text, Checkbox, ScrollArea } from "@radix-ui/themes";
 import { useNodeId, useReactFlow } from "reactflow";
+import _ from "lodash";
 
 export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
   const nodeData = data as RowLookupNodeData;
-  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+  // Mock available columns that would come from upstream nodes
+  const [availableColumns] = useState<string[]>([
+    "型号", "废料重量", "类型", "数量", "金额"
+  ]);
   const [enableLookup, setEnableLookup] = useState<boolean>(
     !!nodeData.matchColumn,
   );
@@ -35,27 +37,15 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
     [nodeId, setNodes],
   );
 
-  // 获取可用列名（假设是从上游节点传递）
-  const fetchAvailableColumns = async () => {
-    try {
-      // 实际项目中，应该从上游节点获取或后端获取
-      const columns = ["型号", "废料重量", "类型"];
-      setAvailableColumns(columns);
-    } catch (error) {
-      console.error("获取列名失败:", error);
-    }
-  };
-
-  // 组件挂载时调用
-  useCallback(() => {
-    fetchAvailableColumns();
-  }, []);
-
   const handleEnableLookup = (checked: boolean) => {
     setEnableLookup(checked);
     if (!checked) {
       updateNodeData({ matchColumn: undefined, error: undefined });
     }
+  };
+
+  const handleSelectMatchColumn = (column: string) => {
+    updateNodeData({ matchColumn: column, error: undefined });
   };
 
   const testRun = async () => {
@@ -66,36 +56,36 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
         return;
       }
 
-      // 模拟从上游节点获取的索引数据
-      const mockIndex = "型号A";
-
-      // 模拟从上游节点获取的sheet数据
-      const mockSheetData = [
-        { 型号: "型号A", 废料重量: 100, 类型: "废料" },
-        { 型号: "型号B", 废料重量: 200, 类型: "废料" },
-        { 型号: "型号A", 废料重量: 300, 类型: "原料" },
+      // 模拟从上游节点获取的数据
+      const mockIndexValues = ["型号A", "型号C"];
+      
+      // 模拟目标数据
+      const mockTargetData = [
+        { "型号": "型号A", "废料重量": 100, "类型": "废料", "数量": 2, "金额": 500 },
+        { "型号": "型号B", "废料重量": 200, "类型": "废料", "数量": 1, "金额": 200 },
+        { "型号": "型号A", "废料重量": 300, "类型": "原料", "数量": 3, "金额": 900 },
+        { "型号": "型号C", "废料重量": 150, "类型": "原料", "数量": 1, "金额": 450 },
       ];
 
       let result;
 
       if (enableLookup && nodeData.matchColumn) {
-        // 调用后端API测试行查找功能
-        result = await invoke("test_row_lookup", {
-          data: mockSheetData,
-          indexValue: mockIndex,
-          matchColumn: nodeData.matchColumn,
-        });
+        // 执行查找匹配
+        result = mockTargetData.filter(row => 
+          mockIndexValues.includes(row[nodeData.matchColumn as keyof typeof row] as string)
+        );
       } else {
         // 如果未启用查找，则直接传递数据
-        result = mockSheetData;
+        result = mockTargetData;
       }
 
-      updateNodeData({ testResult: result, error: undefined });
-
-      // 如果结果是空的，给出提示
-      if (Array.isArray(result) && result.length === 0) {
-        toast.info("未找到匹配的数据行");
-      }
+      updateNodeData({ 
+        testResult: {
+          columns: Object.keys(mockTargetData[0]),
+          data: result
+        }, 
+        error: undefined 
+      });
     } catch (error) {
       console.error("测试运行失败:", error);
       updateNodeData({ error: "测试运行失败" });
@@ -103,14 +93,20 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <BaseNode data={nodeData} onTestRun={testRun}>
+    <BaseNode 
+      data={nodeData} 
+      onTestRun={testRun}
+      isSource={false}
+      isTarget={true}
+      testable
+    >
       <Flex direction="column" gap="2">
         <Flex align="center" gap="2">
           <Checkbox
             checked={enableLookup}
             onCheckedChange={handleEnableLookup}
           />
-          <Text size="2">启用行查找/列匹配</Text>
+          <Text size="1">启用行查找/列匹配</Text>
         </Flex>
 
         {enableLookup && (
@@ -121,28 +117,27 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
             <Select.Root
               size="1"
               value={nodeData.matchColumn || ""}
-              onValueChange={(value) =>
-                updateNodeData({ matchColumn: value, error: undefined })
-              }
+              onValueChange={handleSelectMatchColumn}
             >
-              <Select.Trigger placeholder="选择匹配的列" />
+              <Select.Trigger />
               <Select.Content>
                 <Select.Group>
-                  <Select.Label>选择列</Select.Label>
-                  {availableColumns.map((col) => (
-                    <Select.Item key={col} value={col}>
-                      {col}
-                    </Select.Item>
-                  ))}
+                  <ScrollArea className="max-h-60">
+                    {availableColumns.map((col) => (
+                      <Select.Item key={col} value={col}>
+                        {col}
+                      </Select.Item>
+                    ))}
+                  </ScrollArea>
                 </Select.Group>
               </Select.Content>
             </Select.Root>
           </Flex>
         )}
 
-        {enableLookup && (
+        {enableLookup && nodeData.matchColumn && (
           <Text size="1" color="gray">
-            此节点将在表格中查找列 "{nodeData.matchColumn || "未选择"}"
+            此节点将在表格中查找列 "{nodeData.matchColumn}"
             中与索引值匹配的所有行
           </Text>
         )}

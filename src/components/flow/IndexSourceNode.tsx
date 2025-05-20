@@ -1,7 +1,15 @@
+import { useGetIndexValues } from "@/hooks/workspaceQueries";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, IndexSourceNodeData } from "@/types/nodes";
-import { CheckboxGroup, Flex, Select, Text } from "@radix-ui/themes";
-import { invoke } from "@tauri-apps/api/core";
+import {
+  CheckboxGroup,
+  Flex,
+  Grid,
+  ScrollArea,
+  Select,
+  Text,
+} from "@radix-ui/themes";
+import _ from "lodash";
 import { useCallback, useEffect } from "react";
 import { useNodeId, useReactFlow } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
@@ -12,6 +20,16 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const { setNodes } = useReactFlow();
   const nodeData = data as IndexSourceNodeData;
   const { files } = useWorkspaceStore(useShallow(fileSelector));
+  const {
+    indexValuesArr: indexValues,
+    isIndexValuesLoading,
+    indexValuesError,
+  } = useGetIndexValues(
+    // suppress type error
+    files!.find((file) => file.id === nodeData.sourceFileID)?.path || "",
+    nodeData.sheetName || "",
+    nodeData.columnNames || [],
+  );
 
   useEffect(() => {
     console.log("index source node files", files);
@@ -65,14 +83,13 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         return;
       }
 
-      // 调用后端获取索引数据
-      const result = await invoke("get_index_values", {
-        filePath: nodeData.sourceFileID,
-        sheetName: nodeData.sheetName,
-        columnName: nodeData.columnNames,
+      updateNodeData({
+        testResult: {
+          columns: indexValues?.map((item) => item.column) || [],
+          data: _.zip(...(indexValues?.map((item) => item.data) || [])),
+        },
+        error: undefined,
       });
-
-      updateNodeData({ testResult: result, error: undefined });
     } catch (error) {
       console.error("测试运行失败:", error);
       updateNodeData({ error: "测试运行失败" });
@@ -85,6 +102,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
       isSource={true}
       isTarget={false}
       onTestRun={testRun}
+      testable
     >
       <Flex direction="column" gap="2">
         <Flex align="center" gap="2">
@@ -95,9 +113,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
             onValueChange={(v) => handleSelectFile(v)}
             defaultValue="选择文件"
           >
-            <Select.Trigger>
-              <Text size="1">{nodeData.sourceFileID ?? "选择文件"}</Text>
-            </Select.Trigger>
+            <Select.Trigger />
             <Select.Content>
               <Select.Group>
                 {files && files.length > 0 ? (
@@ -124,7 +140,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
             onValueChange={handleSelectSheet}
             defaultValue="选择工作表"
           >
-            <Select.Trigger style={{ width: "100%" }} />
+            <Select.Trigger />
             <Select.Content>
               <Select.Group>
                 {nodeData.sourceFileID &&
@@ -149,27 +165,31 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
           <Text size="1" weight="bold">
             索引列:
           </Text>
-          <CheckboxGroup.Root
-            size="1"
-            value={nodeData.columnNames ?? []}
-            defaultValue={[]}
-            onValueChange={(columnNames) =>
-              updateNodeData({ columnNames: columnNames, error: undefined })
-            }
-          >
-            {nodeData.sheetName &&
-              files &&
-              files.length > 0 &&
-              files
-                .find((file) => file.id === nodeData.sourceFileID)
-                ?.sheet_metas?.map((sheet) => {
-                  return sheet.columns.map((column) => (
-                    <CheckboxGroup.Item value={column} key={column}>
-                      {column}
-                    </CheckboxGroup.Item>
-                  ));
-                })}
-          </CheckboxGroup.Root>
+          <ScrollArea className="react-flow__node-scrollable max-h-40">
+            <CheckboxGroup.Root
+              size="1"
+              value={nodeData.columnNames ?? []}
+              defaultValue={[]}
+              onValueChange={(columnNames) =>
+                updateNodeData({ columnNames: columnNames, error: undefined })
+              }
+            >
+              <Grid columns="2" gap="1">
+                {nodeData.sheetName &&
+                  files &&
+                  files.length > 0 &&
+                  files
+                    .find((file) => file.id === nodeData.sourceFileID)
+                    ?.sheet_metas?.map((sheet) => {
+                      return sheet.columns.map((column) => (
+                        <CheckboxGroup.Item value={column} key={column}>
+                          {column}
+                        </CheckboxGroup.Item>
+                      ));
+                    })}
+              </Grid>
+            </CheckboxGroup.Root>
+          </ScrollArea>
         </Flex>
       </Flex>
     </BaseNode>

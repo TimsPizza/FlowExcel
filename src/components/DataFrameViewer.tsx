@@ -10,8 +10,9 @@ import { Table } from "@radix-ui/themes";
 import React, { useEffect, useMemo } from "react";
 
 interface DataFrameViewerProps {
-  columns: string[];
+  columns?: string[];
   data: any[][];
+  pagination?: boolean;
   pageSize?: number;
   className?: string;
   onSort?: (column: string) => void;
@@ -22,14 +23,19 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
   data,
   pageSize = 10,
   className = "",
+  pagination = false,
 }) => {
   const [page, setPage] = React.useState(1);
+  console.log("df viewer data", data);
 
   // 计算总页数
   const totalPages = Math.ceil(data.length / pageSize);
 
   // 获取当前页的数据
   const currentPageData = useMemo(() => {
+    if (!pagination) {
+      return data;
+    }
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     return data.slice(start, end);
@@ -45,7 +51,7 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
         <Table.Root size="1">
           <Table.Header>
             <Table.Row>
-              {columns.map((column, index) => (
+              {columns?.map((column, index) => (
                 <Table.ColumnHeaderCell key={index} className="border-r">
                   <div className="max-w-18 overflow-hidden text-ellipsis whitespace-nowrap">
                     {column}
@@ -55,9 +61,9 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {currentPageData.map((row, rowIndex) => (
+            {currentPageData?.map((row, rowIndex) => (
               <Table.Row key={rowIndex} className="max-h-12">
-                {row.map((cell, cellIndex) => (
+                {row?.map((cell, cellIndex) => (
                   <Table.Cell key={cellIndex}>
                     <div className="max-w-18 overflow-hidden text-ellipsis whitespace-nowrap">
                       {cell}
@@ -70,7 +76,7 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
         </Table.Root>
       </div>
 
-      {totalPages > 1 && (
+      {pagination && totalPages > 1 && (
         <div className="mt-4 flex justify-center">
           <Pagination>
             <PaginationContent>

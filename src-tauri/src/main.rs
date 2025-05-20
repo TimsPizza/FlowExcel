@@ -9,7 +9,11 @@ mod bridge;
 mod workspace;
 
 // Import commands
-use bridge::commands::preview_excel_data;
+use bridge::commands::{
+    preview_excel_data,
+    get_index_values,
+    try_read_header_row,
+};
 use workspace::commands::{
     list_workspaces,
     load_workspace,
@@ -24,7 +28,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             // Excel data operations (still using Python)
             preview_excel_data,
-            
+            get_index_values,
+            try_read_header_row,            
             // Workspace operations (now in Rust)
             list_workspaces,
             load_workspace,

@@ -1,5 +1,11 @@
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { ApiResponse, FilePreviewResponse, WorkspaceConfig } from "@/types";
+import {
+  ApiResponse,
+  FilePreviewResponse,
+  IndexValues,
+  TryReadHeaderRowResponse,
+  WorkspaceConfig,
+} from "@/types";
 import { invoke } from "@tauri-apps/api/core";
 import { useMutation, useQuery, UseQueryResult } from "react-query";
 import { toast } from "react-toastify";
@@ -127,7 +133,7 @@ export const useSaveWorkspaceMutation = () => {
 
 /* Get excel preview */
 
-export const get_excel_preview = async (filePath?: string) => {
+export const getExcelPreview = async (filePath?: string) => {
   if (!filePath) {
     return null;
   }
@@ -142,10 +148,13 @@ export const get_excel_preview = async (filePath?: string) => {
   }
   console.log("parsedResult", parsedResult);
   const unemptySheets =
-    parsedResult.data?.sheets.filter((sheet) => sheet.columns.length > 0) ?? [];
+    parsedResult?.data?.sheets?.filter((sheet) => sheet?.columns?.length > 0) ??
+    [];
+  console.log("unemptySheets", unemptySheets);
   const sanitizedResult = {
     sheets: unemptySheets,
   } as FilePreviewResponse;
+  console.log("sanitizedResult", sanitizedResult);
 
   return sanitizedResult;
 };
@@ -153,14 +162,106 @@ export const get_excel_preview = async (filePath?: string) => {
 export const useGetExcelPreview = (filePath?: string) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["excelPreview", filePath],
-    queryFn: async () => await get_excel_preview(filePath),
+    queryFn: async () => await getExcelPreview(filePath),
     enabled: !!filePath,
     refetchOnWindowFocus: false,
     refetchInterval: false,
+    retry: false,
   });
   return {
     previewData: data,
     isPreviewLoading: isLoading,
     previewError: error,
+  };
+};
+
+/**
+ * Get index values for a single column
+ * @param filePath
+ * @param sheetName
+ * @param columnName
+ * @returns Non-repeating values of the column
+ */
+const getIndexValues = async (
+  filePath: string,
+  sheetName: string,
+  columnName: string,
+) => {
+  const result = await invoke<string>("get_index_values", {
+    filePath,
+    sheetName,
+    columnName,
+  });
+  const parsedResult = JSON.parse(result) as ApiResponse<IndexValues>;
+  if (parsedResult.status !== "success") {
+    throw new Error(parsedResult.message);
+  }
+  console.log("getIndexValues result", parsedResult);
+  return parsedResult.data;
+};
+
+export const useGetIndexValues = (
+  filePath: string,
+  sheetName: string,
+  columnNames: string[],
+) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["indexValues", filePath, sheetName, columnNames],
+    queryFn: async () => {
+      return (await Promise.all(
+        columnNames.map((columnName) =>
+          getIndexValues(filePath, sheetName, columnName),
+        ),
+      )) as IndexValues[];
+    },
+    enabled: !!filePath && !!sheetName && !!columnNames,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+  });
+  return {
+    indexValuesArr: data,
+    isIndexValuesLoading: isLoading,
+    indexValuesError: error,
+  };
+};
+
+const tryReadHeaderRow = async (
+  filePath: string,
+  sheetName: string,
+  headerRow: number,
+) => {
+  const result = await invoke<string>("try_read_header_row", {
+    filePath,
+    sheetName,
+    headerRow,
+  });
+  console.log("tryReadHeaderRow result", result);
+  const parsedResult = JSON.parse(
+    result,
+  ) as ApiResponse<TryReadHeaderRowResponse>;
+  console.log("tryReadHeaderRow parsedResult", parsedResult);
+  if (parsedResult.status !== "success") {
+    throw new Error(parsedResult.message);
+  }
+  return parsedResult.data;
+};
+
+export const useTryReadHeaderRow = (
+  filePath: string,
+  sheetName: string,
+  headerRow: number,
+) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["tryReadHeaderRow", filePath, sheetName, headerRow],
+    queryFn: async () => await tryReadHeaderRow(filePath, sheetName, headerRow),
+    enabled: !!filePath && !!sheetName && !isNaN(headerRow),
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    retry: false,
+  });
+  return {
+    headerRow: data,
+    isHeaderRowLoading: isLoading,
+    headerRowError: error,
   };
 };

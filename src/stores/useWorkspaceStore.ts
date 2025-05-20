@@ -1,10 +1,13 @@
 import { FileMeta, WorkspaceConfig, WorkspaceState } from "@/types";
+import { FlowNodeData, NodeType } from "@/types/nodes";
 import {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
   Connection,
-  EdgeChange, // Added Node for explicit typing
+  Edge,
+  EdgeChange,
+  Node,
   NodeChange,
 } from "reactflow";
 import { create } from "zustand";
@@ -160,6 +163,178 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       });
     },
 
+    createIndexSourceNode: (nodeId, position, label) => {
+      console.log("zustand create index source node", nodeId, position, label);
+      const newNode: Node<FlowNodeData> = {
+        id: nodeId,
+        type: NodeType.INDEX_SOURCE,
+        position,
+        data: {
+          id: nodeId,
+          label: label || "索引数据源",
+        },
+      };
+      
+      set((state) => {
+        if (state.currentWorkspace) {
+          return {
+            currentWorkspace: {
+              ...state.currentWorkspace,
+              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
+            },
+            isDirty: true,
+          };
+        }
+        return {};
+      });
+      
+      return newNode;
+    },
+
+    createSheetSelectorNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
+      console.log("zustand create sheet selector node", nodeId, position, label);
+      const newNode: Node<FlowNodeData> = {
+        id: nodeId,
+        type: NodeType.SHEET_SELECTOR,
+        position,
+        data: {
+          id: nodeId,
+          label: label || "工作表选择器",
+          mode: "auto_by_index",
+        },
+      };
+      
+      set((state) => {
+        if (state.currentWorkspace) {
+          return {
+            currentWorkspace: {
+              ...state.currentWorkspace,
+              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
+            },
+            isDirty: true,
+          };
+        }
+        return {};
+      });
+      
+      return newNode;
+    },
+
+    createRowFilterNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
+      console.log("zustand create row filter node", nodeId, position, label);
+      const newNode: Node<FlowNodeData> = {
+        id: nodeId,
+        type: NodeType.ROW_FILTER,
+        position,
+        data: {
+          id: nodeId,
+          label: label || "数据过滤器",
+          conditions: [],
+        },
+      };
+      
+      set((state) => {
+        if (state.currentWorkspace) {
+          return {
+            currentWorkspace: {
+              ...state.currentWorkspace,
+              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
+            },
+            isDirty: true,
+          };
+        }
+        return {};
+      });
+      
+      return newNode;
+    },
+
+    createRowLookupNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
+      console.log("zustand create row lookup node", nodeId, position, label);
+      const newNode: Node<FlowNodeData> = {
+        id: nodeId,
+        type: NodeType.ROW_LOOKUP,
+        position,
+        data: {
+          id: nodeId,
+          label: label || "数据查找器",
+        },
+      };
+      
+      set((state) => {
+        if (state.currentWorkspace) {
+          return {
+            currentWorkspace: {
+              ...state.currentWorkspace,
+              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
+            },
+            isDirty: true,
+          };
+        }
+        return {};
+      });
+      
+      return newNode;
+    },
+
+    createAggregatorNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
+      console.log("zustand create aggregator node", nodeId, position, label);
+      const newNode: Node<FlowNodeData> = {
+        id: nodeId,
+        type: NodeType.AGGREGATOR,
+        position,
+        data: {
+          id: nodeId,
+          label: label || "数据聚合器",
+          method: "sum",
+        },
+      };
+      
+      set((state) => {
+        if (state.currentWorkspace) {
+          return {
+            currentWorkspace: {
+              ...state.currentWorkspace,
+              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
+            },
+            isDirty: true,
+          };
+        }
+        return {};
+      });
+      
+      return newNode;
+    },
+
+    createOutputNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
+      console.log("zustand create output node", nodeId, position, label);
+      const newNode: Node<FlowNodeData> = {
+        id: nodeId,
+        type: NodeType.OUTPUT,
+        position,
+        data: {
+          id: nodeId,
+          label: label || "数据输出",
+          outputFormat: "table",
+        },
+      };
+      
+      set((state) => {
+        if (state.currentWorkspace) {
+          return {
+            currentWorkspace: {
+              ...state.currentWorkspace,
+              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
+            },
+            isDirty: true,
+          };
+        }
+        return {};
+      });
+      
+      return newNode;
+    },
+
     updateNodeData: (nodeId, data) => {
       console.log("zustand update node data", nodeId, data);
       set((state) => {
@@ -289,9 +464,17 @@ export const flowSelector = (state: WorkspaceState) => ({
   flowNodes: state.currentWorkspace?.flow_nodes,
   flowEdges: state.currentWorkspace?.flow_edges,
   addFlowNode: state.addFlowNode,
+  createIndexSourceNode: state.createIndexSourceNode,
+  createSheetSelectorNode: state.createSheetSelectorNode,
+  createRowFilterNode: state.createRowFilterNode,
+  createRowLookupNode: state.createRowLookupNode,
+  createAggregatorNode: state.createAggregatorNode,
+  createOutputNode: state.createOutputNode,
+  updateNodeData: state.updateNodeData,
+  removeFlowNode: state.removeFlowNode,
   onNodesChange: state.onNodesChange,
   onEdgesChange: state.onEdgesChange,
-  storeOnConnect: state.onConnect,
+  onConnect: state.onConnect,
 });
 
 export const fileSelector = (state: WorkspaceState) => ({
