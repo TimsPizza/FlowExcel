@@ -11,4 +11,5 @@ dependencies = [
     "pydantic<2.0",
     "pyinstaller>=6.13.0",
     "xlrd>=2.0.1",
+    "networkx>=2.7.0",
 ]

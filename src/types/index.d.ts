@@ -1,3 +1,7 @@
+// 使用从nodes.ts导入的类型定义
+import { FlowNodeData, NodeType } from "./nodes";
+import { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect } from "reactflow";
+
 export interface ExcelInfo {
   sheets: string[];
   sheet_info: {
@@ -34,43 +38,12 @@ export interface FileMeta {
   sheet_metas: SheetMeta[];
 }
 
-// Use unknown instead of any for better type safety
-export interface FlowNodeData {
-  [key: string]: unknown;
-}
-
-// Extend React Flow's Node type if needed, or use it directly
-// For now, defining our own simplified version
-export interface FlowNode {
-  id: string; // Use id consistent with React Flow
-  type: string; // e.g., 'primarySource', 'linkedProcessing'
-  position: { x: number; y: number };
-  data: FlowNodeData;
-}
-
-export interface PrimarySourceNodeData extends FlowNodeData {
-  fileId?: string;
-  indexColumns?: string[];
-}
-
-export interface AssociationNodeData extends FlowNodeData {
-  incomingIndexName?: string; // Name of the index column from the source node
-  fileId?: string; // ID of the excel file to associate with
-  inputIndexColumn?: string; // Column in this file to match against incomingIndexName
-  dataColumn?: string; // Column in this file to get data from
-  aggregation?: "sum" | "average" | "count" | "first" | "last"; // Type of aggregation
-  outputColumnName?: string; // Name of the new column produced
-}
-
-// Discriminated union for specific node data types
-export type SpecificNodeData = PrimarySourceNodeData | AssociationNodeData;
-// | OtherNodeTypeData etc.
-
+// Workspace配置类型
 export interface WorkspaceConfig {
   id: string;
   name: string;
   files: FileMeta[];
-  flow_nodes: Node<FlowNodeData>[]; // Use React Flow's Node type with our data structure
+  flow_nodes: Node<FlowNodeData>[]; // React Flow的Node类型与我们的数据结构
   flow_edges: Edge[];
 }
 

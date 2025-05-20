@@ -1,7 +1,7 @@
 use tauri::AppHandle;
 use crate::bridge::models::{ApiResponse, ErrorResponse};
 use crate::workspace::models::WorkspaceConfig;
-use crate::workspace::service::{WorkspaceService, WorkspaceSummary};
+use crate::workspace::service::{WorkspaceService};
 
 /// List all available workspaces
 #[tauri::command]

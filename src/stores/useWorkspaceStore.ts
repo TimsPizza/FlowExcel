@@ -1,5 +1,14 @@
 import { FileMeta, WorkspaceConfig, WorkspaceState } from "@/types";
-import { FlowNodeData, NodeType } from "@/types/nodes";
+import {
+  FlowNodeData,
+  NodeType,
+  IndexSourceNodeDataContext,
+  SheetSelectorNodeDataContext,
+  RowFilterNodeDataContext,
+  RowLookupNodeDataContext,
+  AggregatorNodeDataContext,
+  OutputNodeDataContext,
+} from "@/types/nodes";
 import {
   addEdge,
   applyEdgeChanges,
@@ -14,440 +23,413 @@ import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 
 // 创建Zustand存储库
-export const useWorkspaceStore = create<WorkspaceState>()(
-  // persist( // Optional: Uncomment to persist part of the state
-  (set, get) => ({
-    currentWorkspace: null,
-    isDirty: false,
-    // Will set the current workspace to a new workspace with the given id and name
-    createWorkspace: (id, name) => {
-      // Accept id and optional name
-      const newWorkspace: WorkspaceConfig = {
-        id: id,
-        name: name || `New Workspace ${id.substring(0, 4)}`, // Default name if not provided
-        files: [],
-        flow_nodes: [],
-        flow_edges: [],
+export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
+  currentWorkspace: null,
+  isDirty: false,
+  // Will set the current workspace to a new workspace with the given id and name
+  createWorkspace: (id, name) => {
+    // Accept id and optional name
+    const newWorkspace: WorkspaceConfig = {
+      id: id,
+      name: name || `New Workspace ${id.substring(0, 4)}`, // Default name if not provided
+      files: [],
+      flow_nodes: [],
+      flow_edges: [],
+    };
+    console.log("zustand create workspace");
+    set({ currentWorkspace: newWorkspace, isDirty: true });
+    return get().currentWorkspace;
+  },
+
+  loadWorkspace: (workspace) => {
+    // Ensure flow_nodes and flow_edges are always initialized as an array
+    console.log("zustand load workspace");
+
+    set((state) => {
+      const current = state.currentWorkspace;
+      const sanitized = {
+        ...workspace,
+        flow_nodes: workspace.flow_nodes || [],
+        flow_edges: workspace.flow_edges || [],
       };
-      console.log("zustand create workspace");
-      set({ currentWorkspace: newWorkspace, isDirty: true });
-      // No need to return ID here, it's passed in
-    },
 
-    loadWorkspace: (workspace) => {
-      // Ensure flow_nodes and flow_edges are always initialized as an array
-      console.log("zustand load workspace");
+      // 如果当前 workspace 已经一样了，就不 set
+      if (
+        current?.id === sanitized.id &&
+        current?.name === sanitized.name &&
+        shallow(current?.flow_nodes, sanitized.flow_nodes) &&
+        shallow(current?.flow_edges, sanitized.flow_edges)
+      ) {
+        return state; // won't trigger set
+      }
 
-      set((state) => {
-        const current = state.currentWorkspace;
-        const sanitized = {
-          ...workspace,
-          flow_nodes: workspace.flow_nodes || [],
-          flow_edges: workspace.flow_edges || [],
-        };
+      return {
+        currentWorkspace: sanitized,
+        isDirty: false,
+      };
+    });
+  },
 
-        // 如果当前 workspace 已经一样了，就不 set
-        if (
-          current?.id === sanitized.id &&
-          current?.name === sanitized.name &&
-          shallow(current?.flow_nodes, sanitized.flow_nodes) &&
-          shallow(current?.flow_edges, sanitized.flow_edges)
-        ) {
-          return state; // won't trigger set
-        }
-
+  setCurrentWorkspaceName: (name) => {
+    console.log("zustand set current workspace name", name);
+    set((state) => {
+      if (state.currentWorkspace) {
         return {
-          currentWorkspace: sanitized,
-          isDirty: false,
+          currentWorkspace: { ...state.currentWorkspace, name },
+          isDirty: true,
         };
-      });
-    },
+      }
+      return {};
+    });
+  },
 
-    setCurrentWorkspaceName: (name) => {
-      console.log("zustand set current workspace name", name);
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: { ...state.currentWorkspace, name },
-            isDirty: true,
-          };
+  // Expects a full FileMeta object including a pre-generated id and columns from backend
+  addFileToWorkspace: (newFile: FileMeta) => {
+    set((state) => {
+      console.log(
+        "zustand add file to workspace",
+        state.currentWorkspace?.id,
+        "newFile",
+        newFile,
+      );
+      if (state.currentWorkspace) {
+        // Prevent adding file with duplicate ID (though UUIDs make this unlikely)
+        if (state.currentWorkspace.files.find((f) => f.id === newFile.id)) {
+          return state;
         }
-        return {};
-      });
-    },
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            files: [...state.currentWorkspace.files, newFile],
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+    return get().currentWorkspace;
+  },
 
-    // Expects a full FileMeta object including a pre-generated id and columns from backend
-    addFileToWorkspace: (newFile: FileMeta) => {
-      set((state) => {
-        console.log(
-          "zustand add file to workspace",
-          state.currentWorkspace?.id,
-          "newFile",
-          newFile,
+  updateFileMeta: (fileId, updates) => {
+    console.log("zustand update file meta", fileId, updates);
+    set((state) => {
+      if (state.currentWorkspace) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            files: state.currentWorkspace.files.map((f) =>
+              f.id === fileId ? { ...f, ...updates } : f,
+            ),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
+
+  removeFileFromWorkspace: (fileId) => {
+    console.log("zustand remove file from workspace", fileId);
+    set((state) => {
+      if (state.currentWorkspace) {
+        // Also remove nodes that might reference this file?
+        // This dependency management can get complex.
+        // For now, just remove the file.
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            files: state.currentWorkspace.files.filter((f) => f.id !== fileId),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
+
+  // --- Flow Node Actions Implementation ---
+  addFlowNode: (node: Node<FlowNodeData>) => {
+    console.log("zustand add flow node", node);
+    set((state) => {
+      if (state.currentWorkspace) {
+        const existingNodeIndex = state.currentWorkspace.flow_nodes.findIndex(
+          (n) => n.id === node.id,
         );
-        if (state.currentWorkspace) {
-          // Prevent adding file with duplicate ID (though UUIDs make this unlikely)
-          if (state.currentWorkspace.files.find((f) => f.id === newFile.id)) {
-            return state;
-          }
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              files: [...state.currentWorkspace.files, newFile],
-            },
-            isDirty: true,
-          };
+        let new_flow_nodes;
+        if (existingNodeIndex !== -1) {
+          // Node exists, update it (React Flow handles immutable updates well)
+          new_flow_nodes = [...state.currentWorkspace.flow_nodes];
+          new_flow_nodes[existingNodeIndex] = node;
+        } else {
+          // Node does not exist, add it
+          new_flow_nodes = [...state.currentWorkspace.flow_nodes, node];
         }
-        return {};
-      });
-      return get().currentWorkspace;
-    },
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_nodes: new_flow_nodes,
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
 
-    updateFileMeta: (fileId, updates) => {
-      console.log("zustand update file meta", fileId, updates);
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              files: state.currentWorkspace.files.map((f) =>
-                f.id === fileId ? { ...f, ...updates } : f,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  createIndexSourceNode: (nodeId, position, label) => {
+    const newNodeData: IndexSourceNodeDataContext = {
+      nodeType: NodeType.INDEX_SOURCE,
+      label: label || "索引源",
+      sourceFileID: undefined,
+      sheetName: undefined,
+      columnNames: undefined,
+      testResult: undefined,
+      error: undefined,
+    };
+    const newNode: Node<FlowNodeData> = {
+      id: nodeId,
+      type: NodeType.INDEX_SOURCE,
+      position,
+      data: newNodeData,
+    };
+    get().addFlowNode(newNode);
+    return newNode;
+  },
 
-    removeFileFromWorkspace: (fileId) => {
-      console.log("zustand remove file from workspace", fileId);
-      set((state) => {
-        if (state.currentWorkspace) {
-          // Also remove nodes that might reference this file?
-          // This dependency management can get complex.
-          // For now, just remove the file.
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              files: state.currentWorkspace.files.filter(
-                (f) => f.id !== fileId,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  createSheetSelectorNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => {
+    const newNodeData: SheetSelectorNodeDataContext = {
+      nodeType: NodeType.SHEET_SELECTOR,
+      label: label || "Sheet定位",
+      mode: "auto_by_index",
+      targetFileID: undefined,
+      manualSheetName: undefined,
+      testResult: undefined,
+      error: undefined,
+    };
+    const newNode: Node<FlowNodeData> = {
+      id: nodeId,
+      type: NodeType.SHEET_SELECTOR,
+      position,
+      data: newNodeData,
+    };
+    get().addFlowNode(newNode);
+    return newNode;
+  },
 
-    // --- Flow Node Actions Implementation ---
-    addFlowNode: (node) => {
-      console.log("zustand add flow node", node);
-      set((state) => {
-        if (state.currentWorkspace) {
-          // Check for duplicate node ID
-          if (state.currentWorkspace.flow_nodes.find((n) => n.id === node.id)) {
-            return state;
-          }
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, node],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  createRowFilterNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => {
+    const newNodeData: RowFilterNodeDataContext = {
+      nodeType: NodeType.ROW_FILTER,
+      label: label || "行过滤",
+      conditions: [],
+      testResult: undefined,
+      error: undefined,
+    };
+    const newNode: Node<FlowNodeData> = {
+      id: nodeId,
+      type: NodeType.ROW_FILTER,
+      position,
+      data: newNodeData,
+    };
+    get().addFlowNode(newNode);
+    return newNode;
+  },
 
-    createIndexSourceNode: (nodeId, position, label) => {
-      console.log("zustand create index source node", nodeId, position, label);
-      const newNode: Node<FlowNodeData> = {
-        id: nodeId,
-        type: NodeType.INDEX_SOURCE,
-        position,
-        data: {
-          id: nodeId,
-          label: label || "索引数据源",
-        },
-      };
-      
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-      
-      return newNode;
-    },
+  createRowLookupNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => {
+    const newNodeData: RowLookupNodeDataContext = {
+      nodeType: NodeType.ROW_LOOKUP,
+      label: label || "行查找",
+      matchColumn: undefined,
+      testResult: undefined,
+      error: undefined,
+    };
+    const newNode: Node<FlowNodeData> = {
+      id: nodeId,
+      type: NodeType.ROW_LOOKUP,
+      position,
+      data: newNodeData,
+    };
+    get().addFlowNode(newNode);
+    return newNode;
+  },
 
-    createSheetSelectorNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
-      console.log("zustand create sheet selector node", nodeId, position, label);
-      const newNode: Node<FlowNodeData> = {
-        id: nodeId,
-        type: NodeType.SHEET_SELECTOR,
-        position,
-        data: {
-          id: nodeId,
-          label: label || "工作表选择器",
-          mode: "auto_by_index",
-        },
-      };
-      
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-      
-      return newNode;
-    },
+  createAggregatorNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => {
+    const newNodeData: AggregatorNodeDataContext = {
+      nodeType: NodeType.AGGREGATOR,
+      label: label || "数据聚合",
+      method: "sum",
+      statColumn: undefined,
+      testResult: undefined,
+      error: undefined,
+    };
+    const newNode: Node<FlowNodeData> = {
+      id: nodeId,
+      type: NodeType.AGGREGATOR,
+      position,
+      data: newNodeData,
+    };
+    get().addFlowNode(newNode);
+    return newNode;
+  },
 
-    createRowFilterNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
-      console.log("zustand create row filter node", nodeId, position, label);
-      const newNode: Node<FlowNodeData> = {
-        id: nodeId,
-        type: NodeType.ROW_FILTER,
-        position,
-        data: {
-          id: nodeId,
-          label: label || "数据过滤器",
-          conditions: [],
-        },
-      };
-      
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-      
-      return newNode;
-    },
+  createOutputNode: (
+    nodeId: string,
+    position: { x: number; y: number },
+    label?: string,
+  ) => {
+    const newNodeData: OutputNodeDataContext = {
+      nodeType: NodeType.OUTPUT,
+      label: label || "输出结果",
+      outputFormat: "table",
+      testResult: undefined,
+      error: undefined,
+    };
+    const newNode: Node<FlowNodeData> = {
+      id: nodeId,
+      type: NodeType.OUTPUT,
+      position,
+      data: newNodeData,
+    };
+    get().addFlowNode(newNode);
+    return newNode;
+  },
 
-    createRowLookupNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
-      console.log("zustand create row lookup node", nodeId, position, label);
-      const newNode: Node<FlowNodeData> = {
-        id: nodeId,
-        type: NodeType.ROW_LOOKUP,
-        position,
-        data: {
-          id: nodeId,
-          label: label || "数据查找器",
-        },
-      };
-      
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-      
-      return newNode;
-    },
+  updateNodeData: (nodeId, dataToUpdate: Partial<FlowNodeData>) => {
+    console.log("zustand update node data", nodeId, dataToUpdate);
+    set((state) => {
+      if (state.currentWorkspace) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_nodes: state.currentWorkspace.flow_nodes.map((n) => {
+              if (n.id === nodeId) {
+                return {
+                  ...n, // Spread top-level ReactFlow node props (id, type, position)
+                  // Merge the new partial data directly into the existing node.data
+                  data: { ...n.data, ...dataToUpdate } as FlowNodeData,
+                };
+              }
+              return n;
+            }),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
 
-    createAggregatorNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
-      console.log("zustand create aggregator node", nodeId, position, label);
-      const newNode: Node<FlowNodeData> = {
-        id: nodeId,
-        type: NodeType.AGGREGATOR,
-        position,
-        data: {
-          id: nodeId,
-          label: label || "数据聚合器",
-          method: "sum",
-        },
-      };
-      
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-      
-      return newNode;
-    },
+  removeFlowNode: (nodeId) => {
+    console.log("zustand remove flow node", nodeId);
+    set((state) => {
+      if (state.currentWorkspace) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_nodes: state.currentWorkspace.flow_nodes.filter(
+              (n) => n.id !== nodeId,
+            ),
+            // Also remove any edges that connect to/from this node
+            flow_edges: state.currentWorkspace.flow_edges.filter(
+              (e) => e.source !== nodeId && e.target !== nodeId,
+            ),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
 
-    createOutputNode: (nodeId: string, position: { x: number; y: number }, label?: string) => {
-      console.log("zustand create output node", nodeId, position, label);
-      const newNode: Node<FlowNodeData> = {
-        id: nodeId,
-        type: NodeType.OUTPUT,
-        position,
-        data: {
-          id: nodeId,
-          label: label || "数据输出",
-          outputFormat: "table",
-        },
-      };
-      
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: [...state.currentWorkspace.flow_nodes, newNode],
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-      
-      return newNode;
-    },
+  onNodesChange: (changes: NodeChange[]) => {
+    console.log("zustand on nodes change", changes);
+    set((state) => {
+      if (state.currentWorkspace?.flow_nodes) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_nodes: applyNodeChanges(
+              changes,
+              state.currentWorkspace.flow_nodes,
+            ),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
 
-    updateNodeData: (nodeId, data) => {
-      console.log("zustand update node data", nodeId, data);
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: state.currentWorkspace.flow_nodes.map((n) =>
-                n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  onEdgesChange: (changes: EdgeChange[]) => {
+    console.log("zustand on edges change", changes);
+    set((state) => {
+      if (state.currentWorkspace?.flow_edges) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_edges: applyEdgeChanges(
+              changes,
+              state.currentWorkspace.flow_edges,
+            ),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
 
-    removeFlowNode: (nodeId) => {
-      console.log("zustand remove flow node", nodeId);
-      set((state) => {
-        if (state.currentWorkspace) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: state.currentWorkspace.flow_nodes.filter(
-                (n) => n.id !== nodeId,
-              ),
-              // Also remove any edges that connect to/from this node
-              flow_edges: state.currentWorkspace.flow_edges.filter(
-                (e) => e.source !== nodeId && e.target !== nodeId,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  onConnect: (connection: Connection) => {
+    console.log("zustand on connect", connection);
+    set((state) => {
+      if (state.currentWorkspace?.flow_edges) {
+        // 添加一个唯一ID给边
+        const edge = {
+          ...connection,
+          id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
+        };
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_edges: addEdge(edge, state.currentWorkspace.flow_edges),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
 
-    onNodesChange: (changes: NodeChange[]) => {
-      console.log("zustand on nodes change", changes);
-      set((state) => {
-        if (state.currentWorkspace?.flow_nodes) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_nodes: applyNodeChanges(
-                changes,
-                state.currentWorkspace.flow_nodes,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  clearCurrentWorkspace: () => {
+    console.log("zustand clear current workspace");
+    set({ currentWorkspace: null, isDirty: false });
+  },
 
-    onEdgesChange: (changes: EdgeChange[]) => {
-      console.log("zustand on edges change", changes);
-      set((state) => {
-        if (state.currentWorkspace?.flow_edges) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_edges: applyEdgeChanges(
-                changes,
-                state.currentWorkspace.flow_edges,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
+  resetDirty: () => {
+    console.log("zustand reset dirty");
+    set({ isDirty: false });
+  },
 
-    onConnect: (connection: Connection) => {
-      console.log("zustand on connect", connection);
-      set((state) => {
-        if (state.currentWorkspace?.flow_edges) {
-          return {
-            currentWorkspace: {
-              ...state.currentWorkspace,
-              flow_edges: addEdge(
-                connection,
-                state.currentWorkspace.flow_edges,
-              ),
-            },
-            isDirty: true,
-          };
-        }
-        return {};
-      });
-    },
-
-    clearCurrentWorkspace: () => {
-      console.log("zustand clear current workspace");
-      set({ currentWorkspace: null, isDirty: false });
-    },
-
-    resetDirty: () => {
-      console.log("zustand reset dirty");
-      set({ isDirty: false });
-    },
-
-    markAsDirty: () => {
-      console.log("zustand mark as dirty");
-      set({ isDirty: true });
-    },
-  }),
-);
+  markAsDirty: () => {
+    console.log("zustand mark as dirty");
+    set({ isDirty: true });
+  },
+}));
 
 // 导出稳定的selector函数
 export const workspaceSelector = (state: WorkspaceState) => ({
@@ -483,3 +465,4 @@ export const fileSelector = (state: WorkspaceState) => ({
   updateFileMeta: state.updateFileMeta,
   removeFileFromWorkspace: state.removeFileFromWorkspace,
 });
+

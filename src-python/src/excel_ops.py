@@ -1,21 +1,15 @@
+import datetime
+from typing import List
 import pandas as pd
-from typing import List, Optional, Union
-import json
-import datetime  # 确保导入
-
 from models import (
-    FileDetailsResponse,
-    ErrorResponse,
     FilePreviewResponse,
+    IndexValues,
     PreviewResponse,
+    PythonResponse,
     SheetInfo,
     TryReadHeaderRowResponse,
-)  # 假设 models.py 在同级或可按路径导入
-from utils import (
-    serialize,
-    recursively_serialize_dict,
-)  # 假设 utils.py 在同级或可按路径导入
-from dtos import PythonResponse
+)
+from utils import serialize_value as serialize
 
 
 # 自定义 Pydantic 模型 JSON 编码器，以便使用我们的 serialize 函数
@@ -57,9 +51,9 @@ def get_excel_preview(file_path: str) -> FilePreviewResponse:
         columns = df.columns.tolist()
         preview_data = (
             df.head(10).values.tolist()
-                # .astype(object)
-                # .where(pd.notnull(df), None)
-                # .values.tolist()
+            # .astype(object)
+            # .where(pd.notnull(df), None)
+            # .values.tolist()
         )
         sheet_infos.append(
             SheetInfo(sheet_name=sheet, columns=columns, preview_data=preview_data)
@@ -84,3 +78,31 @@ def try_read_header_row(file_path: str, sheet_name: str, header_row: int) -> int
         return PythonResponse(status="success", data=resp, message="")
     except Exception as e:
         return PythonResponse(status="error", message=str(e), data=None)
+
+
+def get_index_values(file_path, sheet_name, column_name):
+    """获取指定列的所有唯一值作为索引"""
+    try:
+        # 读取指定sheet的数据
+        df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+        # 检查列是否存在
+        if column_name not in df.columns:
+            return PythonResponse(
+                status="error",
+                message=f"列 '{column_name}' 在工作表 '{sheet_name}' 中不存在",
+                data=None,
+            )
+
+        # 根据选择的列组合构建索引值
+        unique_values = df[column_name].dropna().astype(str).unique().tolist()
+        result = IndexValues(
+            column=column_name,
+            data=unique_values,
+        )
+
+        return PythonResponse(status="success", data=result)
+    except Exception as e:
+        return PythonResponse(
+            status="error", message=f"获取索引值时发生错误: {str(e)}", data=None
+        )

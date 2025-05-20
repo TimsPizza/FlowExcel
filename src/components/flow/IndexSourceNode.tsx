@@ -1,4 +1,7 @@
-import { useGetIndexValues } from "@/hooks/workspaceQueries";
+import {
+  useGetIndexValues,
+  useTryReadHeaderRow,
+} from "@/hooks/workspaceQueries";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, IndexSourceNodeData } from "@/types/nodes";
 import {
@@ -20,6 +23,16 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const { setNodes } = useReactFlow();
   const nodeData = data as IndexSourceNodeData;
   const { files } = useWorkspaceStore(useShallow(fileSelector));
+  const { headerRow, isHeaderRowLoading, headerRowError } = useTryReadHeaderRow(
+    files!.find((file) => file.id === nodeData.sourceFileID)?.path || "",
+    nodeData.sheetName || "",
+    nodeData.sheetName
+      ? files!
+          .find((file) => file.id === nodeData.sourceFileID)
+          ?.sheet_metas.find((sheet) => sheet.sheet_name === nodeData.sheetName)
+          ?.header_row || 0
+      : 0,
+  );
   const {
     indexValuesArr: indexValues,
     isIndexValuesLoading,
@@ -72,6 +85,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
   };
 
+  // show index values of current settings, render is handled by BaseNode.tsx
   const testRun = async () => {
     try {
       if (
@@ -178,15 +192,13 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                 {nodeData.sheetName &&
                   files &&
                   files.length > 0 &&
-                  files
-                    .find((file) => file.id === nodeData.sourceFileID)
-                    ?.sheet_metas?.map((sheet) => {
-                      return sheet.columns.map((column) => (
-                        <CheckboxGroup.Item value={column} key={column}>
-                          {column}
-                        </CheckboxGroup.Item>
-                      ));
-                    })}
+                  headerRow?.column_names.map((column) => {
+                    return (
+                      <CheckboxGroup.Item value={column} key={column}>
+                        {column}
+                      </CheckboxGroup.Item>
+                    );
+                  })}
               </Grid>
             </CheckboxGroup.Root>
           </ScrollArea>

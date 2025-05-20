@@ -3,6 +3,17 @@ from pydantic import BaseModel, Field
 
 # 注意：根据 pyproject.toml，这里使用 Pydantic V1 语法
 
+from typing import Generic, Optional, TypeVar
+
+T = TypeVar('T')
+
+
+class PythonResponse(Generic[T], BaseModel):
+    status: str
+    message: Optional[str] = None
+    data: Optional[T] = None  
+    
+
 
 class FileMeta(BaseModel):
     id: str = Field(

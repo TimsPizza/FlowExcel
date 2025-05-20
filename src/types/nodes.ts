@@ -10,26 +10,27 @@ export enum NodeType {
   OUTPUT = "output",
 }
 
-export interface BaseNodeData {
-  id: string;
+// Base for the content of the 'data' property of a ReactFlow node
+export interface CustomNodeBaseData {
   label: string;
-  testResult?: SimpleDataframe; // will be passed to df viewer because they are always dataframes right?
+  nodeType: NodeType;
+  testResult?: SimpleDataframe;
   error?: string;
 }
 
-export interface IndexSourceNodeData extends BaseNodeData {
+export interface IndexSourceNodeDataContext extends CustomNodeBaseData {
   sourceFileID?: string; // file id in workspace
   sheetName?: string;
   columnNames?: string[];
 }
 
-export interface SheetSelectorNodeData extends BaseNodeData {
+export interface SheetSelectorNodeDataContext extends CustomNodeBaseData {
   targetFileID?: string;
   mode: "auto_by_index" | "manual";
   manualSheetName?: string;
 }
 
-export interface RowFilterNodeData extends BaseNodeData {
+export interface RowFilterNodeDataContext extends CustomNodeBaseData {
   conditions: {
     column: string;
     operator: string;
@@ -38,25 +39,26 @@ export interface RowFilterNodeData extends BaseNodeData {
   }[];
 }
 
-export interface RowLookupNodeData extends BaseNodeData {
+export interface RowLookupNodeDataContext extends CustomNodeBaseData {
   matchColumn?: string;
 }
 
-export interface AggregatorNodeData extends BaseNodeData {
+export interface AggregatorNodeDataContext extends CustomNodeBaseData {
   statColumn?: string;
   method: "sum" | "avg" | "count" | "min" | "max";
 }
 
-export interface OutputNodeData extends BaseNodeData {
+export interface OutputNodeDataContext extends CustomNodeBaseData {
   outputFormat?: "table" | "csv" | "excel";
 }
 
+// FlowNodeData is the type for the 'data' property of a ReactFlow Node
 export type FlowNodeData =
-  | IndexSourceNodeData
-  | SheetSelectorNodeData
-  | RowFilterNodeData
-  | RowLookupNodeData
-  | AggregatorNodeData
-  | OutputNodeData;
+  | IndexSourceNodeDataContext
+  | SheetSelectorNodeDataContext
+  | RowFilterNodeDataContext
+  | RowLookupNodeDataContext
+  | AggregatorNodeDataContext
+  | OutputNodeDataContext;
 
 export type FlowNodeProps = NodeProps<FlowNodeData>;

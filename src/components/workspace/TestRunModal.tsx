@@ -7,19 +7,23 @@ interface TestRunModalProps {
 }
 
 const TestRunModal = ({ runResult }: TestRunModalProps) => {
-  if (!runResult) {
-    return null;
-  }
   return (
     <Dialog.Root>
       <Dialog.Trigger>
-        <Text color="gray">测试运行</Text>
+        <Text color="gray" size="1" weight="medium">
+          测试运行
+        </Text>
       </Dialog.Trigger>
       <Dialog.Content className="">
         <Dialog.Title>测试运行结果</Dialog.Title>
-        <Box className="max-h-72 overflow-auto rounded-md border p-2">
-          <DataFrameViewer columns={runResult.columns} data={runResult.data} />
-        </Box>
+        {runResult && (
+          <Box className="max-h-72 overflow-auto rounded-md border p-2">
+            <DataFrameViewer
+              columns={runResult.columns}
+              data={runResult.data}
+            />
+          </Box>
+        )}
       </Dialog.Content>
     </Dialog.Root>
   );

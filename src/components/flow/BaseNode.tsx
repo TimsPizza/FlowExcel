@@ -1,4 +1,5 @@
 import TestRunModal from "@/components/workspace/TestRunModal";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { BaseNodeData } from "@/types/nodes";
 import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
@@ -22,13 +23,23 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
   testable = false,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const removeFlowNode = useWorkspaceStore((state) => state.removeFlowNode);
 
   return (
-    <Card className="min-w-72 max-w-2xl">
-      <Flex direction="column" gap="2" className="">
+    <Card className="-z-10 min-w-72 max-w-2xl !overflow-visible">
+      <Flex direction="column" gap="2" className="-z-10 !overflow-visible">
         <Flex justify="between" align="center" mb="1">
           <Text weight="bold">{data.label}</Text>
           <Flex gap="1">
+            <Badge
+              color="red"
+              className="cursor-pointer"
+              onClick={() => {
+                removeFlowNode(data.id);
+              }}
+            >
+              删除
+            </Badge>
             {testable && (
               <Badge
                 color="blue"
@@ -70,14 +81,15 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
           type="target"
           position={Position.Top}
           style={{ background: "#555" }}
+          className="relative !z-10"
         />
       )}
 
-      {!isSource && (
+      {isSource && (
         <Handle
+          className="!h-4 !w-4 !-translate-y-1/2 !translate-x-1/2"
           type="source"
-          position={Position.Bottom}
-          style={{ background: "#555" }}
+          position={Position.Right}
         />
       )}
     </Card>

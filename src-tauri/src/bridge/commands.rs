@@ -1,11 +1,14 @@
 use std::process::Command;
 
-use crate::bridge::models::ApiResponse;
+// use crate::pipeline::models::Pipeline;
+// use crate::pipeline::executor::execute_pipeline;
+// use serde_json;
+// use tauri::AppHandle;
 // This module contains Tauri commands that interact with Python for Excel-specific operations
 
 #[tauri::command]
 pub async fn preview_excel_data(file_path: String) -> Result<String, String> {
-    let output = Command::new("/Users/timspizza/code/excel/.venv/bin/python")
+    let output = Command::new("/Users/timspizza/code/tauri-excel/src-python/.venv/bin/python")
         .args([
             "/Users/timspizza/code/tauri-excel/src-python/src/main.py",
             "preview-data",
@@ -28,7 +31,7 @@ pub async fn get_index_values(
     sheet_name: String,
     column_name: String,
 ) -> Result<String, String> {
-    let output = Command::new("/Users/timspizza/code/excel/.venv/bin/python")
+    let output = Command::new("/Users/timspizza/code/tauri-excel/src-python/.venv/bin/python")
         .args([
             "/Users/timspizza/code/tauri-excel/src-python/src/main.py",
             "get-index-values",
@@ -55,7 +58,7 @@ pub async fn try_read_header_row(
     sheet_name: String,
     header_row: i32,
 ) -> Result<String, String> {
-    let output = Command::new("/Users/timspizza/code/excel/.venv/bin/python")
+    let output = Command::new("/Users/timspizza/code/tauri-excel/src-python/.venv/bin/python")
         .args([
             "/Users/timspizza/code/tauri-excel/src-python/src/main.py",
             "try-read-header-row",

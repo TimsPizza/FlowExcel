@@ -113,7 +113,7 @@ const AddFileModal = () => {
       }}
     >
       <Dialog.Trigger>
-        <Button>添加文件</Button>
+        <Button variant="soft" size="2">添加文件</Button>
       </Dialog.Trigger>
       <Dialog.Content>
         <Dialog.Title>

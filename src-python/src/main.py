@@ -1,141 +1,12 @@
 import argparse
+from excel_ops import get_excel_preview, try_read_header_row, get_index_values
+from utils import normalize_response
 import json
+from typing import Dict, Any
 import pandas as pd
-from numpy import nan
-from utils import *
-from dtos import *
-import sys
-from excel_ops import (
-    get_excel_preview,
-    try_read_header_row,
-)  # Use relative import if main.py is a module
-from models import IndexValues, PreviewData
-
-
-def get_excel_info(file_path) -> PythonResponse[ExcelInfo]:
-    """获取Excel文件的基本信息（sheet列表等）"""
-    try:
-        xl = pd.ExcelFile(file_path)
-        sheets = xl.sheet_names
-        sheet_info = {}
-        for sheet in sheets:
-            # 读取每个sheet的前1行以获取列名
-            df = pd.read_excel(file_path, sheet_name=sheet, nrows=1)
-            sheet_info[sheet] = {"columns": df.columns.tolist()}
-        return PythonResponse(
-            status="success", data=ExcelInfo(sheets=sheets, sheet_info=sheet_info)
-        )
-    except Exception as e:
-        return PythonResponse(status="error", message=str(e), data=None)
-
-
-def get_index_values(file_path, sheet_name, column_name):
-    """获取指定列的所有唯一值作为索引"""
-    try:
-        # 读取指定sheet的数据
-        df = pd.read_excel(file_path, sheet_name=sheet_name)
-
-        # 检查列是否存在
-        if column_name not in df.columns:
-            return PythonResponse(
-                status="error",
-                message=f"列 '{column_name}' 在工作表 '{sheet_name}' 中不存在",
-                data=None,
-            )
-
-        # 根据选择的列组合构建索引值
-        unique_values = df[column_name].dropna().astype(str).unique().tolist()
-        result = IndexValues(
-            column=column_name,
-            data=unique_values,
-        )
-
-        return PythonResponse(status="success", data=result)
-    except Exception as e:
-        return PythonResponse(
-            status="error", message=f"获取索引值时发生错误: {str(e)}", data=None
-        )
-
-
-def read_excel_file(file_cfg):
-    return pd.read_excel(
-        file_cfg["path"],
-        sheet_name=file_cfg.get("sheet", 0),
-        header=file_cfg.get("header_row", 0),
-        usecols=file_cfg.get("columns"),
-    )
-
-
-def apply_special_mapping(index, mapping):
-    if mapping and index in mapping:
-        return mapping[index]
-    return index
-
-
-def run_task(task, files_dict):
-    # 读取索引来源
-    idx_file_cfg = files_dict[task["index_source"]["file"]]
-    idx_col = task["index_source"]["column"]
-    idx_df = read_excel_file(idx_file_cfg)
-    indices = idx_df[idx_col].dropna().astype(str).tolist()
-
-    # 读取数据来源
-    data_file_cfg = files_dict[task["data_source"]["file"]]
-    data_idx_col = task["data_source"]["index_column"]
-    value_col = task["data_source"]["value_column"]
-    data_df = read_excel_file(data_file_cfg)
-
-    # 特殊映射
-    mapping = task.get("special_mapping", {})
-
-    # 结果
-    result = {}
-    for idx in indices:
-        mapped_idx = apply_special_mapping(idx, mapping)
-        rows = data_df[data_df[data_idx_col].astype(str) == mapped_idx]
-        if task.get("aggregation", "sum") == "sum":
-            value = rows[value_col].sum()
-        else:
-            value = rows[value_col].sum()  # 预留扩展
-        result[idx] = value
-    return result
-
-
-def preview_index_mapping(task, files_dict):
-    """预览索引映射关系"""
-    try:
-        # 读取索引来源
-        idx_file_cfg = files_dict[task["index_source"]["file"]]
-        idx_col = task["index_source"]["column"]
-        idx_df = read_excel_file(idx_file_cfg)
-        indices = idx_df[idx_col].dropna().astype(str).tolist()
-
-        # 读取数据来源
-        data_file_cfg = files_dict[task["data_source"]["file"]]
-        data_idx_col = task["data_source"]["index_column"]
-        value_col = task["data_source"]["value_column"]
-        data_df = read_excel_file(data_file_cfg)
-
-        # 特殊映射
-        mapping = task.get("special_mapping", {})
-
-        # 构建映射预览
-        preview = []
-        for idx in indices:
-            mapped_idx = apply_special_mapping(idx, mapping)
-            rows = data_df[data_df[data_idx_col].astype(str) == mapped_idx]
-            preview.append(
-                {
-                    "original_index": idx,
-                    "mapped_index": mapped_idx,
-                    "matched_rows": rows.shape[0],
-                    "matched_data": rows.to_dict("records"),
-                }
-            )
-
-        return {"status": "success", "preview": preview}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+from pipeline.models import Pipeline
+from pipeline.processor import PipelineExecutor
+from pipeline import execute_pipeline, test_pipeline_node
 
 
 def main():
@@ -221,6 +92,26 @@ def main():
     parser_try_read_header_row.add_argument(
         "--header-row", required=True, type=int, help="1-based index of the header row."
     )
+
+    # Command: execute-pipeline
+    parser_execute_pipeline = subparsers.add_parser(
+        "execute-pipeline", help="Execute a data processing pipeline."
+    )
+    parser_execute_pipeline.add_argument(
+        "--pipeline-json", required=True, type=str, help="JSON string defining the pipeline."
+    )
+
+    # Command: test-pipeline-node
+    parser_test_node = subparsers.add_parser(
+        "test-pipeline-node", help="Test a single node in a data pipeline."
+    )
+    parser_test_node.add_argument(
+        "--pipeline-json", required=True, type=str, help="JSON string defining the pipeline."
+    )
+    parser_test_node.add_argument(
+        "--node-id", required=True, type=str, help="ID of the node to test."
+    )
+
     args = parser.parse_args()
 
     if args.command == "get-index-values":
@@ -245,6 +136,14 @@ def main():
             sheet_name=args.sheet_name,
             header_row=args.header_row,
         )
+        print(normalize_response(result))
+        return
+    elif args.command == "execute-pipeline":
+        result = execute_pipeline(args.pipeline_json)
+        print(normalize_response(result))
+        return
+    elif args.command == "test-pipeline-node":
+        result = test_pipeline_node(args.pipeline_json, args.node_id)
         print(normalize_response(result))
         return
     else:

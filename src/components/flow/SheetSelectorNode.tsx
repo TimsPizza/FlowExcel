@@ -1,11 +1,6 @@
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, SheetSelectorNodeData } from "@/types/nodes";
-import { 
-  Flex, 
-  RadioGroup, 
-  Select, 
-  Text 
-} from "@radix-ui/themes";
+import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback } from "react";
 import { useNodeId, useReactFlow } from "reactflow";
@@ -32,18 +27,18 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
             };
           }
           return node;
-        })
+        }),
       );
     },
-    [nodeId, setNodes]
+    [nodeId, setNodes],
   );
 
   const handleSelectFile = async (fileId: string) => {
     try {
       updateNodeData({ targetFileID: fileId, error: undefined });
-      
+
       // Reset manual sheet name if file changed
-      if (nodeData.mode === 'manual' && nodeData.manualSheetName) {
+      if (nodeData.mode === "manual" && nodeData.manualSheetName) {
         updateNodeData({ manualSheetName: undefined });
       }
     } catch (error) {
@@ -51,11 +46,11 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
   };
 
-  const handleSheetModeChange = (mode: 'auto_by_index' | 'manual') => {
-    updateNodeData({ 
-      mode, 
+  const handleSheetModeChange = (mode: "auto_by_index" | "manual") => {
+    updateNodeData({
+      mode,
       manualSheetName: undefined, // Reset when changing mode
-      error: undefined 
+      error: undefined,
     });
   };
 
@@ -67,47 +62,46 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
     try {
       // Validate required fields
       if (!nodeData.targetFileID) {
-        updateNodeData({ error: '请选择目标Excel文件' });
+        updateNodeData({ error: "请选择目标Excel文件" });
         return;
       }
-      
-      if (nodeData.mode === 'manual' && !nodeData.manualSheetName) {
-        updateNodeData({ error: '请选择手动指定的sheet名称' });
+
+      if (nodeData.mode === "manual" && !nodeData.manualSheetName) {
+        updateNodeData({ error: "请选择手动指定的sheet名称" });
         return;
       }
-      
-      // Mock data for testing
-      const mockIndexes = ['型号A', '型号B', '型号C'];
-      
+
       // Call backend API to test sheet selection
       let result;
-      
-      if (nodeData.mode === 'auto_by_index') {
+
+      if (nodeData.mode === "auto_by_index") {
         // Auto mode: Try to find matching sheets for each index
         result = {
           matchedSheets: {
-            '型号A': 'Sheet1',
-            '型号B': 'Sheet2',
-            '型号C': null
+            型号A: "Sheet1",
+            型号B: "Sheet2",
+            型号C: null,
           },
-          unmatchedIndexes: ['型号C']
+          unmatchedIndexes: ["型号C"],
         };
       } else {
         // Manual mode: Use fixed sheet
-        const targetFile = files?.find(f => f.id === nodeData.targetFileID);
-        const targetSheet = targetFile?.sheet_metas?.find(s => s.sheet_name === nodeData.manualSheetName);
-        
+        const targetFile = files?.find((f) => f.id === nodeData.targetFileID);
+        const targetSheet = targetFile?.sheet_metas?.find(
+          (s) => s.sheet_name === nodeData.manualSheetName,
+        );
+
         result = {
           sheetName: nodeData.manualSheetName,
           columns: targetSheet?.columns || [],
-          rowCount: 42 // Mock data
+          rowCount: 42, // Mock data
         };
       }
-      
+
       updateNodeData({ testResult: result, error: undefined });
     } catch (error) {
-      console.error('测试运行失败:', error);
-      updateNodeData({ error: '测试运行失败' });
+      console.error("测试运行失败:", error);
+      updateNodeData({ error: "测试运行失败" });
     }
   };
 
@@ -144,30 +138,34 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
             </Select.Content>
           </Select.Root>
         </Flex>
-        
+
         <Flex direction="column" gap="1">
-          <Text size="1" weight="bold">Sheet定位模式:</Text>
-          <RadioGroup.Root 
-            value={nodeData.mode || 'auto_by_index'} 
-            onValueChange={(value) => handleSheetModeChange(value as 'auto_by_index' | 'manual')}
+          <Text size="1" weight="bold">
+            Sheet定位模式:
+          </Text>
+          <RadioGroup.Root
+            value={nodeData.mode || "auto_by_index"}
+            onValueChange={(value) =>
+              handleSheetModeChange(value as "auto_by_index" | "manual")
+            }
           >
             <Flex direction="column" gap="1">
               <RadioGroup.Item value="auto_by_index">
                 自动匹配索引到sheet名
               </RadioGroup.Item>
-              <RadioGroup.Item value="manual">
-                手动指定sheet名
-              </RadioGroup.Item>
+              <RadioGroup.Item value="manual">手动指定sheet名</RadioGroup.Item>
             </Flex>
           </RadioGroup.Root>
         </Flex>
-        
-        {nodeData.mode === 'manual' && (
+
+        {nodeData.mode === "manual" && (
           <Flex align="center" gap="2">
-            <Text size="1" weight="bold">Sheet名称:</Text>
-            <Select.Root 
+            <Text size="1" weight="bold">
+              Sheet名称:
+            </Text>
+            <Select.Root
               size="1"
-              value={nodeData.manualSheetName || ''}
+              value={nodeData.manualSheetName || ""}
               onValueChange={handleSelectSheet}
             >
               <Select.Trigger />
@@ -194,4 +192,4 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
       </Flex>
     </BaseNode>
   );
-}; 
+};

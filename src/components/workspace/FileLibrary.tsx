@@ -16,22 +16,20 @@ const FileLibrary: React.FC = () => {
   return (
     <Flex direction="column" gap="4" width={"100%"}>
       <Box p="4">
-        <Text weight="bold" size="4" mb="3">
-          文件库
-        </Text>
-        <AddFileModal />
-
         <Flex direction="column" gap="5">
           <Box>
-            <Text weight="medium" size="3" mb="2">
-              工作区文件
-            </Text>
+            <Flex justify="start" align="baseline" gap="2">
+              <Text weight="medium" size="3" mb="2">
+                工作区文件
+              </Text>
+              <AddFileModal />
+            </Flex>
             {files?.length === 0 ? (
               <Text size="2" color="gray">
                 当前工作区还没有添加文件。
               </Text>
             ) : (
-              <ScrollArea>
+              <ScrollArea className="mt-4">
                 <Flex direction="column" gap="1">
                   {files?.map((file) => (
                     <Box

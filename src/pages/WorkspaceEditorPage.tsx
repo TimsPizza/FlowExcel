@@ -1,4 +1,3 @@
-import FileLibrary from "@/components/workspace/FileLibrary";
 import WorkspaceToolbar from "@/components/workspace/WorkspaceToolbar";
 import {
   useSaveWorkspaceMutation,
@@ -8,13 +7,12 @@ import {
   useWorkspaceStore,
   workspaceSelector,
 } from "@/stores/useWorkspaceStore";
-import { Box, Flex, Heading } from "@radix-ui/themes";
+import { Flex } from "@radix-ui/themes";
 import React, { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "react-query";
-import { ErrorResponse, Outlet, useParams } from "react-router-dom";
+import { ErrorResponse, Outlet, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useShallow } from "zustand/shallow";
-import { FlowEditor } from "@/components/flow/FlowEditor";
 
 function isErrorResponse(obj: unknown): obj is ErrorResponse {
   if (typeof obj !== "object" || obj === null) {
@@ -29,7 +27,7 @@ function isErrorResponse(obj: unknown): obj is ErrorResponse {
 
 export default function WorkspaceEditorPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const navigate = useNavigate();
 
   const {
     workspace,
@@ -52,18 +50,21 @@ export default function WorkspaceEditorPage() {
 
   // 当从后端加载数据成功时，更新zustand状态
   useEffect(() => {
-    if (hasLoaded) return;
     if (workspace && !isWsLoading && !wsError) {
       loadWorkspace(workspace);
-      setHasLoaded(true);
     }
-  }, [workspace, isWsLoading, wsError, hasLoaded, loadWorkspace]);
+  }, [workspace, isWsLoading, wsError, loadWorkspace]);
+
+  useEffect(() => {
+    if (wsError) {
+      navigate("/");
+    }
+  }, [wsError, navigate]);
 
   // 组件卸载时清理workspace状态
   useEffect(() => {
     return () => {
       clearCurrentWorkspace();
-      setHasLoaded(false);
     };
   }, [clearCurrentWorkspace]);
 
@@ -89,7 +90,7 @@ export default function WorkspaceEditorPage() {
     queryClient.invalidateQueries([""]);
   }, [currentWorkspace, isSaving, saveWorkspace, queryClient]);
 
-  if (isWsLoading && !currentWorkspace && !hasLoaded) {
+  if (isWsLoading && !currentWorkspace) {
     return <div>Loading Workspace...</div>;
   }
 
@@ -104,10 +105,6 @@ export default function WorkspaceEditorPage() {
   if (!currentWorkspace) {
     return <div>Workspace not available (ID: {workspaceId}).</div>;
   }
-
-  // 从当前工作区中获取流程节点和连接
-  const initialNodes = currentWorkspace.flow_nodes || [];
-  const initialEdges = currentWorkspace.flow_edges || [];
 
   return (
     <Flex direction="column" className="h-screen">
