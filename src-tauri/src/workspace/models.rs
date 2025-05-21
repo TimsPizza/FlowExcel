@@ -22,12 +22,16 @@ pub enum RustFlowNodeData {
         label: String,
         #[serde(rename = "sourceFileID", skip_serializing_if = "Option::is_none")]
         source_file_id: Option<String>,
+        #[serde(rename = "bySheetName", skip_serializing_if = "Option::is_none")]
+        by_sheet_name: Option<bool>,
         #[serde(rename = "sheetName", skip_serializing_if = "Option::is_none")]
         sheet_name: Option<String>,
-        #[serde(rename = "columnNames", skip_serializing_if = "Option::is_none")]
-        column_names: Option<Vec<String>>,
-        #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
-        test_result: Option<serde_json::Value>, // Assuming SimpleDataframe serializes to JSON
+        #[serde(rename = "byColumn", skip_serializing_if = "Option::is_none")]
+        by_column: Option<bool>,
+        #[serde(rename = "columnName", skip_serializing_if = "Option::is_none")]
+        column_name: Option<String>,
+        // #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
+        // test_result: Option<serde_json::Value>, // Assuming SimpleDataframe serializes to JSON
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },
@@ -40,8 +44,8 @@ pub enum RustFlowNodeData {
         mode: String, // "auto_by_index" | "manual"
         #[serde(rename = "manualSheetName", skip_serializing_if = "Option::is_none")]
         manual_sheet_name: Option<String>,
-        #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
-        test_result: Option<serde_json::Value>,
+        // #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
+        // test_result: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },
@@ -50,8 +54,8 @@ pub enum RustFlowNodeData {
         id: String,
         label: String,
         conditions: Vec<FilterCondition>,
-        #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
-        test_result: Option<serde_json::Value>,
+        // #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
+        // test_result: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },
@@ -61,8 +65,8 @@ pub enum RustFlowNodeData {
         label: String,
         #[serde(rename = "matchColumn", skip_serializing_if = "Option::is_none")]
         match_column: Option<String>,
-        #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
-        test_result: Option<serde_json::Value>,
+        // #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
+        // test_result: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },
@@ -73,8 +77,8 @@ pub enum RustFlowNodeData {
         #[serde(rename = "statColumn", skip_serializing_if = "Option::is_none")]
         stat_column: Option<String>,
         method: String, // "sum" | "avg" | "count" | "min" | "max"
-        #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
-        test_result: Option<serde_json::Value>,
+        // #[serde(rename = "testResult", skip_serializing_if = "Option::is_none")]
+        // test_result: Option<serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         error: Option<String>,
     },

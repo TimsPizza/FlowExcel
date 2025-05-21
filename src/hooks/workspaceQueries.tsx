@@ -4,10 +4,11 @@ import {
   FilePreviewResponse,
   IndexValues,
   TryReadHeaderRowResponse,
+  TryReadSheetNamesResponse,
   WorkspaceConfig,
 } from "@/types";
 import {
-  FlowNodeData, 
+  FlowNodeData,
   NodeType,
   IndexSourceNodeDataContext,
   SheetSelectorNodeDataContext,
@@ -145,7 +146,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         // Spread all properties from currentData first
         ...currentData,
         // Ensure essential base properties exist
-        label: currentData.label || `Node ${reactFlowNode.id.substring(0,5)}`,
+        label: currentData.label || `Node ${reactFlowNode.id.substring(0, 5)}`,
         nodeType: currentData.nodeType, // This must exist due to the check above
         // testResult and error are optional and can remain as they are or undefined
       } as FlowNodeData, // Explicitly cast to FlowNodeData
@@ -372,7 +373,7 @@ export const useGetIndexValues = (
   return {
     indexValuesArr: data,
     isIndexValuesLoading: isLoading,
-    indexValuesError: error,
+    indexValuesError: error as Error,
   };
 };
 
@@ -413,6 +414,40 @@ export const useTryReadHeaderRow = (
   return {
     headerRow: data,
     isHeaderRowLoading: isLoading,
-    headerRowError: error,
+    headerRowError: error as Error,
+  };
+};
+
+const tryReadSheetNames = async (filePath: string) => {
+  try {
+    const result = await invoke<string>("try_read_sheet_names", {
+      filePath,
+    });
+    const parsedResult = JSON.parse(
+      result,
+    ) as ApiResponse<TryReadSheetNamesResponse>;
+    if (parsedResult.status !== "success") {
+      throw new Error(parsedResult.message);
+    }
+    return parsedResult.data;
+  } catch (error) {
+    console.error("tryReadSheetNames error", error);
+    throw new Error(String(error));
+  } 
+};
+
+export const useTryReadSheetNames = (filePath: string, bySheetName: boolean) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["tryReadSheetNames", filePath],
+    queryFn: async () => await tryReadSheetNames(filePath),
+    enabled: !!filePath && bySheetName,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    retry: false,
+  });
+  return {
+    sheetNamesArr: data,
+    isSheetNamesLoading: isLoading,
+    sheetNamesError: error as Error,
   };
 };

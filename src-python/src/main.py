@@ -1,5 +1,10 @@
 import argparse
-from excel_ops import get_excel_preview, try_read_header_row, get_index_values
+from excel_ops import (
+    get_excel_preview,
+    try_read_header_row,
+    get_index_values,
+    try_read_sheet_names,
+)
 from utils import normalize_response
 import json
 from typing import Dict, Any
@@ -93,12 +98,23 @@ def main():
         "--header-row", required=True, type=int, help="1-based index of the header row."
     )
 
+    # Command: try-read-sheet-names
+    parser_try_read_sheet_names = subparsers.add_parser(
+        "try-read-sheet-names", help="Try to read the sheet names from an Excel file."
+    )
+    parser_try_read_sheet_names.add_argument(
+        "--file-path", required=True, type=str, help="Path to the Excel file."
+    )
+
     # Command: execute-pipeline
     parser_execute_pipeline = subparsers.add_parser(
         "execute-pipeline", help="Execute a data processing pipeline."
     )
     parser_execute_pipeline.add_argument(
-        "--pipeline-json", required=True, type=str, help="JSON string defining the pipeline."
+        "--pipeline-json",
+        required=True,
+        type=str,
+        help="JSON string defining the pipeline.",
     )
 
     # Command: test-pipeline-node
@@ -106,7 +122,10 @@ def main():
         "test-pipeline-node", help="Test a single node in a data pipeline."
     )
     parser_test_node.add_argument(
-        "--pipeline-json", required=True, type=str, help="JSON string defining the pipeline."
+        "--pipeline-json",
+        required=True,
+        type=str,
+        help="JSON string defining the pipeline.",
     )
     parser_test_node.add_argument(
         "--node-id", required=True, type=str, help="ID of the node to test."
@@ -114,40 +133,39 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "get-index-values":
-        column_name = args.column_names  # should be a single column name here
-        result = get_index_values(
-            file_path=args.file_path,
-            sheet_name=args.sheet_name,
-            column_name=column_name,
-        )
-        print(normalize_response(result))
-        return
-
-    elif args.command == "preview-data":
-        result = get_excel_preview(
-            file_path=args.file_path,
-        )
-        print(normalize_response(result))
-        return
-    elif args.command == "try-read-header-row":
-        result = try_read_header_row(
-            file_path=args.file_path,
-            sheet_name=args.sheet_name,
-            header_row=args.header_row,
-        )
-        print(normalize_response(result))
-        return
-    elif args.command == "execute-pipeline":
-        result = execute_pipeline(args.pipeline_json)
-        print(normalize_response(result))
-        return
-    elif args.command == "test-pipeline-node":
-        result = test_pipeline_node(args.pipeline_json, args.node_id)
-        print(normalize_response(result))
-        return
-    else:
-        parser.print_help()
+    match args.command:
+        case "get-index-values":
+            column_name = args.column_names  # should be a single column name here
+            result = get_index_values(
+                file_path=args.file_path,
+                sheet_name=args.sheet_name,
+                column_name=column_name,
+            )
+            print(normalize_response(result))
+            return
+        case "preview-data":
+            result = get_excel_preview(
+                file_path=args.file_path,
+            )
+            print(normalize_response(result))
+            return
+        case "try-read-header-row":
+            result = try_read_header_row(
+                file_path=args.file_path,
+                sheet_name=args.sheet_name,
+                header_row=args.header_row,
+            )
+            print(normalize_response(result))
+            return
+        case "try-read-sheet-names":
+            result = try_read_sheet_names(
+                file_path=args.file_path,
+            )
+            print(normalize_response(result))
+            return
+        case _:
+            parser.print_help()
+            return
 
 
 if __name__ == "__main__":

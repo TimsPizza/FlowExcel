@@ -13,6 +13,7 @@ use bridge::commands::{
     preview_excel_data,
     get_index_values,
     try_read_header_row,
+    try_read_sheet_names,
 };
 use workspace::commands::{
     list_workspaces,
@@ -30,6 +31,7 @@ fn main() {
             preview_excel_data,
             get_index_values,
             try_read_header_row,            
+            try_read_sheet_names,
             // Workspace operations (now in Rust)
             list_workspaces,
             load_workspace,

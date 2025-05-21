@@ -73,7 +73,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   return (
     <BaseNode
       data={nodeData}
-      isSource={false}
+      isSource={true}
       isTarget={true}
       onTestRun={testRun}
       testable

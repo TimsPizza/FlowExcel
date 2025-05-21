@@ -17,8 +17,9 @@ import { toast } from "react-toastify";
 import ReactFlow, {
   Background,
   Connection,
-  Controls,
   Edge,
+  EdgeChange,
+  EdgeRemoveChange,
   Node,
   NodeChange,
   NodePositionChange,
@@ -30,9 +31,8 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
 } from "reactflow";
-import "reactflow/dist/style.css";
 import { v4 as uuidv4 } from "uuid";
-import nodeTypes from "./nodes/sNodeFactory";
+import nodeTypes from "./nodes/NodeFactory";
 
 function isNodePositionChange(
   change: NodeChange,
@@ -43,6 +43,9 @@ function isNodeSelectionChange(
   change: NodeChange,
 ): change is NodeSelectionChange {
   return "selected" in change;
+}
+function isEdgeOnRemove(change: EdgeChange): change is EdgeRemoveChange {
+  return "type" in change && change.type === "remove";
 }
 
 const NODE_TYPES = [
@@ -63,8 +66,10 @@ const getInitialNodeData = (type: NodeType, nodeId: string): FlowNodeData => {
         nodeType: NodeType.INDEX_SOURCE,
         label: "索引源",
         sourceFileID: undefined,
+        bySheetName: false,
         sheetName: undefined,
-        columnNames: undefined,
+        byColumn: true,
+        columnName: "",
         testResult: undefined,
         error: undefined,
       } as IndexSourceNodeDataContext;
@@ -127,8 +132,8 @@ interface FlowEditorProps {
 
 export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
-  const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
   const onConnect = useWorkspaceStore((state) => state.onConnect);
+  const removeFlowEdge = useWorkspaceStore((state) => state.removeFlowEdge);
   const wsFlowNodes = useWorkspaceStore(
     (state) => state.currentWorkspace?.flow_nodes,
   );
@@ -195,7 +200,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   // 处理节点变更并同步到zustand store
   const handleOnNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      console.log("FlowEditor handleOnNodesChanges", changes);
+      // console.log("FlowEditor handleOnNodesChanges", changes);
       rfOnNodesChange(changes);
 
       changes.forEach((change) => {
@@ -243,10 +248,18 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       // Apply changes to local ReactFlow state
       rfOnEdgesChange(changes);
 
+      changes.forEach((change) => {
+        if (isEdgeOnRemove(change)) {
+          const edgeFromRfState = edges.find((e) => e.id === change.id);
+          if (edgeFromRfState) {
+            removeFlowEdge(edgeFromRfState.id);
+          }
+        }
+      });
       // Process changes if needed - can sync to backend/storage if required
       // For now, we're just letting useEffect handle syncing edges to the workspace
     },
-    [rfOnEdgesChange],
+    [rfOnEdgesChange, edges, removeFlowEdge],
   );
 
   // just call zustand store onConnect as changes are handled by useEffect
@@ -351,6 +364,8 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         onConnect={handleOnConnect}
         nodeTypes={nodeTypes}
         fitView
+        nodeDragThreshold={10}
+        // elementsSelectable={false}
         onNodeDragStart={(_event, node) => {
           activelyDraggedNodeId.current = node.id;
         }}
@@ -391,7 +406,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           </Flex>
         </Panel>
 
-        <Controls />
+        {/* <Controls /> */}
         {/* <MiniMap /> */}
         <Background />
       </ReactFlow>

@@ -1,12 +1,12 @@
 import { FlowEditor } from './FlowEditor';
-import nodeTypes from './NodeFactory';
-import { BaseNode } from './BaseNode';
-import { IndexSourceNode } from './IndexSourceNode';
-import { SheetSelectorNode } from './SheetSelectorNode';
-import { RowFilterNode } from './RowFilterNode';
-import { RowLookupNode } from './RowLookupNode';
-import { AggregatorNode } from './AggregatorNode';
-import { OutputNode } from './OutputNode';
+import nodeTypes from './nodes/NodeFactory';
+import { BaseNode } from './nodes/BaseNode';
+import { IndexSourceNode } from './nodes/IndexSourceNode';
+import { SheetSelectorNode } from './nodes/SheetSelectorNode';
+import { RowFilterNode } from './nodes/RowFilterNode';
+import { RowLookupNode } from './nodes/RowLookupNode';
+import { AggregatorNode } from './nodes/AggregatorNode';
+import { OutputNode } from './nodes/OutputNode';
 
 export {
   FlowEditor,

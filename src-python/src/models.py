@@ -84,3 +84,7 @@ class PreviewResponse(BaseModel):
     
 class TryReadHeaderRowResponse(BaseModel):
     column_names: List[Any] = Field(..., description="List of column names")
+
+
+class TryReadSheetNamesResponse(BaseModel):
+    sheet_names: List[Any] = Field(..., description="List of sheet names")

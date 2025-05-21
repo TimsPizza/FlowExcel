@@ -119,7 +119,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
       onTestRun={testRun}
       testable
     >
-      <Flex direction="column" gap="2">
+      <Flex direction="column" gap="3">
         <Flex align="center" gap="2">
           <Text size="1" weight="bold">
             输出格式:
@@ -157,7 +157,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
           </Button>
         </Flex>
 
-        {nodeData.testResult && (
+        {/* {nodeData.testResult && (
           <ScrollArea className="react-flow__node-scrollable max-h-60">
             <Table.Root>
               <Table.Header>
@@ -181,7 +181,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
               </Table.Body>
             </Table.Root>
           </ScrollArea>
-        )}
+        )} */}
       </Flex>
     </BaseNode>
   );

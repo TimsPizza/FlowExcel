@@ -77,3 +77,21 @@ pub async fn try_read_header_row(
         return Err(format!("Python调用失败: {}", output.status));
     }
 }
+
+#[tauri::command]
+pub async fn try_read_sheet_names(file_path: String) -> Result<String, String> {
+    let output = Command::new("/Users/timspizza/code/tauri-excel/src-python/.venv/bin/python")
+        .args([
+            "/Users/timspizza/code/tauri-excel/src-python/src/main.py",
+            "try-read-sheet-names",
+            "--file-path",
+            &file_path,
+        ])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if output.status.success() {
+        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
+    } else {
+        return Err(format!("Python调用失败: {}", output.status));
+    }
+}

@@ -588,10 +588,6 @@ video {
   }
 }
 
-.fixed {
-  position: fixed;
-}
-
 .absolute {
   position: absolute;
 }
@@ -604,12 +600,16 @@ video {
   right: 0.5rem;
 }
 
-.\!z-10 {
-  z-index: 10 !important;
+.left-0 {
+  left: 0px;
 }
 
-.-z-10 {
-  z-index: -10;
+.top-0 {
+  top: 0px;
+}
+
+.\!z-10 {
+  z-index: 10 !important;
 }
 
 .z-50 {
@@ -651,8 +651,20 @@ video {
   margin-top: 1rem;
 }
 
+.mb-auto {
+  margin-bottom: auto;
+}
+
+.mt-auto {
+  margin-top: auto;
+}
+
 .block {
   display: block;
+}
+
+.inline-block {
+  display: inline-block;
 }
 
 .flex {
@@ -711,12 +723,12 @@ video {
   height: 100vh;
 }
 
-.max-h-12 {
-  max-height: 3rem;
+.h-3 {
+  height: 0.75rem;
 }
 
-.max-h-40 {
-  max-height: 10rem;
+.max-h-12 {
+  max-height: 3rem;
 }
 
 .max-h-6 {
@@ -755,8 +767,8 @@ video {
   width: 100%;
 }
 
-.min-w-72 {
-  min-width: 18rem;
+.w-3 {
+  width: 0.75rem;
 }
 
 .min-w-\[200px\] {
@@ -841,6 +853,10 @@ video {
   flex-direction: column;
 }
 
+.items-start {
+  align-items: flex-start;
+}
+
 .items-center {
   align-items: center;
 }
@@ -873,10 +889,6 @@ video {
 
 .overflow-hidden {
   overflow: hidden;
-}
-
-.\!overflow-visible {
-  overflow: visible !important;
 }
 
 .text-ellipsis {
@@ -1133,6 +1145,19 @@ video {
 #root {
   min-height: 100vh;
   min-width: 100vw;
+}
+
+/*  样式Bug修复，勿动！！ */
+
+.react-flow__node-output {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.react-flow__node {
+  min-width: 15rem !important;
+  background: white !important;
 }
 
 .hover\:bg-gray-100:hover {

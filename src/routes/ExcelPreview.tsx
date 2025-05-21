@@ -1,6 +1,6 @@
 import { DataFrameViewer } from "@/components/DataFrameViewer";
 import { SheetInfo } from "@/types";
-import { Flex, Select, Tabs } from "@radix-ui/themes";
+import { Flex, Tabs } from "@radix-ui/themes";
 import { useEffect, useMemo, useState } from "react";
 
 interface ExcelPreviewProps {

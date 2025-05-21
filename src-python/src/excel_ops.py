@@ -8,6 +8,7 @@ from models import (
     PythonResponse,
     SheetInfo,
     TryReadHeaderRowResponse,
+    TryReadSheetNamesResponse,
 )
 from utils import serialize_value as serialize
 
@@ -75,6 +76,17 @@ def try_read_header_row(file_path: str, sheet_name: str, header_row: int) -> int
         df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row)
         column_names = df.columns.tolist()
         resp = TryReadHeaderRowResponse(column_names=column_names)
+        return PythonResponse(status="success", data=resp, message="")
+    except Exception as e:
+        return PythonResponse(status="error", message=str(e), data=None)
+    
+def try_read_sheet_names(file_path: str) -> List[str]:
+    """
+    Try to read the sheet names from an Excel file.
+    """
+    try:
+        sheets = pd.ExcelFile(file_path).sheet_names
+        resp = TryReadSheetNamesResponse(sheet_names=sheets)
         return PythonResponse(status="success", data=resp, message="")
     except Exception as e:
         return PythonResponse(status="error", message=str(e), data=None)

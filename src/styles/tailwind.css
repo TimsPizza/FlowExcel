@@ -36,3 +36,15 @@
     @apply min-w-10 max-w-24 overflow-hidden text-ellipsis whitespace-nowrap;
   }
 }
+
+/*  样式Bug修复，勿动！！ */
+.react-flow__node-output {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.react-flow__node {
+  min-width: 15rem !important;
+  background: white !important;
+}

@@ -4,6 +4,7 @@ import { CustomNodeBaseData } from "@/types/nodes";
 import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { Handle, Position } from "reactflow";
+import { TriangleRightIcon, TriangleDownIcon } from "@radix-ui/react-icons";
 
 interface BaseNodeProps {
   data: CustomNodeBaseData;
@@ -26,14 +27,18 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
   const removeFlowNode = useWorkspaceStore((state) => state.removeFlowNode);
 
   return (
-    <Card className="-z-10 min-w-72 max-w-2xl !overflow-visible">
-      <Flex direction="column" gap="2" className="-z-10 !overflow-visible">
+    <>
+      <Flex
+        direction="column"
+        gap="2"
+        className="rounded-md border border-gray-200 p-2"
+      >
         <Flex justify="between" align="center" mb="1">
           <Text weight="bold">{data.label}</Text>
           <Flex gap="1">
             <Badge
               color="red"
-              className="cursor-pointer"
+              className="inline-block cursor-pointer"
               onClick={() => {
                 removeFlowNode(data.id);
               }}
@@ -43,7 +48,7 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
             {testable && (
               <Badge
                 color="blue"
-                style={{ cursor: "pointer" }}
+                className="inline-block cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onTestRun?.();
@@ -54,7 +59,7 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
             )}
             <Badge
               color="gray"
-              style={{ cursor: "pointer" }}
+              className="inline-block cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded(!expanded);
@@ -79,19 +84,18 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
       {isTarget && (
         <Handle
           type="target"
-          position={Position.Top}
-          style={{ background: "#555" }}
-          className="relative !z-10"
+          position={Position.Left}
+          className=""
         />
       )}
 
       {isSource && (
         <Handle
-          className="!h-4 !w-4 !-translate-y-1/2 !translate-x-1/2"
           type="source"
           position={Position.Right}
+          className=""
         />
       )}
-    </Card>
+    </>
   );
 };

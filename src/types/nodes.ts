@@ -15,14 +15,18 @@ export interface CustomNodeBaseData {
   id: string;
   label: string;
   nodeType: NodeType;
-  testResult?: SimpleDataframe;
+  testResult?: SimpleDataframe; // temporary for ui only, will not be saved to json
   error?: string;
 }
 
 export interface IndexSourceNodeDataContext extends CustomNodeBaseData {
   sourceFileID?: string; // file id in workspace
+  // by sheet names
+  bySheetName?: boolean;
   sheetName?: string;
-  columnNames?: string[];
+  // by column names in a specific sheet
+  byColumn?: boolean;
+  columnName: string;
 }
 
 export interface SheetSelectorNodeDataContext extends CustomNodeBaseData {
@@ -47,6 +51,7 @@ export interface RowLookupNodeDataContext extends CustomNodeBaseData {
 export interface AggregatorNodeDataContext extends CustomNodeBaseData {
   statColumn?: string;
   method: "sum" | "avg" | "count" | "min" | "max";
+  outputAs?: string; // output column name
 }
 
 export interface OutputNodeDataContext extends CustomNodeBaseData {

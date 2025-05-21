@@ -91,7 +91,7 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
     <BaseNode 
       data={nodeData} 
       onTestRun={testRun}
-      isSource={false}
+      isSource={true}
       isTarget={true}
       testable
     >

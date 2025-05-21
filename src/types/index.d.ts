@@ -53,13 +53,17 @@ export interface FilePreviewResponse {
 }
 
 export interface SimpleDataframe {
-  columns: string[]; // index column names
-  data: any[][];
+  columns?: string[]; // index column names
+  data?: any[][];
 }
 
 export interface IndexValues {
   column: string;
   data: any[]; // 1d array of values
+}
+
+export interface TryReadSheetNamesResponse {
+  sheet_names: string[];
 }
 
 export interface TryReadHeaderRowResponse {
@@ -101,38 +105,10 @@ export interface WorkspaceState {
 
   // Flow Actions
   addFlowNode: (node: Node<FlowNodeData>) => void;
-  createIndexSourceNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => Node<FlowNodeData>;
-  createSheetSelectorNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => Node<FlowNodeData>;
-  createRowFilterNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => Node<FlowNodeData>;
-  createRowLookupNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => Node<FlowNodeData>;
-  createAggregatorNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => Node<FlowNodeData>;
-  createOutputNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => Node<FlowNodeData>;
-  updateNodeData: (nodeId: string, data: Partial<FlowNodeData>) => void;
+  updateNodeData: (nodeId: string, data: Partial<FlowNodeData>, markDirty?: boolean) => void;
   removeFlowNode: (nodeId: string) => void;
+
+  removeFlowEdge: (edgeId: string) => void;
 
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -141,12 +117,4 @@ export interface WorkspaceState {
   clearCurrentWorkspace: () => void;
   resetDirty: () => void; // 新增：重置dirty状态
   markAsDirty: () => void; // 新增：标记为已修改
-}
-
-/* React Flow Types */
-
-export interface PrimarySourceNodeData extends FlowNodeData {
-  fileId?: string;
-  indexColumns?: string[];
-  // We might add more specific output handles if branching directly from here
 }

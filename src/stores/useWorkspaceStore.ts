@@ -86,12 +86,12 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
   // Expects a full FileMeta object including a pre-generated id and columns from backend
   addFileToWorkspace: (newFile: FileMeta) => {
     set((state) => {
-      console.log(
-        "zustand add file to workspace",
-        state.currentWorkspace?.id,
-        "newFile",
-        newFile,
-      );
+      // console.log(
+      //   "zustand add file to workspace",
+      //   state.currentWorkspace?.id,
+      //   "newFile",
+      //   newFile,
+      // );
       if (state.currentWorkspace) {
         // Prevent adding file with duplicate ID (though UUIDs make this unlikely)
         if (state.currentWorkspace.files.find((f) => f.id === newFile.id)) {
@@ -149,7 +149,6 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
 
   // --- Flow Node Actions Implementation ---
   addFlowNode: (node: Node<FlowNodeData>) => {
-    console.log("zustand add flow node", node);
     set((state) => {
       if (state.currentWorkspace) {
         const existingNodeIndex = state.currentWorkspace.flow_nodes.findIndex(
@@ -176,140 +175,11 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
     });
   },
 
-  createIndexSourceNode: (nodeId, position, label) => {
-    const newNodeData: IndexSourceNodeDataContext = {
-      nodeType: NodeType.INDEX_SOURCE,
-      label: label || "索引源",
-      sourceFileID: undefined,
-      sheetName: undefined,
-      columnNames: undefined,
-      testResult: undefined,
-      error: undefined,
-    };
-    const newNode: Node<FlowNodeData> = {
-      id: nodeId,
-      type: NodeType.INDEX_SOURCE,
-      position,
-      data: newNodeData,
-    };
-    get().addFlowNode(newNode);
-    return newNode;
-  },
-
-  createSheetSelectorNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
+  updateNodeData: (
+    nodeId,
+    dataToUpdate: Partial<FlowNodeData>,
+    markDirty: boolean = true,
   ) => {
-    const newNodeData: SheetSelectorNodeDataContext = {
-      nodeType: NodeType.SHEET_SELECTOR,
-      label: label || "Sheet定位",
-      mode: "auto_by_index",
-      targetFileID: undefined,
-      manualSheetName: undefined,
-      testResult: undefined,
-      error: undefined,
-    };
-    const newNode: Node<FlowNodeData> = {
-      id: nodeId,
-      type: NodeType.SHEET_SELECTOR,
-      position,
-      data: newNodeData,
-    };
-    get().addFlowNode(newNode);
-    return newNode;
-  },
-
-  createRowFilterNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => {
-    const newNodeData: RowFilterNodeDataContext = {
-      nodeType: NodeType.ROW_FILTER,
-      label: label || "行过滤",
-      conditions: [],
-      testResult: undefined,
-      error: undefined,
-    };
-    const newNode: Node<FlowNodeData> = {
-      id: nodeId,
-      type: NodeType.ROW_FILTER,
-      position,
-      data: newNodeData,
-    };
-    get().addFlowNode(newNode);
-    return newNode;
-  },
-
-  createRowLookupNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => {
-    const newNodeData: RowLookupNodeDataContext = {
-      nodeType: NodeType.ROW_LOOKUP,
-      label: label || "行查找",
-      matchColumn: undefined,
-      testResult: undefined,
-      error: undefined,
-    };
-    const newNode: Node<FlowNodeData> = {
-      id: nodeId,
-      type: NodeType.ROW_LOOKUP,
-      position,
-      data: newNodeData,
-    };
-    get().addFlowNode(newNode);
-    return newNode;
-  },
-
-  createAggregatorNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => {
-    const newNodeData: AggregatorNodeDataContext = {
-      nodeType: NodeType.AGGREGATOR,
-      label: label || "数据聚合",
-      method: "sum",
-      statColumn: undefined,
-      testResult: undefined,
-      error: undefined,
-    };
-    const newNode: Node<FlowNodeData> = {
-      id: nodeId,
-      type: NodeType.AGGREGATOR,
-      position,
-      data: newNodeData,
-    };
-    get().addFlowNode(newNode);
-    return newNode;
-  },
-
-  createOutputNode: (
-    nodeId: string,
-    position: { x: number; y: number },
-    label?: string,
-  ) => {
-    const newNodeData: OutputNodeDataContext = {
-      nodeType: NodeType.OUTPUT,
-      label: label || "输出结果",
-      outputFormat: "table",
-      testResult: undefined,
-      error: undefined,
-    };
-    const newNode: Node<FlowNodeData> = {
-      id: nodeId,
-      type: NodeType.OUTPUT,
-      position,
-      data: newNodeData,
-    };
-    get().addFlowNode(newNode);
-    return newNode;
-  },
-
-  updateNodeData: (nodeId, dataToUpdate: Partial<FlowNodeData>) => {
     console.log("zustand update node data", nodeId, dataToUpdate);
     set((state) => {
       if (state.currentWorkspace) {
@@ -327,7 +197,7 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
               return n;
             }),
           },
-          isDirty: true,
+          isDirty: markDirty,
         };
       }
       return {};
@@ -347,6 +217,24 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
             // Also remove any edges that connect to/from this node
             flow_edges: state.currentWorkspace.flow_edges.filter(
               (e) => e.source !== nodeId && e.target !== nodeId,
+            ),
+          },
+          isDirty: true,
+        };
+      }
+      return {};
+    });
+  },
+  // Flow Edge Actions Implementation
+  removeFlowEdge: (edgeId) => {
+    console.log("zustand remove flow edge", edgeId);
+    set((state) => {
+      if (state.currentWorkspace) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            flow_edges: state.currentWorkspace.flow_edges.filter(
+              (e) => e.id !== edgeId,
             ),
           },
           isDirty: true,
@@ -446,12 +334,6 @@ export const flowSelector = (state: WorkspaceState) => ({
   flowNodes: state.currentWorkspace?.flow_nodes,
   flowEdges: state.currentWorkspace?.flow_edges,
   addFlowNode: state.addFlowNode,
-  createIndexSourceNode: state.createIndexSourceNode,
-  createSheetSelectorNode: state.createSheetSelectorNode,
-  createRowFilterNode: state.createRowFilterNode,
-  createRowLookupNode: state.createRowLookupNode,
-  createAggregatorNode: state.createAggregatorNode,
-  createOutputNode: state.createOutputNode,
   updateNodeData: state.updateNodeData,
   removeFlowNode: state.removeFlowNode,
   onNodesChange: state.onNodesChange,
@@ -465,4 +347,3 @@ export const fileSelector = (state: WorkspaceState) => ({
   updateFileMeta: state.updateFileMeta,
   removeFileFromWorkspace: state.removeFileFromWorkspace,
 });
-
