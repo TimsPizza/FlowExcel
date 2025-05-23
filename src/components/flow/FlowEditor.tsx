@@ -9,6 +9,7 @@ import {
   RowLookupNodeDataContext,
   SheetSelectorNodeDataContext,
 } from "@/types/nodes";
+import { SimpleDataframe } from "@/types";
 import { FilePlusIcon, PlayIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Button, Dialog, Flex, Select, Text } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
@@ -33,6 +34,7 @@ import ReactFlow, {
 } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import nodeTypes from "./nodes/NodeFactory";
+import { useExecutePipelineMutation } from "@/hooks/workspaceQueries";
 
 function isNodePositionChange(
   change: NodeChange,
@@ -132,6 +134,7 @@ interface FlowEditorProps {
 
 export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
+  const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
   const onConnect = useWorkspaceStore((state) => state.onConnect);
   const removeFlowEdge = useWorkspaceStore((state) => state.removeFlowEdge);
   const wsFlowNodes = useWorkspaceStore(
@@ -140,6 +143,10 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const wsFlowEdges = useWorkspaceStore(
     (state) => state.currentWorkspace?.flow_edges,
   );
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  
+  const executePipelineMutation = useExecutePipelineMutation();
+  
   const [nodes, setNodes, rfOnNodesChange] = useNodesState<FlowNodeData>([]);
   const [edges, setEdges, rfOnEdgesChange] = useEdgesState([]);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>(
@@ -148,7 +155,6 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [isRunning, setIsRunning] = useState(false);
   const activelyDraggedNodeId = useRef<string | null>(null);
 
   // 初始化或同步节点和边
@@ -297,62 +303,158 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
 
   // 执行流程
   const runFlow = useCallback(async () => {
-    try {
-      if (nodes.length === 0) {
-        toast.error("流程为空，请先添加节点");
-        return;
-      }
-
-      setIsRunning(true);
-
-      // 转换节点和边为后端所需格式
-      const nodeConfigs = nodes.map((node) => ({
-        id: node.id,
-        type: node.type,
-        data: node.data,
-      }));
-
-      const edgeConfigs = edges.map((edge) => ({
-        source: edge.source,
-        target: edge.target,
-      }));
-
-      // 调用后端API执行流程
-      const result = await invoke("execute_flow", {
-        nodes: nodeConfigs,
-        edges: edgeConfigs,
-      });
-
-      // 更新节点结果和状态
-      if (result && typeof result === "object") {
-        const resultsMap = result as Record<string, any>;
-
-        setNodes(
-          nodes.map((node) => {
-            const nodeResult = resultsMap[node.id];
-            if (nodeResult) {
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  testResult: nodeResult.result,
-                  error: nodeResult.error || undefined,
-                },
-              };
-            }
-            return node;
-          }),
-        );
-      }
-
-      toast.success("流程执行完成");
-    } catch (error) {
-      console.error("流程执行失败:", error);
-      toast.error("流程执行失败");
-    } finally {
-      setIsRunning(false);
+    if (nodes.length === 0) {
+      toast.error("流程为空，请先添加节点");
+      return;
     }
-  }, [nodes, edges, setNodes]);
+
+    if (!currentWorkspace) {
+      toast.error("未找到当前工作区");
+      return;
+    }
+
+    executePipelineMutation.mutate(
+      currentWorkspace.id,
+      {
+        onSuccess: (result) => {
+          // 更新节点的结果数据
+          const updatedNodes = nodes.map((node) => {
+            const nodeResults = result.results[node.id];
+            if (nodeResults && nodeResults.length > 0) {
+              // 根据节点类型处理结果数据
+              switch (node.data.nodeType) {
+                case NodeType.INDEX_SOURCE: {
+                  // 索引源节点的结果是索引值列表
+                  const nodeResult = nodeResults[0]; // 索引源节点只有一个结果
+                  if (nodeResult.result_data) {
+                    const { columns, data } = nodeResult.result_data;
+                    
+                    // 将数据转换为前端需要的格式
+                    const formattedData = [];
+                    if (data && data.length > 0) {
+                      // 如果是按列索引，提取唯一值
+                      if ((node.data as IndexSourceNodeDataContext).byColumn && columns.length > 0) {
+                        const columnName = columns[0];
+                        const uniqueValues = [...new Set(data.map((row: Record<string, any>) => row[columnName]))];
+                        formattedData.push(uniqueValues);
+                      } 
+                      // 如果是按工作表名索引
+                      else if ((node.data as IndexSourceNodeDataContext).bySheetName) {
+                        formattedData.push(data.map((row: Record<string, any>) => Object.values(row)[0]));
+                      }
+                    }
+                    
+                    return {
+                      ...node,
+                      data: {
+                        ...node.data,
+                        testResult: {
+                          columns,
+                          data: formattedData,
+                        },
+                        error: undefined,
+                      },
+                    };
+                  }
+                  break;
+                }
+                case NodeType.AGGREGATOR: {
+                  // 聚合节点的结果是多个索引值的聚合结果
+                  const formattedData: any[][] = [];
+                  let columns: string[] = [];
+                  
+                  nodeResults.forEach((nodeResult: any) => {
+                    if (nodeResult.result_data && nodeResult.result_data.data) {
+                      // 提取列名
+                      if (columns.length === 0 && nodeResult.result_data.columns) {
+                        columns = nodeResult.result_data.columns;
+                      }
+                      
+                      // 提取数据并格式化为二维数组
+                      const resultData = nodeResult.result_data.data;
+                      if (resultData.length > 0) {
+                        resultData.forEach((row: Record<string, any>) => {
+                          // 对于聚合节点，通常结果是索引值和聚合结果
+                          const indexValue = row.index_value || "";
+                          const resultValue = row.result || 0;
+                          formattedData.push([indexValue, resultValue]);
+                        });
+                      }
+                    }
+                  });
+                  
+                  return {
+                    ...node,
+                    data: {
+                      ...node.data,
+                      testResult: {
+                        columns: ["索引", (node.data as AggregatorNodeDataContext).method + "_" + ((node.data as AggregatorNodeDataContext).statColumn || "")],
+                        data: formattedData,
+                      },
+                      error: undefined,
+                    },
+                  };
+                }
+                default: {
+                  // 其他节点类型的通用处理
+                  // 合并所有索引值的结果用于预览
+                  const combinedData: any[][] = [];
+                  let columns: string[] = [];
+                  
+                  nodeResults.forEach((nodeResult: any) => {
+                    if (nodeResult.result_data && nodeResult.result_data.data) {
+                      // 获取列名（只需要第一次）
+                      if (columns.length === 0 && nodeResult.result_data.columns) {
+                        columns = nodeResult.result_data.columns;
+                      }
+                      
+                      // 转换数据为二维数组格式
+                      nodeResult.result_data.data.forEach((row: Record<string, any>) => {
+                        const rowArray = columns.map(col => row[col]);
+                        combinedData.push(rowArray);
+                      });
+                    }
+                  });
+                  
+                  return {
+                    ...node,
+                    data: {
+                      ...node.data,
+                      testResult: {
+                        columns,
+                        data: combinedData,
+                      } as SimpleDataframe,
+                      error: undefined,
+                    },
+                  };
+                }
+              }
+            }
+            
+            // 如果没有结果或处理失败，返回错误状态
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                testResult: undefined,
+                error: "无结果数据",
+              },
+            };
+          });
+
+          setNodes(updatedNodes);
+          
+          // 同步更新到工作区store
+          updatedNodes.forEach(node => {
+            updateNodeData(node.id, node.data);
+          });
+        },
+        onError: (error) => {
+          toast.error(`流程执行失败: ${error.message}`);
+        },
+      }
+    );
+  }, [nodes, currentWorkspace, executePipelineMutation, setNodes, updateNodeData]);
 
   return (
     <div style={{ width: "100%", height: "100%" }} ref={reactFlowWrapper}>
@@ -394,8 +496,8 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
             <Button onClick={handleAddNode}>
               <PlusIcon /> 添加
             </Button>
-            <Button color="green" disabled={isRunning} onClick={runFlow}>
-              <PlayIcon /> {isRunning ? "执行中..." : "执行流程"}
+            <Button color="green" disabled={executePipelineMutation.isLoading} onClick={runFlow}>
+              <PlayIcon /> {executePipelineMutation.isLoading ? "执行中..." : "执行流程"}
             </Button>
             <Button
               variant="soft"

@@ -14,6 +14,8 @@ use bridge::commands::{
     get_index_values,
     try_read_header_row,
     try_read_sheet_names,
+    execute_pipeline,
+    test_pipeline_node,
 };
 use workspace::commands::{
     list_workspaces,
@@ -32,6 +34,9 @@ fn main() {
             get_index_values,
             try_read_header_row,            
             try_read_sheet_names,
+            // Pipeline execution
+            execute_pipeline,
+            test_pipeline_node,
             // Workspace operations (now in Rust)
             list_workspaces,
             load_workspace,

@@ -1,10 +1,19 @@
 import { useCallback, useRef, useState } from "react";
 import { FlowNodeProps, AggregatorNodeDataContext } from "@/types/nodes";
 import { BaseNode } from "./BaseNode";
-import { Select, Flex, Text, TextArea, TextField } from "@radix-ui/themes";
+import {
+  Select,
+  Flex,
+  Text,
+  TextArea,
+  TextField,
+  Badge,
+} from "@radix-ui/themes";
 import { useNodeId } from "reactflow";
 import _ from "lodash";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
+import { toast } from "react-toastify";
 
 const AGGREGATION_METHODS = [
   { value: "sum", label: "求和" },
@@ -18,7 +27,14 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const isComposing = useRef(false);
   const nodeId = useNodeId();
   const nodeData = data as AggregatorNodeDataContext;
-  const [innerValue, setInnerValue] = useState(nodeData.outputAs || "");
+  const [innerValue, setInnerValue_] = useState(nodeData.outputAs || "");
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const testPipelineNodeMutation = useTestPipelineNodeMutation();
+
+  const setInnerValue = (value: string) => {
+    console.log("setInnerValue", value);
+    setInnerValue_(value);
+  };
   const [availableColumns] = useState<string[]>([
     "型号",
     "废料重量",
@@ -101,19 +117,22 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
             aggregated = values.length;
             break;
           case "min":
-            aggregated = _.minBy(values, statCol)?.[statCol] || 0;
+            aggregated =
+              Number(
+                _.minBy(values, statCol)?.[statCol as keyof (typeof values)[0]],
+              ) || 0;
             break;
           case "max":
-            aggregated = _.maxBy(values, statCol)?.[statCol] || 0;
+            aggregated =
+              Number(
+                _.maxBy(values, statCol)?.[statCol as keyof (typeof values)[0]],
+              ) || 0;
             break;
           default:
             aggregated = 0;
         }
 
-        return {
-          索引: key,
-          [nodeData.method + "_" + statCol]: aggregated,
-        };
+        return [key, aggregated];
       });
 
       updateLocalNodeData({
@@ -132,92 +151,158 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
   };
 
-  return (
-    <BaseNode
-      data={nodeData}
-      onTestRun={testRun}
-      isSource={true}
-      isTarget={true}
-      testable
-    >
-      <Flex direction="column" gap="2">
-        <Flex align="center" gap="2">
-          <Text size="1" weight="bold">
-            统计列:
-          </Text>
-          <Select.Root
-            size="1"
-            value={nodeData.statColumn || ""}
-            onValueChange={handleSelectColumn}
-          >
-            <Select.Trigger />
-            <Select.Content>
-              <Select.Group>
-                {availableColumns.map((col) => (
-                  <Select.Item key={col} value={col}>
-                    {col}
-                  </Select.Item>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select.Root>
-        </Flex>
+  const testPipelineRun = async () => {
+    if (!currentWorkspace) {
+      toast.error("未找到当前工作区");
+      return;
+    }
 
-        <Flex align="center" gap="2">
-          <Text size="1" weight="bold">
-            统计方法:
-          </Text>
-          <Select.Root
-            size="1"
-            value={nodeData.method || "sum"}
-            onValueChange={handleSelectMethod}
-          >
-            <Select.Trigger />
-            <Select.Content>
-              <Select.Group>
-                {AGGREGATION_METHODS.map((method) => (
-                  <Select.Item key={method.value} value={method.value}>
-                    {method.label}
-                  </Select.Item>
-                ))}
-              </Select.Group>
-            </Select.Content>
-          </Select.Root>
-        </Flex>
-        <Flex align="center" gap="2">
-          <Text size="1" weight="bold">
-            输出列名:
-          </Text>
-          <TextField.Root
-            value={innerValue}
-            onChange={(e) => {
-              // 只在没有 composition 的情况下同步
-              if (!isComposing.current) {
-                setInnerValue(e.target.value);
-                onChange?.(e);
+    testPipelineNodeMutation.mutate(
+      {
+        workspaceId: currentWorkspace.id,
+        nodeId: nodeData.id,
+      },
+      {
+        onSuccess: (result) => {
+          const nodeResults = result.results[nodeData.id];
+          if (nodeResults && nodeResults.length > 0) {
+            const formattedData: any[][] = [];
+            let columns: string[] = [];
+            
+            nodeResults.forEach((nodeResult: any) => {
+              if (nodeResult.result_data && nodeResult.result_data.data) {
+                if (columns.length === 0 && nodeResult.result_data.columns) {
+                  columns = nodeResult.result_data.columns;
+                }
+                
+                const resultData = nodeResult.result_data.data;
+                if (resultData.length > 0) {
+                  resultData.forEach((row: Record<string, any>) => {
+                    const indexValue = row.index_value || "";
+                    const resultValue = row.result || 0;
+                    formattedData.push([indexValue, resultValue]);
+                  });
+                }
               }
-            }}
-            onCompositionStart={() => {
-              isComposing.current = true;
-            }}
-            onCompositionEnd={(e) => {
-              isComposing.current = false;
-              setInnerValue(e.target.value);
-              onChange?.(e); // composition 结束再真正触发 change
-            }}
-          >
-            <TextField.Slot />
-          </TextField.Root>
-        </Flex>
+            });
+            
+            updateLocalNodeData({
+              testResult: {
+                columns: ["索引", nodeData.method + "_" + (nodeData.statColumn || "")],
+                data: formattedData,
+              },
+              error: undefined,
+            });
+          } else {
+            updateLocalNodeData({
+              testResult: undefined,
+              error: "无结果数据",
+            });
+          }
+        },
+        onError: (error) => {
+          updateLocalNodeData({
+            testResult: undefined,
+            error: `Pipeline测试失败: ${error.message}`,
+          });
+        },
+      },
+    );
+  };
 
-        {nodeData.statColumn && nodeData.method && (
-          <Text size="1" color="gray">
-            此节点将对列 "{nodeData.statColumn}" 进行
-            {AGGREGATION_METHODS.find((m) => m.value === nodeData.method)
-              ?.label || "统计"}
-          </Text>
-        )}
-      </Flex>
-    </BaseNode>
+  return (
+    <>
+      <BaseNode
+        data={nodeData}
+        onTestRun={testPipelineRun}
+        isSource={true}
+        isTarget={true}
+        testable
+      >
+        <Flex direction="column" gap="2">
+          <Flex align="center" gap="2">
+            <Text size="1" weight="bold">
+              统计列:
+            </Text>
+            <Select.Root
+              size="1"
+              value={nodeData.statColumn || ""}
+              onValueChange={handleSelectColumn}
+            >
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Group>
+                  {availableColumns.map((col) => (
+                    <Select.Item key={col} value={col}>
+                      {col}
+                    </Select.Item>
+                  ))}
+                </Select.Group>
+              </Select.Content>
+            </Select.Root>
+          </Flex>
+
+          <Flex align="center" gap="2">
+            <Text size="1" weight="bold">
+              统计方法:
+            </Text>
+            <Select.Root
+              size="1"
+              value={nodeData.method || "sum"}
+              onValueChange={handleSelectMethod}
+            >
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Group>
+                  {AGGREGATION_METHODS.map((method) => (
+                    <Select.Item key={method.value} value={method.value}>
+                      {method.label}
+                    </Select.Item>
+                  ))}
+                </Select.Group>
+              </Select.Content>
+            </Select.Root>
+          </Flex>
+          <Flex align="center" gap="2">
+            <Text size="1" weight="bold">
+              输出列名:
+            </Text>
+            <TextField.Root
+              value={innerValue}
+              onChange={(e) => {
+                // 只在没有 composition 的情况下同步
+                setInnerValue(e.target.value);
+              }}
+              onBlur={() => {
+                // trim 一下
+                setInnerValue(innerValue.trim());
+              }}
+            >
+              <TextField.Slot />
+            </TextField.Root>
+          </Flex>
+
+          {nodeData.statColumn && nodeData.method && (
+            <Text size="1" color="gray">
+              此节点将对列 "{nodeData.statColumn}" 进行
+              {AGGREGATION_METHODS.find((m) => m.value === nodeData.method)
+                ?.label || "统计"}
+            </Text>
+          )}
+        </Flex>
+      </BaseNode>
+
+      {/* Pipeline测试按钮 */}
+      {/* <Flex justify="center" mt="2">
+        <Badge
+          color="green"
+          className="inline-block cursor-pointer"
+          onClick={testPipelineRun}
+          style={{ opacity: testPipelineNodeMutation.isLoading ? 0.6 : 1 }}
+        >
+          {testPipelineNodeMutation.isLoading ? "测试中..." : "Pipeline测试运行"}
+        </Badge>
+      </Flex> */}
+    </>
   );
 };

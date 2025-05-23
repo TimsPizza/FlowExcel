@@ -54,6 +54,9 @@ def main():
         type=str,
         help="Comma-separated list of column names to extract values from.",
     )
+    parser_index_values.add_argument(
+        "--header-row", required=True, type=int, help="1-based index of the header row."
+    )
 
     # Command: preview-data
     parser_preview = subparsers.add_parser("preview-data", help="Preview Excel data.")
@@ -139,6 +142,7 @@ def main():
             result = get_index_values(
                 file_path=args.file_path,
                 sheet_name=args.sheet_name,
+                header_row=args.header_row,
                 column_name=column_name,
             )
             print(normalize_response(result))
@@ -162,6 +166,14 @@ def main():
                 file_path=args.file_path,
             )
             print(normalize_response(result))
+            return
+        case "execute-pipeline":
+            result = execute_pipeline(args.pipeline_json)
+            print(json.dumps(result, ensure_ascii=False))
+            return
+        case "test-pipeline-node":
+            result = test_pipeline_node(args.pipeline_json, args.node_id)
+            print(json.dumps(result, ensure_ascii=False))
             return
         case _:
             parser.print_help()

@@ -337,11 +337,14 @@ export const useGetExcelPreview = (filePath?: string) => {
 const getIndexValues = async (
   filePath: string,
   sheetName: string,
+  headerRow: number,
   columnName: string,
 ) => {
+  console.log("getIndexValues", filePath, sheetName, columnName);
   const result = await invoke<string>("get_index_values", {
     filePath,
     sheetName,
+    headerRow,
     columnName,
   });
   const parsedResult = JSON.parse(result) as ApiResponse<IndexValues>;
@@ -355,18 +358,20 @@ const getIndexValues = async (
 export const useGetIndexValues = (
   filePath: string,
   sheetName: string,
+  // use string[] interface for future use? just do not change yet
+  headerRow: number,
   columnNames: string[],
 ) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["indexValues", filePath, sheetName, columnNames],
+    queryKey: ["indexValues", filePath, sheetName, columnNames, headerRow],
     queryFn: async () => {
       return (await Promise.all(
         columnNames.map((columnName) =>
-          getIndexValues(filePath, sheetName, columnName),
+          getIndexValues(filePath, sheetName, headerRow, columnName),
         ),
       )) as IndexValues[];
     },
-    enabled: !!filePath && !!sheetName && !!columnNames,
+    enabled: !!filePath && !!sheetName && !!columnNames && !isNaN(headerRow),
     refetchOnWindowFocus: false,
     refetchInterval: false,
   });
@@ -419,35 +424,83 @@ export const useTryReadHeaderRow = (
 };
 
 const tryReadSheetNames = async (filePath: string) => {
-  try {
-    const result = await invoke<string>("try_read_sheet_names", {
-      filePath,
-    });
-    const parsedResult = JSON.parse(
-      result,
-    ) as ApiResponse<TryReadSheetNamesResponse>;
-    if (parsedResult.status !== "success") {
-      throw new Error(parsedResult.message);
-    }
-    return parsedResult.data;
-  } catch (error) {
-    console.error("tryReadSheetNames error", error);
-    throw new Error(String(error));
-  } 
+  const result = await invoke<string>("try_read_sheet_names", {
+    filePath,
+  });
+  console.log("tryReadSheetNames raw result:", result);
+  const parsedResult = JSON.parse(result) as ApiResponse<TryReadSheetNamesResponse>;
+  if (parsedResult.status !== "success") {
+    throw new Error(parsedResult.message);
+  }
+  return parsedResult.data as TryReadSheetNamesResponse;
 };
 
 export const useTryReadSheetNames = (filePath: string, bySheetName: boolean) => {
-  const { data, isLoading, error } = useQuery({
+  const query = useQuery<TryReadSheetNamesResponse, Error>({
     queryKey: ["tryReadSheetNames", filePath],
-    queryFn: async () => await tryReadSheetNames(filePath),
+    queryFn: () => tryReadSheetNames(filePath),
     enabled: !!filePath && bySheetName,
-    refetchOnWindowFocus: false,
-    refetchInterval: false,
-    retry: false,
+    onError: (error) => {
+      console.error("Error reading sheet names:", error);
+    },
   });
+
   return {
-    sheetNamesArr: data,
-    isSheetNamesLoading: isLoading,
-    sheetNamesError: error as Error,
+    sheetNamesArr: query.data,
+    isSheetNamesLoading: query.isLoading,
+    sheetNamesError: query.error,
   };
+};
+
+/* Pipeline execution */
+
+interface PipelineExecutionResult {
+  success: boolean;
+  error?: string;
+  results: Record<string, any[]>;
+}
+
+const executePipeline = async (workspaceId: string): Promise<PipelineExecutionResult> => {
+  const result = await invoke<string>("execute_pipeline", {
+    pipelineJson: JSON.stringify({ workspaceId }),
+  });
+  return JSON.parse(result) as PipelineExecutionResult;
+};
+
+export const useExecutePipelineMutation = () => {
+  return useMutation<PipelineExecutionResult, Error, string>({
+    mutationFn: executePipeline,
+    onSuccess: () => {
+      toast.success("Pipeline执行完成");
+    },
+    onError: (error) => {
+      console.error("Pipeline执行失败:", error);
+      toast.error(`Pipeline执行失败: ${error.message}`);
+    },
+  });
+};
+
+/* Pipeline node testing */
+
+const testPipelineNode = async (params: { workspaceId: string; nodeId: string }): Promise<PipelineExecutionResult> => {
+  const result = await invoke<string>("test_pipeline_node", {
+    workspaceId: params.workspaceId,
+    nodeId: params.nodeId,
+  });
+  const parsedResult = JSON.parse(result) as PipelineExecutionResult;
+  console.log("testPipelineNode result", parsedResult);
+  return parsedResult;
+};
+
+export const useTestPipelineNodeMutation = () => {
+  return useMutation<PipelineExecutionResult, Error, { workspaceId: string; nodeId: string }>({
+    mutationFn: testPipelineNode,
+    onSuccess: () => {
+      toast.success("Pipeline测试完成");
+    },
+    onError: (error) => {
+      console.error("Pipeline测试失败:", error);
+      toast.error(`Pipeline测试失败: ${error.message}`);
+    },
+  });
 };

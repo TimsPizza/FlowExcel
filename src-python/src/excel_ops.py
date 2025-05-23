@@ -92,11 +92,11 @@ def try_read_sheet_names(file_path: str) -> List[str]:
         return PythonResponse(status="error", message=str(e), data=None)
 
 
-def get_index_values(file_path, sheet_name, column_name):
+def get_index_values(file_path, sheet_name, header_row, column_name):
     """获取指定列的所有唯一值作为索引"""
     try:
         # 读取指定sheet的数据
-        df = pd.read_excel(file_path, sheet_name=sheet_name)
+        df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row)
 
         # 检查列是否存在
         if column_name not in df.columns:

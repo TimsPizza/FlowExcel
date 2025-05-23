@@ -9,7 +9,7 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId();
   const nodeData = data as RowLookupNodeDataContext;
   const [availableColumns] = useState<string[]>([
-    "型号", "废料重量", "类型", "数量", "金额"
+    "型号", "废料重量", "类型", "数量", "金额", "制单人"
   ]);
   const [enableLookup, setEnableLookup] = useState<boolean>(
     !!nodeData.matchColumn,
