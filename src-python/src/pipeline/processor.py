@@ -197,19 +197,16 @@ class AggregatorProcessor(NodeProcessor):
         data = node.data
         stat_column = data.get("statColumn")
         method = data.get("method", "sum")
+        output_as = data.get("outputAs", "")  # 用户指定的输出列名
         
         # 如果输入数据为空，返回空结果
         if input_df.empty:
-            # print(f"Warning: Input data is empty for aggregator node. Skipping this index.")
             return pd.DataFrame()
         
         if not stat_column:
-            # print(f"Warning: No stat column specified for aggregator node. Skipping this index.")
             return pd.DataFrame()
             
         if stat_column not in input_df.columns:
-            # 如果统计列不存在，打印警告并返回空DataFrame
-            # print(f"Warning: Stat column {stat_column} not found in data. Available columns: {list(input_df.columns)}. Skipping this index.")
             return pd.DataFrame()
         
         try:
@@ -225,26 +222,30 @@ class AggregatorProcessor(NodeProcessor):
             elif method == "max":
                 result_value = input_df[stat_column].max()
             else:
-                # print(f"Warning: Unknown aggregation method: {method}. Skipping this index.")
                 return pd.DataFrame()
             
             # 检查结果是否有效（不是NaN）
             if pd.isna(result_value):
-                # print(f"Warning: Aggregation result is NaN for column {stat_column} with method {method}. Skipping this index.")
                 return pd.DataFrame()
+            
+            # 创建输出列名
+            if output_as:
+                output_column_name = output_as
+            else:
+                output_column_name = f"{method}_{stat_column}"
             
             # 返回聚合结果，包含索引和统计值
             result_df = pd.DataFrame({
                 "index_value": [context.current_index] if context.current_index else [""],
                 "column": [stat_column],
                 "method": [method],
-                "result": [result_value]
+                "result": [result_value],
+                "output_column_name": [output_column_name]
             })
             
             return result_df
             
         except Exception as e:
-            # print(f"Warning: Aggregation failed for column {stat_column} with method {method}: {str(e)}. Skipping this index.")
             return pd.DataFrame()
 
 class OutputProcessor(NodeProcessor):
@@ -506,6 +507,33 @@ class PipelineExecutor:
             subgraph = graph.subgraph(reachable_nodes)
             execution_order = list(nx.topological_sort(subgraph))
         
+        # 找到最近的非统计节点输出的helper函数
+        def find_nearest_dataframe_source(node_id: str) -> Optional[pd.DataFrame]:
+            """找到最近的输出DataFrame的节点"""
+            # 使用BFS从当前节点向前搜索
+            visited = set()
+            queue = [node_id]
+            
+            while queue:
+                current_id = queue.pop(0)
+                if current_id in visited:
+                    continue
+                visited.add(current_id)
+                
+                # 检查前驱节点
+                predecessors = list(graph.predecessors(current_id))
+                for pred_id in predecessors:
+                    if pred_id in node_outputs:
+                        pred_node = node_map.get(pred_id)
+                        # 如果前驱节点不是统计节点，使用它的输出
+                        if pred_node and pred_node.type != NodeType.AGGREGATOR:
+                            return node_outputs[pred_id]
+                    
+                    # 继续向前搜索
+                    queue.append(pred_id)
+            
+            return None
+        
         # 按顺序执行节点
         for node_id in execution_order:
             if node_id not in node_map:
@@ -519,12 +547,16 @@ class PipelineExecutor:
                 # 获取输入数据（来自前驱节点）
                 input_data = None
                 predecessors = list(graph.predecessors(node_id))
+                
                 if predecessors:
-                    # 使用第一个前驱节点的输出作为输入
-                    # 在更复杂的情况下，可能需要合并多个输入
-                    pred_id = predecessors[0]
-                    if pred_id in node_outputs:
-                        input_data = node_outputs[pred_id]
+                    if node.type == NodeType.AGGREGATOR:
+                        # 对于统计节点，找到最近的非统计节点的输出
+                        input_data = find_nearest_dataframe_source(node_id)
+                    else:
+                        # 对于其他节点，使用第一个前驱节点的输出
+                        pred_id = predecessors[0]
+                        if pred_id in node_outputs:
+                            input_data = node_outputs[pred_id]
                 
                 # 执行节点
                 if node.type == NodeType.INDEX_SOURCE:
@@ -560,27 +592,13 @@ class PipelineExecutor:
                         "data": preview_df.to_dict(orient="records"),
                         "total_rows": len(output)
                     }
-                    results[node_id] = PipelineResult(
-                    node_id=node_id,
-                    index_value=context.current_index,
-                    result_data=result_data
-                )
-                # else:
-                #     # 如果输出为空，也记录这个信息
-                #     result_data = {
-                #         "columns": [],
-                #         "data": [],
-                #         "total_rows": 0,
-                #         "message": f"No data for index '{context.current_index}' at node {node_id}"
-                #     }
                     
-                # results[node_id] = PipelineResult(
-                #     node_id=node_id,
-                #     index_value=context.current_index,
-                #     result_data=result_data
-                # )
-                
-                
+                    results[node_id] = PipelineResult(
+                        node_id=node_id,
+                        index_value=context.current_index,
+                        result_data=result_data
+                    )
+                # 如果输出为空，不添加结果，让pipeline继续执行
                 
             except Exception as e:
                 results[node_id] = PipelineResult(

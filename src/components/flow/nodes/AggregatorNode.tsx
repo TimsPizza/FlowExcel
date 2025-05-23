@@ -24,17 +24,11 @@ const AGGREGATION_METHODS = [
 ];
 
 export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const isComposing = useRef(false);
   const nodeId = useNodeId();
   const nodeData = data as AggregatorNodeDataContext;
-  const [innerValue, setInnerValue_] = useState(nodeData.outputAs || "");
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const testPipelineNodeMutation = useTestPipelineNodeMutation();
 
-  const setInnerValue = (value: string) => {
-    console.log("setInnerValue", value);
-    setInnerValue_(value);
-  };
   const [availableColumns] = useState<string[]>([
     "型号",
     "废料重量",
@@ -75,6 +69,14 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const handleSelectMethod = (method: string) => {
     updateLocalNodeData({
       method: method as "sum" | "avg" | "count" | "min" | "max",
+      error: undefined,
+      testResult: undefined,
+    });
+  };
+
+  const handleOutputAsChange = (value: string) => {
+    updateLocalNodeData({
+      outputAs: value,
       error: undefined,
       testResult: undefined,
     });
@@ -135,12 +137,11 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         return [key, aggregated];
       });
 
+      const outputColumnName = nodeData.outputAs || `${nodeData.method}_${nodeData.statColumn}`;
+
       updateLocalNodeData({
         testResult: {
-          columns: [
-            "索引",
-            nodeData.method + "_" + (nodeData.statColumn || ""),
-          ],
+          columns: ["索引", outputColumnName],
           data: result,
         },
         error: undefined,
@@ -166,29 +167,35 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         onSuccess: (result) => {
           const nodeResults = result.results[nodeData.id];
           if (nodeResults && nodeResults.length > 0) {
+            // 聚合节点的结果是多个索引值的聚合结果
             const formattedData: any[][] = [];
-            let columns: string[] = [];
+            let columns: string[] = ["索引值", "聚合结果"];
             
             nodeResults.forEach((nodeResult: any) => {
               if (nodeResult.result_data && nodeResult.result_data.data) {
-                if (columns.length === 0 && nodeResult.result_data.columns) {
-                  columns = nodeResult.result_data.columns;
-                }
-                
                 const resultData = nodeResult.result_data.data;
                 if (resultData.length > 0) {
                   resultData.forEach((row: Record<string, any>) => {
+                    // 对于聚合节点，通常结果是索引值和聚合结果
                     const indexValue = row.index_value || "";
                     const resultValue = row.result || 0;
+                    const outputColumnName = row.output_column_name || `${nodeData.method}_${nodeData.statColumn}`;
                     formattedData.push([indexValue, resultValue]);
                   });
                 }
               }
             });
             
+            // 使用实际的输出列名
+            if (nodeResults.length > 0 && nodeResults[0].result_data?.data?.length > 0) {
+              const firstRow = nodeResults[0].result_data.data[0];
+              const outputColumnName = firstRow.output_column_name || `${nodeData.method}_${nodeData.statColumn}`;
+              columns = ["索引值", outputColumnName];
+            }
+            
             updateLocalNodeData({
               testResult: {
-                columns: ["索引", nodeData.method + "_" + (nodeData.statColumn || "")],
+                columns,
                 data: formattedData,
               },
               error: undefined,
@@ -268,15 +275,9 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
               输出列名:
             </Text>
             <TextField.Root
-              value={innerValue}
-              onChange={(e) => {
-                // 只在没有 composition 的情况下同步
-                setInnerValue(e.target.value);
-              }}
-              onBlur={() => {
-                // trim 一下
-                setInnerValue(innerValue.trim());
-              }}
+              value={nodeData.outputAs || ""}
+              placeholder={`默认: ${nodeData.method}_${nodeData.statColumn || ""}`}
+              onChange={(e) => handleOutputAsChange(e.target.value)}
             >
               <TextField.Slot />
             </TextField.Root>
@@ -287,6 +288,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
               此节点将对列 "{nodeData.statColumn}" 进行
               {AGGREGATION_METHODS.find((m) => m.value === nodeData.method)
                 ?.label || "统计"}
+              ，结果列名: {nodeData.outputAs || `${nodeData.method}_${nodeData.statColumn}`}
             </Text>
           )}
         </Flex>

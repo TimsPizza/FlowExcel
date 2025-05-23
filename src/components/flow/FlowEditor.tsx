@@ -111,6 +111,7 @@ const getInitialNodeData = (type: NodeType, nodeId: string): FlowNodeData => {
         label: "统计",
         statColumn: undefined,
         method: "sum",
+        outputAs: "",
         testResult: undefined,
         error: undefined,
       } as AggregatorNodeDataContext;
@@ -361,16 +362,10 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                 case NodeType.AGGREGATOR: {
                   // 聚合节点的结果是多个索引值的聚合结果
                   const formattedData: any[][] = [];
-                  let columns: string[] = [];
+                  let columns: string[] = ["索引值", "聚合结果"];
                   
                   nodeResults.forEach((nodeResult: any) => {
                     if (nodeResult.result_data && nodeResult.result_data.data) {
-                      // 提取列名
-                      if (columns.length === 0 && nodeResult.result_data.columns) {
-                        columns = nodeResult.result_data.columns;
-                      }
-                      
-                      // 提取数据并格式化为二维数组
                       const resultData = nodeResult.result_data.data;
                       if (resultData.length > 0) {
                         resultData.forEach((row: Record<string, any>) => {
@@ -383,12 +378,19 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                     }
                   });
                   
+                  // 使用实际的输出列名
+                  if (nodeResults.length > 0 && nodeResults[0].result_data?.data?.length > 0) {
+                    const firstRow = nodeResults[0].result_data.data[0];
+                    const outputColumnName = firstRow.output_column_name || `${(node.data as AggregatorNodeDataContext).method}_${(node.data as AggregatorNodeDataContext).statColumn}`;
+                    columns = ["索引值", outputColumnName];
+                  }
+                  
                   return {
                     ...node,
                     data: {
                       ...node.data,
                       testResult: {
-                        columns: ["索引", (node.data as AggregatorNodeDataContext).method + "_" + ((node.data as AggregatorNodeDataContext).statColumn || "")],
+                        columns,
                         data: formattedData,
                       },
                       error: undefined,

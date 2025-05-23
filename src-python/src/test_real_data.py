@@ -162,8 +162,8 @@ REAL_DATA = {
             "data": {
                 "nodeType": "aggregator",
                 "id": "f2ea4ffc-b96d-42fd-b10c-8f178e0ea21e",
-                "label": "统计",
-                "statColumn": "数量",
+                "label": "平均",
+                "statColumn": "回火报废",
                 "method": "avg",
             },
         },
@@ -270,12 +270,20 @@ def test_aggregator_node():
 
     try:
         pipeline_json = json.dumps(REAL_DATA)
-        result = test_pipeline_node(
-            pipeline_json, "3e42efdb-4f0c-4287-b816-b7b8d8dc1f32"
-        )
+        # result = test_pipeline_node(
+        #     pipeline_json, "3e42efdb-4f0c-4287-b816-b7b8d8dc1f32"
+        # )
 
-        print("聚合节点测试结果:")
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+        # print("聚合节点测试结果:")
+        # print(json.dumps(result, indent=2, ensure_ascii=False))
+        
+        result2 = test_pipeline_node(
+            pipeline_json, "f2ea4ffc-b96d-42fd-b10c-8f178e0ea21e"
+        )
+        
+        print("聚合节点2测试结果:")
+        print(json.dumps(result2, indent=2, ensure_ascii=False))
+        
 
     except Exception as e:
         print(f"聚合节点测试失败: {e}")
