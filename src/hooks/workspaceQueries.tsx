@@ -428,14 +428,19 @@ const tryReadSheetNames = async (filePath: string) => {
     filePath,
   });
   console.log("tryReadSheetNames raw result:", result);
-  const parsedResult = JSON.parse(result) as ApiResponse<TryReadSheetNamesResponse>;
+  const parsedResult = JSON.parse(
+    result,
+  ) as ApiResponse<TryReadSheetNamesResponse>;
   if (parsedResult.status !== "success") {
     throw new Error(parsedResult.message);
   }
   return parsedResult.data as TryReadSheetNamesResponse;
 };
 
-export const useTryReadSheetNames = (filePath: string, bySheetName: boolean) => {
+export const useTryReadSheetNames = (
+  filePath: string,
+  bySheetName: boolean,
+) => {
   const query = useQuery<TryReadSheetNamesResponse, Error>({
     queryKey: ["tryReadSheetNames", filePath],
     queryFn: () => tryReadSheetNames(filePath),
@@ -460,7 +465,9 @@ interface PipelineExecutionResult {
   results: Record<string, any[]>;
 }
 
-const executePipeline = async (workspaceId: string): Promise<PipelineExecutionResult> => {
+const executePipeline = async (
+  workspaceId: string,
+): Promise<PipelineExecutionResult> => {
   const result = await invoke<string>("execute_pipeline", {
     pipelineJson: JSON.stringify({ workspaceId }),
   });
@@ -482,18 +489,32 @@ export const useExecutePipelineMutation = () => {
 
 /* Pipeline node testing */
 
-const testPipelineNode = async (params: { workspaceId: string; nodeId: string }): Promise<PipelineExecutionResult> => {
+const testPipelineNode = async (params: {
+  workspaceId: string;
+  nodeId: string;
+}): Promise<PipelineExecutionResult> => {
+  console.log("testPipelineNode params", params);
   const result = await invoke<string>("test_pipeline_node", {
     workspaceId: params.workspaceId,
     nodeId: params.nodeId,
   });
-  const parsedResult = JSON.parse(result) as PipelineExecutionResult;
-  console.log("testPipelineNode result", parsedResult);
-  return parsedResult;
+  console.log("testPipelineNode raw result", result);
+  try {
+    const parsedResult = JSON.parse(result) as PipelineExecutionResult;
+    console.log("testPipelineNode parsed result", parsedResult);
+    return parsedResult;
+  } catch (error) {
+    console.error("testPipelineNode error", error);
+    throw error;
+  }
 };
 
 export const useTestPipelineNodeMutation = () => {
-  return useMutation<PipelineExecutionResult, Error, { workspaceId: string; nodeId: string }>({
+  return useMutation<
+    PipelineExecutionResult,
+    Error,
+    { workspaceId: string; nodeId: string }
+  >({
     mutationFn: testPipelineNode,
     onSuccess: () => {
       toast.success("Pipeline测试完成");

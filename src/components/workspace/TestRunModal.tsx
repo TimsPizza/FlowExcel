@@ -1,4 +1,5 @@
 import { DataFrameViewer } from "@/components/DataFrameViewer";
+import ExcelPreview from "@/routes/ExcelPreview";
 import { SimpleDataframe } from "@/types";
 import { Box, Button, Dialog, Text } from "@radix-ui/themes";
 
@@ -18,10 +19,14 @@ const TestRunModal = ({ runResult }: TestRunModalProps) => {
         <Dialog.Title>测试运行结果</Dialog.Title>
         {runResult && (
           <Box className="max-h-72 overflow-auto rounded-md border p-2">
-            <DataFrameViewer
-              columns={runResult.columns}
-              data={runResult.data}
-            />
+            {runResult && "preview_data" in runResult[0] ? (
+              <ExcelPreview sheets={runResult} hide={false} loading={false} />
+            ) : (
+              <DataFrameViewer
+                columns={runResult.columns}
+                data={runResult.data ?? []}
+              />
+            )}
           </Box>
         )}
       </Dialog.Content>

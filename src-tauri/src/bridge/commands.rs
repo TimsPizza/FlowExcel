@@ -120,20 +120,31 @@ pub async fn execute_pipeline(pipeline_json: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn test_pipeline_node(app_handle: tauri::AppHandle, workspace_id: String, node_id: String) -> Result<String, String> {
-    // 首先加载workspace数据
-    let workspace_result = crate::workspace::commands::load_workspace(app_handle, workspace_id.clone()).await;
-    let workspace_json = match workspace_result {
-        Ok(json) => json,
-        Err(e) => return Err(format!("加载工作区失败: {}", e)),
-    };
+pub async fn test_pipeline_node(
+    app_handle: tauri::AppHandle,
+    workspace_id: String,
+    node_id: String,
+) -> Result<String, String> {
+    // 1. 先拿到带包装的 JSON
+    let workspace_json = crate::workspace::commands::load_workspace(app_handle, workspace_id.clone())
+        .await
+        .map_err(|e| format!("加载工作区失败: {}", e))?;
 
+    // 2. 把它 parse 成 Value，取出 .data 这一层
+    let v: serde_json::Value = serde_json::from_str(&workspace_json)
+        .map_err(|e| format!("解析 workspace_json 失败: {}", e))?;
+    let pipeline_data = v
+        .get("data")
+        .ok_or("workspace_json 里缺少 data 字段")?
+        .to_string(); // to_string() 会把 data 对象转回干净的 JSON 字符串
+
+    // 3. 真·扔给 Python
     let output = Command::new("/Users/timspizza/code/tauri-excel/src-python/.venv/bin/python")
         .args([
             "/Users/timspizza/code/tauri-excel/src-python/src/main.py",
             "test-pipeline-node",
             "--pipeline-json",
-            &workspace_json,
+            &pipeline_data,
             "--node-id",
             &node_id,
         ])
@@ -141,9 +152,9 @@ pub async fn test_pipeline_node(app_handle: tauri::AppHandle, workspace_id: Stri
         .map_err(|e| e.to_string())?;
 
     if output.status.success() {
-        return Ok(String::from_utf8_lossy(&output.stdout).to_string());
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("节点测试失败: {}", stderr));
+        Err(format!("节点测试失败: {}", stderr))
     }
 }

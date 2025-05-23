@@ -4,11 +4,15 @@ import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 import { BaseNode } from "./BaseNode";
+import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
+import { SheetInfo } from "@/types";
 
 export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
   const nodeData = data as SheetSelectorNodeDataContext;
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const { files } = useWorkspaceStore(useShallow(fileSelector));
+  const testPipelineNodeMutation = useTestPipelineNodeMutation();
   const updateSheetSelectorNodeData = useWorkspaceStore(
     (state) => state.updateNodeData,
   );
@@ -45,7 +49,6 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   const testRun = async () => {
-    return; // TODO: implement test run
     try {
       // Validate required fields
       if (!nodeData.targetFileID) {
@@ -60,10 +63,32 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
         return;
       }
 
-      updateSheetSelectorNodeData(nodeId, {
-        testResult: result,
-        error: undefined,
-      });
+      testPipelineNodeMutation.mutate(
+        {
+          workspaceId: currentWorkspace?.id || "",
+          nodeId: nodeData.id,
+        },
+        {
+          onSuccess: (result) => {
+            console.log("testPipelineNode result", result);
+            // @ts-ignore
+            const resultsData = result.results[nodeData.id];
+            let sheets: SheetInfo[] = [];
+            for (const result of resultsData) {
+              sheets.push({
+                sheet_name: result.index_value,
+                preview_data: result.result_data.data,
+                columns: result.result_data.columns,
+              });
+            }
+            console.log("transformed sheets", sheets);
+            updateSheetSelectorNodeData(nodeId, {
+              testResult: sheets,
+              error: undefined,
+            });
+          },
+        },
+      );
     } catch (error) {
       console.error("测试运行失败:", error);
       updateSheetSelectorNodeData(nodeId, { error: "测试运行失败" });

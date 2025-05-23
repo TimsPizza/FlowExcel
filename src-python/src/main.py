@@ -169,11 +169,11 @@ def main():
             return
         case "execute-pipeline":
             result = execute_pipeline(args.pipeline_json)
-            print(json.dumps(result, ensure_ascii=False))
+            print(normalize_response(result))
             return
         case "test-pipeline-node":
             result = test_pipeline_node(args.pipeline_json, args.node_id)
-            print(json.dumps(result, ensure_ascii=False))
+            print(normalize_response(result))
             return
         case _:
             parser.print_help()

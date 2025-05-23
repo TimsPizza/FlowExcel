@@ -333,8 +333,6 @@ class PipelineExecutor:
             
             for edge in edges:
                 graph.add_edge(edge["source"], edge["target"])
-            print(graph.nodes)
-            print(graph.edges)
             
             # 如果指定了目标节点，构建子图
             if target_node_id:
@@ -389,7 +387,6 @@ class PipelineExecutor:
         for node_id in graph.nodes():
             node = graph.nodes[node_id]["node"]
             if node.type == NodeType.INDEX_SOURCE:
-                print(f"index_source: {node_id}")
                 index_sources.append(node_id)
         
         # 收集所有从索引源到目标节点的路径上的节点
@@ -557,7 +554,7 @@ class PipelineExecutor:
                         pred_id = predecessors[0]
                         if pred_id in node_outputs:
                             input_data = node_outputs[pred_id]
-                
+
                 # 执行节点
                 if node.type == NodeType.INDEX_SOURCE:
                     # 索引源节点不需要输入
@@ -589,7 +586,8 @@ class PipelineExecutor:
                     preview_df = output.head(100)  # 最多返回100行
                     result_data = {
                         "columns": preview_df.columns.tolist(),
-                        "data": preview_df.to_dict(orient="records"),
+                        # "data": preview_df.to_dict(orient="records"),
+                        "data": preview_df.values.tolist(),
                         "total_rows": len(output)
                     }
                     

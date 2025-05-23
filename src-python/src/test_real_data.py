@@ -366,7 +366,7 @@ if __name__ == "__main__":
 
     # 依次测试各个节点
     # test_index_source_node()
-    # test_sheet_selector_node()
-    test_aggregator_node()
+    test_sheet_selector_node()
+    # test_aggregator_node()
     # test_full_pipeline()
     # test_with_non_existent_sheet()

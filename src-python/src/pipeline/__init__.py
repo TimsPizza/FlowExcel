@@ -8,6 +8,7 @@ def execute_pipeline(pipeline_json: str) -> Dict[str, Any]:
     Execute a pipeline from a JSON string
     """
     # Parse the pipeline
+    
     pipeline_data = json.loads(pipeline_json)
     
     # Execute the pipeline

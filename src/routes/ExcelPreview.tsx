@@ -60,7 +60,7 @@ export default function ExcelPreview({
               sheets?.find((sheet) => sheet.sheet_name === selectedSheetName)
                 ?.preview_data ?? ([] as any)
             }
-            pageSize={10}
+            // eSize={10}
           />
         )}
       </Flex>
