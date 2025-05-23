@@ -1,4 +1,4 @@
-import { SimpleDataframe } from "@/types";
+import { SimpleDataframe, SheetInfo } from "@/types";
 import { NodeProps } from "reactflow";
 
 export enum NodeType {
@@ -15,7 +15,7 @@ export interface CustomNodeBaseData {
   id: string;
   label: string;
   nodeType: NodeType;
-  testResult?: SimpleDataframe; // temporary for ui only, will not be saved to json
+  testResult?: SimpleDataframe | SheetInfo[]; // temporary for ui only, will not be saved to json
   error?: string;
 }
 
@@ -56,6 +56,7 @@ export interface AggregatorNodeDataContext extends CustomNodeBaseData {
 
 export interface OutputNodeDataContext extends CustomNodeBaseData {
   outputFormat?: "table" | "csv" | "excel";
+  outputPath?: string; // 输出文件保存路径
 }
 
 // FlowNodeData is the type for the 'data' property of a ReactFlow Node

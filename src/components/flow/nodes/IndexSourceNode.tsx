@@ -2,18 +2,14 @@ import {
   useGetIndexValues,
   useTryReadHeaderRow,
   useTryReadSheetNames,
-  useTestPipelineNodeMutation,
 } from "@/hooks/workspaceQueries";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, IndexSourceNodeDataContext } from "@/types/nodes";
-import { Flex, RadioGroup, Select, Text, TextField, Badge } from "@radix-ui/themes";
+import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 import { BaseNode } from "./BaseNode";
-import { FileMeta } from "@/types";
-import { invoke } from "@tauri-apps/api/core";
-import { toast } from "react-toastify";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
@@ -23,8 +19,6 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     (state) => state.updateNodeData,
   );
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  
-  const testPipelineNodeMutation = useTestPipelineNodeMutation();
 
   const { sheetNamesArr, isSheetNamesLoading, sheetNamesError } =
     useTryReadSheetNames(
@@ -131,7 +125,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         {
           testResult: {
             // columns: ["获取到的sheet名称"],
-            data: [sheetNamesArr?.sheet_names || []],
+            columns: sheetNamesArr?.sheet_names || [],
           },
           error: sheetNamesError ? "获取工作表名失败" : undefined,
         },
@@ -146,81 +140,14 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         nodeId,
         {
           testResult: {
-            data:
-              indexValues && indexValues.length > 0 && indexValues[0]
-                ? [indexValues[0].data]
-                : [],
+            columns: indexValues?.map((value) => value.column) || [],
+            data: indexValues?.map((value) => value.data) || [],
           },
           error: indexValuesError ? "获取索引值失败" : undefined,
         },
         false,
       );
     }
-  };
-
-  const testPipelineRun = async () => {
-    if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
-      return;
-    }
-
-    testPipelineNodeMutation.mutate(
-      {
-        workspaceId: currentWorkspace.id,
-        nodeId: nodeData.id,
-      },
-      {
-        onSuccess: (result) => {
-          const nodeResults = result.results[nodeData.id];
-          if (nodeResults && nodeResults.length > 0) {
-            // 处理索引源节点的结果数据
-            const nodeResult = nodeResults[0]; // 索引源节点只有一个结果
-            if (nodeResult.result_data) {
-              const { columns, data } = nodeResult.result_data;
-              
-              // 将数据转换为前端需要的格式
-              const formattedData = [];
-              if (data && data.length > 0) {
-                // 如果是按列索引，提取唯一值
-                if (nodeData.byColumn && columns.length > 0) {
-                  const columnName = columns[0];
-                  const uniqueValues = [...new Set(data.map((row: Record<string, any>) => row[columnName]))];
-                  formattedData.push(uniqueValues);
-                } 
-                // 如果是按工作表名索引
-                else if (nodeData.bySheetName) {
-                  formattedData.push(data.map((row: Record<string, any>) => Object.values(row)[0]));
-                }
-              }
-
-              updateIndexSourceNodeData(nodeData.id, {
-                testResult: {
-                  columns,
-                  data: formattedData,
-                },
-                error: undefined,
-              });
-            } else {
-              updateIndexSourceNodeData(nodeData.id, {
-                testResult: undefined,
-                error: "无结果数据",
-              });
-            }
-          } else {
-            updateIndexSourceNodeData(nodeData.id, {
-              testResult: undefined,
-              error: "无结果数据",
-            });
-          }
-        },
-        onError: (error) => {
-          updateIndexSourceNodeData(nodeData.id, {
-            testResult: undefined,
-            error: `Pipeline测试失败: ${error.message}`,
-          });
-        },
-      }
-    );
   };
 
   return (
@@ -352,18 +279,6 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
           )}
         </Flex>
       </BaseNode>
-      
-      {/* Pipeline测试按钮 */}
-      {/* <Flex justify="center" mt="2">
-        <Badge
-          color="green"
-          className="inline-block cursor-pointer"
-          onClick={testPipelineRun}
-          style={{ opacity: testPipelineNodeMutation.isLoading ? 0.6 : 1 }}
-        >
-          {testPipelineNodeMutation.isLoading ? "测试中..." : "Pipeline测试运行"}
-        </Badge>
-      </Flex> */}
     </>
   );
 };

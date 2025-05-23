@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { FlowNodeProps, AggregatorNodeDataContext } from "@/types/nodes";
+import { FlowNodeProps, AggregatorNodeDataContext, NodeType } from "@/types/nodes";
 import { BaseNode } from "./BaseNode";
 import {
   Select,
@@ -13,7 +13,10 @@ import { useNodeId } from "reactflow";
 import _ from "lodash";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
+import { useNodeColumns } from "@/hooks/useNodeColumns";
+import { transformSingleNodeResults, PipelineNodeResult, TransformedNodeResult } from "@/lib/dataTransforms";
 import { toast } from "react-toastify";
+import { SimpleDataframe } from "@/types";
 
 const AGGREGATION_METHODS = [
   { value: "sum", label: "求和" },
@@ -28,14 +31,12 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeData = data as AggregatorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const testPipelineNodeMutation = useTestPipelineNodeMutation();
+  
+  // 保存转换后的结果
+  const [transformedResult, setTransformedResult] = useState<TransformedNodeResult | null>(null);
 
-  const [availableColumns] = useState<string[]>([
-    "型号",
-    "废料重量",
-    "类型",
-    "数量",
-    "金额",
-  ]);
+  // 使用真实的列数据
+  const { columns: availableColumns, isLoading: isLoadingColumns, error: columnsError } = useNodeColumns();
 
   const updateAggregatorNodeDataInStore = useWorkspaceStore(
     (state) => state.updateNodeData,
@@ -82,79 +83,22 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     });
   };
 
-  const testRun = async () => {
-    try {
-      if (!nodeData.statColumn) {
-        updateLocalNodeData({
-          error: "请选择要统计的列",
-          testResult: undefined,
-        });
-        return;
-      }
-
-      if (!nodeData.method) {
-        updateLocalNodeData({ error: "请选择统计方法", testResult: undefined });
-        return;
-      }
-
-      const mockData = [
-        { 型号: "型号A", 废料重量: 100, 类型: "废料", 数量: 2, 金额: 500 },
-        { 型号: "型号A", 废料重量: 300, 类型: "原料", 数量: 1, 金额: 800 },
-        { 型号: "型号B", 废料重量: 150, 类型: "废料", 数量: 3, 金额: 750 },
-      ];
-
-      const groupedData = _.groupBy(mockData, "型号");
-      const result = Object.entries(groupedData).map(([key, values]) => {
-        let aggregated: number;
-        const statCol = nodeData.statColumn as string;
-
-        switch (nodeData.method) {
-          case "sum":
-            aggregated = _.sumBy(values, statCol);
-            break;
-          case "avg":
-            aggregated = _.meanBy(values, statCol);
-            break;
-          case "count":
-            aggregated = values.length;
-            break;
-          case "min":
-            aggregated =
-              Number(
-                _.minBy(values, statCol)?.[statCol as keyof (typeof values)[0]],
-              ) || 0;
-            break;
-          case "max":
-            aggregated =
-              Number(
-                _.maxBy(values, statCol)?.[statCol as keyof (typeof values)[0]],
-              ) || 0;
-            break;
-          default:
-            aggregated = 0;
-        }
-
-        return [key, aggregated];
-      });
-
-      const outputColumnName = nodeData.outputAs || `${nodeData.method}_${nodeData.statColumn}`;
-
-      updateLocalNodeData({
-        testResult: {
-          columns: ["索引", outputColumnName],
-          data: result,
-        },
-        error: undefined,
-      });
-    } catch (error) {
-      console.error("测试运行失败:", error);
-      updateLocalNodeData({ error: "测试运行失败", testResult: undefined });
-    }
-  };
-
   const testPipelineRun = async () => {
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
+      return;
+    }
+
+    if (!nodeData.statColumn) {
+      updateLocalNodeData({
+        error: "请选择要统计的列",
+        testResult: undefined,
+      });
+      return;
+    }
+
+    if (!nodeData.method) {
+      updateLocalNodeData({ error: "请选择统计方法", testResult: undefined });
       return;
     }
 
@@ -167,50 +111,42 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         onSuccess: (result) => {
           const nodeResults = result.results[nodeData.id];
           if (nodeResults && nodeResults.length > 0) {
-            // 聚合节点的结果是多个索引值的聚合结果
-            const formattedData: any[][] = [];
-            let columns: string[] = ["索引值", "聚合结果"];
-            
-            nodeResults.forEach((nodeResult: any) => {
-              if (nodeResult.result_data && nodeResult.result_data.data) {
-                const resultData = nodeResult.result_data.data;
-                if (resultData.length > 0) {
-                  resultData.forEach((row: Record<string, any>) => {
-                    // 对于聚合节点，通常结果是索引值和聚合结果
-                    const indexValue = row.index_value || "";
-                    const resultValue = row.result || 0;
-                    const outputColumnName = row.output_column_name || `${nodeData.method}_${nodeData.statColumn}`;
-                    formattedData.push([indexValue, resultValue]);
-                  });
-                }
-              }
-            });
-            
-            // 使用实际的输出列名
-            if (nodeResults.length > 0 && nodeResults[0].result_data?.data?.length > 0) {
-              const firstRow = nodeResults[0].result_data.data[0];
-              const outputColumnName = firstRow.output_column_name || `${nodeData.method}_${nodeData.statColumn}`;
-              columns = ["索引值", outputColumnName];
+            // 使用数据转换函数处理结果
+            const transformed = transformSingleNodeResults(
+              nodeData.id,
+              NodeType.AGGREGATOR,
+              nodeResults as PipelineNodeResult[]
+            );
+
+            setTransformedResult(transformed);
+
+            if (transformed.error) {
+              updateLocalNodeData({
+                error: transformed.error,
+                testResult: undefined,
+              });
+            } else {
+              // 转换为SimpleDataframe格式
+              const simpleDataframe: SimpleDataframe = Array.isArray(transformed.displayData) 
+                ? { columns: [], data: [] }  // 如果是多sheet，转为空dataframe
+                : transformed.displayData || { columns: [], data: [] };
+              
+              updateLocalNodeData({
+                testResult: simpleDataframe,
+                error: undefined,
+              });
             }
-            
-            updateLocalNodeData({
-              testResult: {
-                columns,
-                data: formattedData,
-              },
-              error: undefined,
-            });
           } else {
             updateLocalNodeData({
+              error: "未获取到测试结果",
               testResult: undefined,
-              error: "无结果数据",
             });
           }
         },
-        onError: (error) => {
+        onError: (error: Error) => {
           updateLocalNodeData({
+            error: `测试运行失败: ${error.message}`,
             testResult: undefined,
-            error: `Pipeline测试失败: ${error.message}`,
           });
         },
       },
@@ -218,93 +154,94 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <>
-      <BaseNode
-        data={nodeData}
-        onTestRun={testPipelineRun}
-        isSource={true}
-        isTarget={true}
-        testable
-      >
-        <Flex direction="column" gap="2">
-          <Flex align="center" gap="2">
-            <Text size="1" weight="bold">
-              统计列:
+    <BaseNode
+      data={nodeData}
+      onTestRun={testPipelineRun}
+      isSource={true}
+      isTarget={true}
+      testable={true}
+    >
+      <Flex direction="column" gap="2">
+        {/* 列选择 */}
+        <Flex direction="column" gap="1">
+          <Text size="1" weight="medium">
+            统计列
+          </Text>
+          {isLoadingColumns ? (
+            <Text size="1" color="gray">
+              加载列名中...
             </Text>
+          ) : columnsError ? (
+            <Text size="1" color="red">
+              无法获取列名：{columnsError.message}
+            </Text>
+          ) : availableColumns.length === 0 ? (
+            <Text size="1" color="gray">
+              未找到可用列，请检查上游节点配置
+            </Text>
+          ) : (
             <Select.Root
-              size="1"
               value={nodeData.statColumn || ""}
               onValueChange={handleSelectColumn}
             >
               <Select.Trigger />
               <Select.Content>
-                <Select.Group>
-                  {availableColumns.map((col) => (
-                    <Select.Item key={col} value={col}>
-                      {col}
-                    </Select.Item>
-                  ))}
-                </Select.Group>
+                {availableColumns.map((column) => (
+                  <Select.Item key={column} value={column}>
+                    {column}
+                  </Select.Item>
+                ))}
               </Select.Content>
             </Select.Root>
-          </Flex>
-
-          <Flex align="center" gap="2">
-            <Text size="1" weight="bold">
-              统计方法:
-            </Text>
-            <Select.Root
-              size="1"
-              value={nodeData.method || "sum"}
-              onValueChange={handleSelectMethod}
-            >
-              <Select.Trigger />
-              <Select.Content>
-                <Select.Group>
-                  {AGGREGATION_METHODS.map((method) => (
-                    <Select.Item key={method.value} value={method.value}>
-                      {method.label}
-                    </Select.Item>
-                  ))}
-                </Select.Group>
-              </Select.Content>
-            </Select.Root>
-          </Flex>
-          <Flex align="center" gap="2">
-            <Text size="1" weight="bold">
-              输出列名:
-            </Text>
-            <TextField.Root
-              value={nodeData.outputAs || ""}
-              placeholder={`默认: ${nodeData.method}_${nodeData.statColumn || ""}`}
-              onChange={(e) => handleOutputAsChange(e.target.value)}
-            >
-              <TextField.Slot />
-            </TextField.Root>
-          </Flex>
-
-          {nodeData.statColumn && nodeData.method && (
-            <Text size="1" color="gray">
-              此节点将对列 "{nodeData.statColumn}" 进行
-              {AGGREGATION_METHODS.find((m) => m.value === nodeData.method)
-                ?.label || "统计"}
-              ，结果列名: {nodeData.outputAs || `${nodeData.method}_${nodeData.statColumn}`}
-            </Text>
           )}
         </Flex>
-      </BaseNode>
 
-      {/* Pipeline测试按钮 */}
-      {/* <Flex justify="center" mt="2">
-        <Badge
-          color="green"
-          className="inline-block cursor-pointer"
-          onClick={testPipelineRun}
-          style={{ opacity: testPipelineNodeMutation.isLoading ? 0.6 : 1 }}
-        >
-          {testPipelineNodeMutation.isLoading ? "测试中..." : "Pipeline测试运行"}
-        </Badge>
-      </Flex> */}
-    </>
+        {/* 统计方法选择 */}
+        <Flex direction="column" gap="1">
+          <Text size="1" weight="medium">
+            统计方法
+          </Text>
+          <Select.Root
+            value={nodeData.method || ""}
+            onValueChange={handleSelectMethod}
+          >
+            <Select.Trigger />
+            <Select.Content>
+              {AGGREGATION_METHODS.map((method) => (
+                <Select.Item key={method.value} value={method.value}>
+                  {method.label}
+                </Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
+        </Flex>
+
+        {/* 输出列名 */}
+        <Flex direction="column" gap="1">
+          <Text size="1" weight="medium">
+            输出列名（可选）
+          </Text>
+          <TextField.Root
+            value={nodeData.outputAs || ""}
+            onChange={(e) => handleOutputAsChange(e.target.value)}
+            placeholder={`${nodeData.method || "method"}_${nodeData.statColumn || "column"}`}
+          />
+        </Flex>
+
+        {/* 状态指示 */}
+        <Flex gap="1" align="center">
+          {nodeData.statColumn && (
+            <Badge color="green" size="1">
+              列: {nodeData.statColumn}
+            </Badge>
+          )}
+          {nodeData.method && (
+            <Badge color="blue" size="1">
+              方法: {AGGREGATION_METHODS.find(m => m.value === nodeData.method)?.label}
+            </Badge>
+          )}
+        </Flex>
+      </Flex>
+    </BaseNode>
   );
 };

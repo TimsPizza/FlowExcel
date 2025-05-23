@@ -278,7 +278,7 @@ def test_aggregator_node():
         # print(json.dumps(result, indent=2, ensure_ascii=False))
         
         result2 = test_pipeline_node(
-            pipeline_json, "f2ea4ffc-b96d-42fd-b10c-8f178e0ea21e"
+            pipeline_json, "3e42efdb-4f0c-4287-b816-b7b8d8dc1f32"
         )
         
         print("聚合节点2测试结果:")
@@ -366,7 +366,7 @@ if __name__ == "__main__":
 
     # 依次测试各个节点
     # test_index_source_node()
-    test_sheet_selector_node()
-    # test_aggregator_node()
+    # test_sheet_selector_node()
+    test_aggregator_node()
     # test_full_pipeline()
     # test_with_non_existent_sheet()

@@ -182,11 +182,15 @@ class RowLookupProcessor(NodeProcessor):
             return pd.DataFrame()
         
         # 查找匹配当前索引值的行
-        filtered_df = input_df[input_df[match_column] == context.current_index].copy()
+        # filtered_df = input_df[input_df[match_column] == context.current_index].copy()
+        filtered_df = pd.DataFrame()
+        for index, row in input_df.iterrows():
+            if row[match_column] == context.current_index:
+                filtered_df = pd.concat([filtered_df, row.to_frame().T])
         
         # 如果没有匹配的行，不抛错误，而是返回空DataFrame
         # if filtered_df.empty:
-        #     # print(f"Warning: No rows found matching index value '{context.current_index}' in column '{match_column}'. Skipping this index.")
+        #     print(f"Warning: No rows found matching index value '{context.current_index}' in column '{match_column}'. Skipping this index.")
         
         return filtered_df
 
@@ -251,47 +255,70 @@ class AggregatorProcessor(NodeProcessor):
 class OutputProcessor(NodeProcessor):
     """输出节点处理器"""
     
-    def process(self, context: ExecutionContext, node: BaseNode, input_df: pd.DataFrame) -> pd.DataFrame:
-        # 输出节点主要是格式化数据，实际的文件写入由executor处理
-        return input_df
-    
-    def write_excel_output(self, results: Dict[str, List[PipelineResult]], output_path: str):
-        """
-        将多个pipeline的结果写入Excel文件，每个索引值生成一个sheet
-        
-        Args:
-            results: 执行结果字典
-            output_path: 输出文件路径
-        """
-        try:
-            with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-                # 收集所有输出节点的结果
-                output_data = {}
+    def process(self, context: ExecutionContext, node: BaseNode, input_df: pd.DataFrame = None, aggregator_outputs: Dict[str, pd.DataFrame] = None) -> pd.DataFrame:
+        # 输出节点收集所有agg节点的结果并合并
+        if not aggregator_outputs:
+            result_df = input_df if input_df is not None else pd.DataFrame()
+        else:
+            # 收集所有agg节点的结果，这些结果已经是合并后的格式
+            # 期望格式：columns = ["index", "output_column_name"], data = [[index_value, result_value], ...]
+            
+            merged_data = {}
+            
+            for agg_node_id, agg_df in aggregator_outputs.items():
+                if agg_df.empty:
+                    continue
                 
-                for node_id, node_results in results.items():
-                    for result in node_results:
-                        if result.result_data and result.index_value:
-                            sheet_name = result.index_value
-                            if sheet_name not in output_data:
-                                output_data[sheet_name] = []
-                            
-                            # 转换结果数据为DataFrame
-                            if result.result_data.get("data"):
-                                df = pd.DataFrame(result.result_data["data"])
-                                output_data[sheet_name].append(df)
-                
-                # 写入每个sheet
-                for sheet_name, dataframes in output_data.items():
-                    if dataframes:
-                        # 如果有多个DataFrame，可以选择合并或分别处理
-                        # 这里选择合并
-                        combined_df = pd.concat(dataframes, ignore_index=True)
-                        # 限制sheet名长度（Excel限制为31字符）
-                        safe_sheet_name = str(sheet_name)[:31]
-                        combined_df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
+                # 已经是合并后的格式，直接使用
+                # 期望列：["index", "output_column_name"]
+                if len(agg_df.columns) >= 2:
+                    index_col = agg_df.columns[0]  # 第一列是索引
+                    value_col = agg_df.columns[1]  # 第二列是统计值
+                    
+                    for _, row in agg_df.iterrows():
+                        index_value = row[index_col]
+                        result_value = row[value_col]
                         
-        except Exception as e:
-            raise ValueError(f"Failed to write Excel output: {str(e)}")
+                        if index_value not in merged_data:
+                            merged_data[index_value] = {"索引": index_value}
+                        
+                        merged_data[index_value][value_col] = result_value
+            
+            # 转换为DataFrame
+            if merged_data:
+                result_df = pd.DataFrame(list(merged_data.values()))
+            else:
+                result_df = pd.DataFrame()
+        
+        # 检查是否需要保存文件
+        output_path = node.data.get("outputPath")
+        output_format = node.data.get("outputFormat", "table")
+        
+        if output_path and not result_df.empty:
+            try:
+                self._save_to_file(result_df, output_path, output_format)
+            except Exception as e:
+                print(f"Warning: Failed to save output file: {str(e)}")
+        
+        return result_df
+    
+    def _save_to_file(self, df: pd.DataFrame, output_path: str, output_format: str):
+        """保存DataFrame到文件"""
+        import os
+        
+        # 确保输出目录存在
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # 根据格式保存文件
+        if output_format == "csv":
+            df.to_csv(output_path, index=False, encoding='utf-8-sig')
+        elif output_format == "excel":
+            df.to_excel(output_path, index=False, engine='openpyxl')
+        else:
+            # 默认保存为CSV
+            df.to_csv(output_path, index=False, encoding='utf-8-sig')
 
 class PipelineExecutor:
     """Pipeline执行器 - 支持索引驱动的多实例执行"""
@@ -334,8 +361,15 @@ class PipelineExecutor:
             for edge in edges:
                 graph.add_edge(edge["source"], edge["target"])
             
+            # 找到所有输出节点
+            output_nodes = [node for node in node_map.values() if node.type == NodeType.OUTPUT]
+            
             # 如果指定了目标节点，构建子图
             if target_node_id:
+                # 如果目标节点是输出节点，需要特殊处理
+                if target_node_id in [n.id for n in output_nodes]:
+                    return self._execute_output_node_only(graph, node_map, files, target_node_id)
+                    
                 subgraph_nodes = self._get_subgraph_nodes(graph, target_node_id)
                 graph = graph.subgraph(subgraph_nodes)
                 node_map = {nid: node_map[nid] for nid in subgraph_nodes if nid in node_map}
@@ -348,22 +382,7 @@ class PipelineExecutor:
             
             results = ExecutionResults()
             
-            # 如果目标节点就是索引源节点之一，只执行该节点
-            if target_node_id and any(source.id == target_node_id for source in index_sources):
-                target_source = next(source for source in index_sources if source.id == target_node_id)
-                index_results = self._execute_from_index_source(
-                    graph, node_map, files, target_source, target_node_id
-                )
-                
-                # 合并结果
-                for node_id, node_results in index_results.items():
-                    if node_id not in results.results:
-                        results.results[node_id] = []
-                    results.results[node_id].extend(node_results)
-                
-                return results
-            
-            # 对每个索引源执行
+            # 对每个索引源执行（不包括输出节点）
             for index_source in index_sources:
                 index_results = self._execute_from_index_source(
                     graph, node_map, files, index_source, target_node_id
@@ -375,11 +394,274 @@ class PipelineExecutor:
                         results.results[node_id] = []
                     results.results[node_id].extend(node_results)
             
+            # 对聚合节点的结果进行合并处理
+            self._merge_aggregator_results(results, node_map)
+            
+            # 如果没有指定目标节点或目标节点不是输出节点，处理所有输出节点
+            if not target_node_id or target_node_id not in [n.id for n in output_nodes]:
+                self._process_output_nodes(graph, node_map, files, results, output_nodes)
+            
             return results
             
         except Exception as e:
             return ExecutionResults(success=False, error=str(e))
     
+    def _execute_output_node_only(
+        self, 
+        graph: nx.DiGraph, 
+        node_map: Dict[str, BaseNode], 
+        files: Dict[str, FileInfo],
+        output_node_id: str
+    ) -> ExecutionResults:
+        """单独测试输出节点"""
+        try:
+            # 先执行所有前置pipeline以获取聚合结果
+            temp_results = ExecutionResults()
+            
+            # 找到所有索引源节点
+            index_sources = [node for node in node_map.values() if node.type == NodeType.INDEX_SOURCE]
+            
+            # 执行所有前置pipeline（不包括输出节点）
+            for index_source in index_sources:
+                # 创建不包含输出节点的子图
+                non_output_graph = self._create_graph_excluding_output_nodes(graph, node_map)
+                
+                index_results = self._execute_from_index_source(
+                    non_output_graph, node_map, files, index_source, None
+                )
+                
+                # 合并结果
+                for node_id, node_results in index_results.items():
+                    if node_id not in temp_results.results:
+                        temp_results.results[node_id] = []
+                    temp_results.results[node_id].extend(node_results)
+            
+            # 合并聚合节点结果
+            self._merge_aggregator_results(temp_results, node_map)
+            
+            # 处理目标输出节点
+            results = ExecutionResults()
+            output_node = node_map[output_node_id]
+            output_results = self._process_single_output_node(
+                graph, node_map, files, temp_results, output_node
+            )
+            
+            if output_results:
+                results.results[output_node_id] = output_results
+            
+            return results
+            
+        except Exception as e:
+            return ExecutionResults(success=False, error=str(e))
+    
+    def _create_graph_excluding_output_nodes(self, graph: nx.DiGraph, node_map: Dict[str, BaseNode]) -> nx.DiGraph:
+        """创建不包含输出节点的图"""
+        output_node_ids = [node.id for node in node_map.values() if node.type == NodeType.OUTPUT]
+        nodes_to_keep = [node_id for node_id in graph.nodes() if node_id not in output_node_ids]
+        return graph.subgraph(nodes_to_keep)
+    
+    def _process_output_nodes(
+        self,
+        graph: nx.DiGraph,
+        node_map: Dict[str, BaseNode],
+        files: Dict[str, FileInfo],
+        pipeline_results: ExecutionResults,
+        output_nodes: List[BaseNode]
+    ):
+        """处理所有输出节点，使用合并后的pipeline结果"""
+        for output_node in output_nodes:
+            try:
+                output_results = self._process_single_output_node(
+                    graph, node_map, files, pipeline_results, output_node
+                )
+                
+                if output_results:
+                    if output_node.id not in pipeline_results.results:
+                        pipeline_results.results[output_node.id] = []
+                    pipeline_results.results[output_node.id].extend(output_results)
+                    
+            except Exception as e:
+                error_result = PipelineResult(
+                    node_id=output_node.id,
+                    error=f"Output node processing failed: {str(e)}"
+                )
+                
+                if output_node.id not in pipeline_results.results:
+                    pipeline_results.results[output_node.id] = []
+                pipeline_results.results[output_node.id].append(error_result)
+    
+    def _process_single_output_node(
+        self,
+        graph: nx.DiGraph,
+        node_map: Dict[str, BaseNode],
+        files: Dict[str, FileInfo],
+        pipeline_results: ExecutionResults,
+        output_node: BaseNode
+    ) -> List[PipelineResult]:
+        """处理单个输出节点 - 收集所有pipeline的合并后结果"""
+        try:
+            # 创建一个虚拟的执行上下文
+            context = ExecutionContext(files=files)
+            
+            # 找到所有index source节点，每个代表一个独立的pipeline
+            index_sources = [node for node in node_map.values() if node.type == NodeType.INDEX_SOURCE]
+            
+            # 收集每个pipeline的最终结果
+            pipeline_dataframes = {}  # {pipeline_name: dataframe}
+            
+            for index_source in index_sources:
+                pipeline_name = self._get_pipeline_name(index_source, node_map)
+                
+                # 找到这个pipeline中的聚合节点（任选一个，因为它们现在有相同的合并结果）
+                pipeline_aggregators = self._find_pipeline_aggregators(graph, index_source.id, node_map)
+                
+                # 获取合并后的聚合结果（所有聚合节点现在都有相同的合并结果）
+                if pipeline_aggregators:
+                    first_agg_id = pipeline_aggregators[0]  # 取第一个聚合节点
+                    if first_agg_id in pipeline_results.results:
+                        merged_results = pipeline_results.results[first_agg_id]
+                        if merged_results and merged_results[0].result_data:
+                            # 合并后格式：columns = ["索引", "sum_xxx", "avg_yyy", ...], data = [[index_val, val1, val2, ...], ...]
+                            result_data = merged_results[0].result_data
+                            columns = result_data.get("columns", [])
+                            data = result_data.get("data", [])
+                            
+                            if columns and data:
+                                df = pd.DataFrame(data, columns=columns)
+                                pipeline_dataframes[pipeline_name] = df
+            
+            # 执行输出节点处理器
+            processor = self.processors[NodeType.OUTPUT]
+            
+            # 如果有多个pipeline结果，创建多sheet格式
+            if len(pipeline_dataframes) > 1:
+                # 多pipeline结果 - 返回多sheet格式
+                output_result = self._create_multi_sheet_output(pipeline_dataframes, output_node)
+            elif len(pipeline_dataframes) == 1:
+                # 单pipeline结果 - 返回单dataframe格式
+                single_df = list(pipeline_dataframes.values())[0]
+                output_result = processor.process(context, output_node, single_df, None)
+            else:
+                # 没有有效结果
+                output_result = pd.DataFrame()
+            
+            # 创建结果
+            result_data = None
+            if isinstance(output_result, dict):
+                # 多sheet结果
+                result_data = {
+                    "sheets": output_result,
+                    "format": "multi_sheet"
+                }
+            elif not output_result.empty:
+                # 单dataframe结果
+                preview_df = output_result.head(100)
+                result_data = {
+                    "columns": preview_df.columns.tolist(),
+                    "data": preview_df.values.tolist(),
+                    "total_rows": len(output_result),
+                    "format": "single_sheet"
+                }
+            
+            return [PipelineResult(
+                node_id=output_node.id,
+                result_data=result_data
+            )]
+            
+        except Exception as e:
+            return [PipelineResult(
+                node_id=output_node.id,
+                error=str(e)
+            )]
+    
+    def _get_pipeline_name(self, index_source: BaseNode, node_map: Dict[str, BaseNode]) -> str:
+        """获取pipeline的名称"""
+        # 使用索引源的文件名或数据来命名pipeline
+        source_data = index_source.data
+        source_file_id = source_data.get("sourceFileID", "unknown")
+        column_name = source_data.get("columnName", "data")
+        
+        # 可以根据需要自定义命名逻辑
+        return f"{source_file_id}_{column_name}"
+    
+    def _find_pipeline_aggregators(
+        self, 
+        graph: nx.DiGraph, 
+        index_source_id: str, 
+        node_map: Dict[str, BaseNode]
+    ) -> List[str]:
+        """找到指定pipeline中的所有聚合节点"""
+        # 从index source开始，找到所有可达的聚合节点
+        reachable_nodes = nx.descendants(graph, index_source_id)
+        reachable_nodes.add(index_source_id)
+        
+        aggregator_nodes = []
+        for node_id in reachable_nodes:
+            node = node_map.get(node_id)
+            if node and node.type == NodeType.AGGREGATOR:
+                aggregator_nodes.append(node_id)
+        
+        return aggregator_nodes
+    
+    def _create_multi_sheet_output(
+        self, 
+        pipeline_dataframes: Dict[str, pd.DataFrame], 
+        output_node: BaseNode
+    ) -> Dict[str, Dict[str, Any]]:
+        """创建多sheet输出格式"""
+        output_sheets = {}
+        
+        for pipeline_name, df in pipeline_dataframes.items():
+            if not df.empty:
+                preview_df = df.head(100)
+                output_sheets[pipeline_name] = {
+                    "columns": preview_df.columns.tolist(),
+                    "data": preview_df.values.tolist(),
+                    "total_rows": len(df)
+                }
+                
+                # 如果设置了输出路径，保存为多sheet Excel文件
+                output_path = output_node.data.get("outputPath")
+                output_format = output_node.data.get("outputFormat", "table")
+                
+                if output_path and output_format == "excel":
+                    try:
+                        self._save_multi_sheet_excel(pipeline_dataframes, output_path)
+                    except Exception as e:
+                        print(f"Warning: Failed to save multi-sheet Excel: {str(e)}")
+        
+        return output_sheets
+    
+    def _save_multi_sheet_excel(self, pipeline_dataframes: Dict[str, pd.DataFrame], output_path: str):
+        """保存多sheet Excel文件"""
+        import os
+        
+        # 确保输出目录存在
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # 使用ExcelWriter保存多个sheet
+        with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+            for sheet_name, df in pipeline_dataframes.items():
+                # 确保sheet名称有效（Excel的限制）
+                safe_sheet_name = self._make_safe_sheet_name(sheet_name)
+                df.to_excel(writer, sheet_name=safe_sheet_name, index=False)
+    
+    def _make_safe_sheet_name(self, name: str) -> str:
+        """创建安全的Excel sheet名称"""
+        # Excel sheet名称限制：不能包含 / \ ? * [ ] : 字符，且长度不超过31
+        invalid_chars = ['/', '\\', '?', '*', '[', ']', ':']
+        safe_name = name
+        for char in invalid_chars:
+            safe_name = safe_name.replace(char, '_')
+        
+        # 限制长度
+        if len(safe_name) > 31:
+            safe_name = safe_name[:31]
+            
+        return safe_name
+
     def _get_subgraph_nodes(self, graph: nx.DiGraph, target_node_id: str) -> Set[str]:
         """获取从所有索引源到目标节点的子图节点"""
         # 找到所有索引源
@@ -482,13 +764,21 @@ class PipelineExecutor:
         start_node_id: str,
         target_node_id: Optional[str]
     ) -> Dict[str, PipelineResult]:
-        """执行单个索引值的pipeline"""
+        """执行单个索引值的pipeline（不包括输出节点）"""
         
         results = {}
         node_outputs = {}  # 存储每个节点的输出
+        aggregator_results = {}  # 存储聚合节点的结果
+        
+        # 排除输出节点
+        output_node_ids = [node.id for node in node_map.values() if node.type == NodeType.OUTPUT]
         
         # 如果有目标节点，只执行到目标节点
         if target_node_id:
+            # 如果目标节点是输出节点，不在这里处理
+            if target_node_id in output_node_ids:
+                return results
+                
             try:
                 execution_order = list(nx.shortest_path(graph, start_node_id, target_node_id))
             except nx.NetworkXNoPath:
@@ -498,9 +788,11 @@ class PipelineExecutor:
                     error=f"No path from {start_node_id} to {target_node_id}"
                 )}
         else:
-            # 执行从起始节点可达的所有节点
+            # 执行从起始节点可达的所有节点（不包括输出节点）
             reachable_nodes = nx.descendants(graph, start_node_id)
             reachable_nodes.add(start_node_id)
+            # 排除输出节点
+            reachable_nodes = {node_id for node_id in reachable_nodes if node_id not in output_node_ids}
             subgraph = graph.subgraph(reachable_nodes)
             execution_order = list(nx.topological_sort(subgraph))
         
@@ -531,9 +823,9 @@ class PipelineExecutor:
             
             return None
         
-        # 按顺序执行节点
+        # 按顺序执行节点（排除输出节点）
         for node_id in execution_order:
-            if node_id not in node_map:
+            if node_id not in node_map or node_id in output_node_ids:
                 continue
                 
             node = node_map[node_id]
@@ -567,7 +859,7 @@ class PipelineExecutor:
                 elif node.type == NodeType.SHEET_SELECTOR:
                     # Sheet选择器不需要前驱输入
                     output = processor.process(context, node)
-                elif node.type in [NodeType.ROW_FILTER, NodeType.ROW_LOOKUP, NodeType.AGGREGATOR, NodeType.OUTPUT]:
+                elif node.type in [NodeType.ROW_FILTER, NodeType.ROW_LOOKUP, NodeType.AGGREGATOR]:
                     # 这些节点需要输入数据
                     if input_data is None:
                         raise ValueError(f"Node {node_id} requires input data")
@@ -586,25 +878,101 @@ class PipelineExecutor:
                     preview_df = output.head(100)  # 最多返回100行
                     result_data = {
                         "columns": preview_df.columns.tolist(),
-                        # "data": preview_df.to_dict(orient="records"),
                         "data": preview_df.values.tolist(),
                         "total_rows": len(output)
                     }
                     
-                    results[node_id] = PipelineResult(
+                    current_result = PipelineResult(
                         node_id=node_id,
                         index_value=context.current_index,
                         result_data=result_data
                     )
+                    
+                    # 如果是聚合节点，存储到aggregator_results中
+                    if node.type == NodeType.AGGREGATOR:
+                        aggregator_results[node_id] = current_result
+                        
+                        # 对于聚合节点，需要携带之前所有聚合节点的结果
+                        # 按照执行顺序添加之前的聚合节点结果
+                        for prev_node_id in execution_order:
+                            if prev_node_id in aggregator_results:
+                                results[prev_node_id] = aggregator_results[prev_node_id]
+                        
+                        # 添加当前聚合节点的结果
+                        results[node_id] = current_result
+                    else:
+                        results[node_id] = current_result
                 # 如果输出为空，不添加结果，让pipeline继续执行
                 
             except Exception as e:
-                results[node_id] = PipelineResult(
+                error_result = PipelineResult(
                     node_id=node_id,
                     index_value=context.current_index,
                     error=str(e)
                 )
+                
+                # 如果是聚合节点出错，也要携带之前的聚合节点结果
+                if node.type == NodeType.AGGREGATOR:
+                    # 添加之前的聚合节点结果
+                    for prev_node_id in execution_order:
+                        if prev_node_id == node_id:
+                            break
+                        if prev_node_id in aggregator_results:
+                            results[prev_node_id] = aggregator_results[prev_node_id]
+                
+                results[node_id] = error_result
                 # 如果节点执行失败，停止后续执行
                 break
         
         return results
+
+    def _merge_aggregator_results(self, results: ExecutionResults, node_map: Dict[str, BaseNode]):
+        """合并聚合节点的结果为统一的dataframe"""
+        
+        # 首先收集所有聚合节点的原始数据
+        all_aggregator_data = {}  # {index_value: {column_name: value}}
+        
+        for node_id, node_results in results.results.items():
+            # 检查是否为聚合节点
+            node = node_map.get(node_id)
+            if not node or node.type != NodeType.AGGREGATOR:
+                continue
+            
+            # 收集这个聚合节点的所有结果
+            for result in node_results:
+                if result.result_data and result.result_data.get("data"):
+                    data_rows = result.result_data["data"]
+                    if data_rows and len(data_rows) > 0:
+                        # 期望格式：["index_value", "column", "method", "result", "output_column_name"]
+                        row = data_rows[0]  # 每个结果只有一行
+                        if len(row) >= 5:
+                            index_value = row[0]
+                            result_value = row[3]
+                            output_column_name = row[4]
+                            
+                            if index_value not in all_aggregator_data:
+                                all_aggregator_data[index_value] = {"索引": index_value}
+                            
+                            all_aggregator_data[index_value][output_column_name] = result_value
+        
+        # 如果有聚合数据，为每个聚合节点创建统一的合并结果
+        if all_aggregator_data:
+            # 创建统一的DataFrame
+            unified_df_data = list(all_aggregator_data.values())
+            unified_df = pd.DataFrame(unified_df_data)
+            
+            # 为每个聚合节点创建相同的合并结果
+            unified_result_data = {
+                "columns": unified_df.columns.tolist(),
+                "data": unified_df.values.tolist(),
+                "total_rows": len(unified_df)
+            }
+            
+            # 更新所有聚合节点的结果为统一的合并结果
+            for node_id, node_results in results.results.items():
+                node = node_map.get(node_id)
+                if node and node.type == NodeType.AGGREGATOR:
+                    results.results[node_id] = [PipelineResult(
+                        node_id=node_id,
+                        result_data=unified_result_data
+                    )]

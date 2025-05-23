@@ -1,5 +1,5 @@
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { FlowNodeProps, RowFilterNodeDataContext } from "@/types/nodes";
+import { FlowNodeProps, RowFilterNodeDataContext, NodeType } from "@/types/nodes";
 import { PlusIcon, TrashIcon } from "@radix-ui/react-icons";
 import {
   Button,
@@ -10,10 +10,16 @@ import {
   Select,
   Text,
   TextField,
+  Badge,
 } from "@radix-ui/themes";
 import { useState } from "react";
 import { useNodeId } from "reactflow";
 import { BaseNode } from "./BaseNode";
+import { useNodeColumns } from "@/hooks/useNodeColumns";
+import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
+import { transformSingleNodeResults, PipelineNodeResult } from "@/lib/dataTransforms";
+import { SimpleDataframe } from "@/types";
+import { toast } from "react-toastify";
 
 const OPERATORS = [
   { value: "==", label: "等于" },
@@ -29,13 +35,11 @@ const OPERATORS = [
 export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
   const nodeData = data as RowFilterNodeDataContext;
-  const [availableColumns, setAvailableColumns] = useState<string[]>([
-    "型号",
-    "废料重量",
-    "类型",
-    "数量",
-    "时间",
-  ]);
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const testPipelineNodeMutation = useTestPipelineNodeMutation();
+
+  // 使用真实的列数据
+  const { columns: availableColumns, isLoading: isLoadingColumns, error: columnsError } = useNodeColumns();
 
   const updateRowFilterNodeDataInStore = useWorkspaceStore(
     (state) => state.updateNodeData,
@@ -45,8 +49,9 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
     const updatedConditions = [...(nodeData.conditions || [])];
     updatedConditions[index] = { ...updatedConditions[index], [field]: value };
     updateRowFilterNodeDataInStore(nodeId, {
-      conditions: updatedConditions,
+      conditions: updatedConditions as any,
       error: undefined,
+      testResult: undefined,
     });
   };
 
@@ -55,11 +60,12 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       column: "",
       operator: "==",
       value: "",
-      logic: "AND",
+      logic: "AND" as "AND" | "OR",
     };
     updateRowFilterNodeDataInStore(nodeId, {
       conditions: [...(nodeData.conditions || []), newCondition],
       error: undefined,
+      testResult: undefined,
     });
   };
 
@@ -69,99 +75,93 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
     updateRowFilterNodeDataInStore(nodeId, {
       conditions: updatedConditions,
       error: undefined,
+      testResult: undefined,
     });
   };
 
-  const testRun = async () => {
-    try {
-      if (!nodeData.conditions?.length) {
-        updateRowFilterNodeDataInStore(nodeId, {
-          error: "请至少添加一个过滤条件",
-        });
-        return;
-      }
-
-      // 验证每个条件是否完整
-      const incomplete = nodeData.conditions.some(
-        (condition) => !condition.column || !condition.operator,
-      );
-
-      if (incomplete) {
-        updateRowFilterNodeDataInStore(nodeId, { error: "过滤条件不完整" });
-        return;
-      }
-
-      // 模拟从上游节点获取的数据
-      const mockData = [
-        { 型号: "A型", 废料重量: 100, 类型: "废料" },
-        { 型号: "B型", 废料重量: 0, 类型: "废料" },
-        { 型号: "C型", 废料重量: 200, 类型: "原料" },
-      ];
-
-      // 应用过滤逻辑
-      const filteredData = mockData.filter((row) => {
-        return nodeData.conditions.every((condition, idx) => {
-          const { column, operator, value, logic } = condition;
-          const rowValue = row[column];
-
-          let matches = false;
-          switch (operator) {
-            case "==":
-              matches = rowValue == value;
-              break;
-            case "!=":
-              matches = rowValue != value;
-              break;
-            case ">":
-              matches = rowValue > value;
-              break;
-            case ">=":
-              matches = rowValue >= value;
-              break;
-            case "<":
-              matches = rowValue < value;
-              break;
-            case "<=":
-              matches = rowValue <= value;
-              break;
-            case "contains":
-              matches = String(rowValue).includes(String(value));
-              break;
-            case "not_contains":
-              matches = !String(rowValue).includes(String(value));
-              break;
-            default:
-              matches = false;
-          }
-
-          // Apply logic (AND/OR)
-          if (idx > 0 && logic === "OR") {
-            return matches;
-          }
-          return matches;
-        });
-      });
-
-      updateRowFilterNodeDataInStore(nodeId, {
-        testResult: {
-          columns: Object.keys(mockData[0]),
-          data: filteredData,
-        },
-        error: undefined,
-      });
-    } catch (error) {
-      console.error("测试运行失败:", error);
-      updateRowFilterNodeDataInStore(nodeId, { error: "测试运行失败" });
+  const testPipelineRun = async () => {
+    if (!currentWorkspace) {
+      toast.error("未找到当前工作区");
+      return;
     }
+
+    if (!nodeData.conditions?.length) {
+      updateRowFilterNodeDataInStore(nodeId, {
+        error: "请至少添加一个过滤条件",
+        testResult: undefined,
+      });
+      return;
+    }
+
+    // 验证每个条件是否完整
+    const incomplete = nodeData.conditions.some(
+      (condition) => !condition.column || !condition.operator,
+    );
+
+    if (incomplete) {
+      updateRowFilterNodeDataInStore(nodeId, { 
+        error: "过滤条件不完整",
+        testResult: undefined,
+      });
+      return;
+    }
+
+    testPipelineNodeMutation.mutate(
+      {
+        workspaceId: currentWorkspace.id,
+        nodeId: nodeData.id,
+      },
+      {
+        onSuccess: (result) => {
+          const nodeResults = result.results[nodeData.id];
+          if (nodeResults && nodeResults.length > 0) {
+            // 使用数据转换函数处理结果
+            const transformed = transformSingleNodeResults(
+              nodeData.id,
+              NodeType.ROW_FILTER,
+              nodeResults as PipelineNodeResult[]
+            );
+
+            if (transformed.error) {
+              updateRowFilterNodeDataInStore(nodeId, {
+                error: transformed.error,
+                testResult: undefined,
+              });
+            } else {
+              // 转换为SimpleDataframe格式
+              const simpleDataframe: SimpleDataframe = Array.isArray(transformed.displayData) 
+                ? { columns: [], data: [] }  // 如果是多sheet，转为空dataframe
+                : transformed.displayData || { columns: [], data: [] };
+              
+              updateRowFilterNodeDataInStore(nodeId, {
+                testResult: simpleDataframe,
+                error: undefined,
+              });
+            }
+          } else {
+            updateRowFilterNodeDataInStore(nodeId, {
+              error: "未获取到测试结果",
+              testResult: undefined,
+            });
+          }
+        },
+        onError: (error: Error) => {
+          updateRowFilterNodeDataInStore(nodeId, {
+            error: `测试运行失败: ${error.message}`,
+            testResult: undefined,
+          });
+        },
+      },
+    );
   };
 
   return (
     <BaseNode
       data={nodeData}
-      onTestRun={testRun}
+      onTestRun={testPipelineRun}
       isSource={true}
       isTarget={true}
-      testable
+      testable={true}
     >
       <ScrollArea className="react-flow__node-scrollable max-h-60">
         <Flex direction="column" gap="2">
@@ -173,6 +173,19 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
               <PlusIcon /> 添加条件
             </Button>
           </Flex>
+
+          {/* 列加载状态 */}
+          {isLoadingColumns && (
+            <Text size="1" color="gray">
+              加载列名中...
+            </Text>
+          )}
+          
+          {columnsError && (
+            <Text size="1" color="red">
+              无法获取列名：{columnsError.message}
+            </Text>
+          )}
 
           {(!nodeData.conditions || nodeData.conditions.length === 0) && (
             <Text size="1" color="gray">
@@ -198,57 +211,48 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                 </Select.Root>
               )}
 
-              <Grid columns="2" gap="1">
+              <Grid columns="4" gap="1" align="center">
+                {/* 列选择 */}
                 <Select.Root
                   size="1"
                   value={condition.column || ""}
-                  onValueChange={(value) =>
-                    updateCondition(index, "column", value)
-                  }
-                >
-                  <Select.Trigger placeholder="选择列" />
-                  <Select.Content>
-                    <Select.Group>
-                      {availableColumns.map((col) => (
-                        <Select.Item key={col} value={col}>
-                          {col}
-                        </Select.Item>
-                      ))}
-                    </Select.Group>
-                  </Select.Content>
-                </Select.Root>
-
-                <Select.Root
-                  size="1"
-                  value={condition.operator || "=="}
-                  onValueChange={(value) =>
-                    updateCondition(index, "operator", value)
-                  }
+                  onValueChange={(value) => updateCondition(index, "column", value)}
                 >
                   <Select.Trigger />
                   <Select.Content>
-                    <Select.Group>
-                      {OPERATORS.map((op) => (
-                        <Select.Item key={op.value} value={op.value}>
-                          {op.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Group>
+                    {availableColumns.map((column) => (
+                      <Select.Item key={column} value={column}>
+                        {column}
+                      </Select.Item>
+                    ))}
                   </Select.Content>
                 </Select.Root>
-              </Grid>
 
-              <Flex gap="1">
+                {/* 操作符选择 */}
+                <Select.Root
+                  size="1"
+                  value={condition.operator || "=="}
+                  onValueChange={(value) => updateCondition(index, "operator", value)}
+                >
+                  <Select.Trigger />
+                  <Select.Content>
+                    {OPERATORS.map((op) => (
+                      <Select.Item key={op.value} value={op.value}>
+                        {op.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+
+                {/* 值输入 */}
                 <TextField.Root
                   size="1"
+                  value={condition.value || ""}
+                  onChange={(e) => updateCondition(index, "value", e.target.value)}
                   placeholder="值"
-                  style={{ flex: 1 }}
-                  value={condition.value?.toString() || ""}
-                  onChange={(e) =>
-                    updateCondition(index, "value", e.target.value)
-                  }
                 />
 
+                {/* 删除按钮 */}
                 <IconButton
                   size="1"
                   variant="soft"
@@ -257,9 +261,23 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                 >
                   <TrashIcon />
                 </IconButton>
-              </Flex>
+              </Grid>
             </Flex>
           ))}
+
+          {/* 状态指示 */}
+          {nodeData.conditions && nodeData.conditions.length > 0 && (
+            <Flex gap="1" wrap="wrap">
+              <Badge color="blue" size="1">
+                {nodeData.conditions.length} 个条件
+              </Badge>
+              {availableColumns.length > 0 && (
+                <Badge color="green" size="1">
+                  {availableColumns.length} 个可用列
+                </Badge>
+              )}
+            </Flex>
+          )}
         </Flex>
       </ScrollArea>
     </BaseNode>

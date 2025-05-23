@@ -174,6 +174,8 @@ def main():
         case "test-pipeline-node":
             result = test_pipeline_node(args.pipeline_json, args.node_id)
             print(normalize_response(result))
+            # print(json.dumps(result, indent=2, ensure_ascii=False))
+
             return
         case _:
             parser.print_help()
