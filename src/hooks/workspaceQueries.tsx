@@ -1,3 +1,4 @@
+import useToast from "@/hooks/useToast";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import {
   ApiResponse,
@@ -19,7 +20,6 @@ import {
 } from "@/types/nodes";
 import { invoke } from "@tauri-apps/api/core";
 import { useMutation, useQuery, UseQueryResult } from "react-query";
-import { toast } from "react-toastify";
 import { Node as ReactFlowNode } from "reactflow";
 
 /* List workspaces */
@@ -76,6 +76,7 @@ async function getWorkspaceByID(workspaceID: string): Promise<WorkspaceConfig> {
 }
 
 export const useWorkspaceQuery = ({ workspaceID }: { workspaceID: string }) => {
+  const toast = useToast();
   const {
     isLoading,
     data: workspace,
@@ -253,6 +254,7 @@ async function saveWorkspace(
 }
 
 export const useSaveWorkspaceMutation = () => {
+  const toast = useToast();
   const resetDirty = useWorkspaceStore((state) => state.resetDirty);
   const { mutateAsync, isLoading, error } = useMutation({
     mutationKey: ["saveWorkspace"],
@@ -475,6 +477,7 @@ const executePipeline = async (
 };
 
 export const useExecutePipelineMutation = () => {
+  const toast = useToast();
   return useMutation<PipelineExecutionResult, Error, string>({
     mutationFn: executePipeline,
     onSuccess: () => {
@@ -510,6 +513,7 @@ const testPipelineNode = async (params: {
 };
 
 export const useTestPipelineNodeMutation = () => {
+  const toast = useToast();
   return useMutation<
     PipelineExecutionResult,
     Error,

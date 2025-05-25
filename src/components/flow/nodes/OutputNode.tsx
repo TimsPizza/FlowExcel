@@ -1,7 +1,16 @@
 import { useCallback } from "react";
 import { FlowNodeProps, OutputNodeDataContext, NodeType } from "@/types/nodes";
 import { BaseNode } from "./BaseNode";
-import { Select, Flex, Button, Text, TextField, Badge, ScrollArea, Card } from "@radix-ui/themes";
+import {
+  Select,
+  Flex,
+  Button,
+  Text,
+  TextField,
+  Badge,
+  ScrollArea,
+  Card,
+} from "@radix-ui/themes";
 import { useNodeId } from "reactflow";
 import { CopyIcon, DownloadIcon, FileIcon } from "@radix-ui/react-icons";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
@@ -13,9 +22,10 @@ import {
   isDataFrameResult,
 } from "@/lib/dataTransforms";
 import { SimpleDataframe, SheetInfo } from "@/types";
-import { toast } from "react-toastify";
+import useToast from "@/hooks/useToast";
 
 export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const toast = useToast();
   const nodeId = useNodeId()!;
   const nodeData = data as OutputNodeDataContext;
   const { mutate: testPipelineMutation } = useTestPipelineNodeMutation();
@@ -94,7 +104,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
       }
 
       let csvContent = "";
-      
+
       // 检查是否为多sheet结果
       if (isMultiSheetResult(nodeData.testResult)) {
         // 多sheet结果：将所有sheet合并为一个CSV
@@ -172,9 +182,16 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
 
               // 如果设置了输出路径且有数据，显示保存成功消息
               if (nodeData.outputPath && transformed.displayData) {
-                if (isMultiSheetResult(transformed.displayData) && transformed.displayData.length > 0) {
+                if (
+                  isMultiSheetResult(transformed.displayData) &&
+                  transformed.displayData.length > 0
+                ) {
                   toast.success("多sheet数据已保存到指定路径");
-                } else if (isDataFrameResult(transformed.displayData) && transformed.displayData.data && transformed.displayData.data.length > 0) {
+                } else if (
+                  isDataFrameResult(transformed.displayData) &&
+                  transformed.displayData.data &&
+                  transformed.displayData.data.length > 0
+                ) {
                   toast.success("数据已保存到指定路径");
                 }
               }
@@ -199,9 +216,12 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   // 计算总行数用于显示
   const getTotalRows = () => {
     if (!nodeData.testResult) return 0;
-    
+
     if (isMultiSheetResult(nodeData.testResult)) {
-      return nodeData.testResult.reduce((total, sheet) => total + sheet.preview_data.length, 0);
+      return nodeData.testResult.reduce(
+        (total, sheet) => total + sheet.preview_data.length,
+        0,
+      );
     } else if (isDataFrameResult(nodeData.testResult)) {
       return nodeData.testResult.data?.length || 0;
     }
@@ -220,7 +240,9 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
             {sheets.map((sheet, index) => (
               <Card key={index} size="1">
                 <Flex direction="column" gap="1">
-                  <Text size="1" weight="bold">{sheet.sheet_name}</Text>
+                  <Text size="1" weight="bold">
+                    {sheet.sheet_name}
+                  </Text>
                   <Text size="1" color="gray">
                     {sheet.columns.length} 列 × {sheet.preview_data.length} 行
                   </Text>
@@ -242,7 +264,8 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
       return (
         <Flex direction="column" gap="1">
           <Text size="1" color="gray">
-            {resultData.columns?.length || 0} 列 × {resultData.data?.length || 0} 行
+            {resultData.columns?.length || 0} 列 ×{" "}
+            {resultData.data?.length || 0} 行
           </Text>
           {resultData.columns && resultData.columns.length > 0 && (
             <Text size="1" style={{ fontFamily: "monospace" }}>
@@ -311,7 +334,9 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
         {/* 数据预览 */}
         {nodeData.testResult && (
           <Flex direction="column" gap="2">
-            <Text size="1" weight="medium">数据预览</Text>
+            <Text size="1" weight="medium">
+              数据预览
+            </Text>
             {renderDataPreview()}
           </Flex>
         )}

@@ -14,7 +14,6 @@ import { FilePlusIcon, PlayIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Button, Dialog, Flex, Select, Text } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "react-toastify";
 import ReactFlow, {
   Background,
   Connection,
@@ -35,6 +34,7 @@ import ReactFlow, {
 import { v4 as uuidv4 } from "uuid";
 import nodeTypes from "./nodes/NodeFactory";
 import { useExecutePipelineMutation } from "@/hooks/workspaceQueries";
+import useToast from "@/hooks/useToast";
 
 function isNodePositionChange(
   change: NodeChange,
@@ -134,6 +134,7 @@ interface FlowEditorProps {
 }
 
 export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
+  const toast = useToast();
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
   const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
   const onConnect = useWorkspaceStore((state) => state.onConnect);

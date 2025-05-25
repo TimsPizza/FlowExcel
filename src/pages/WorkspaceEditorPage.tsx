@@ -8,9 +8,14 @@ import {
   workspaceSelector,
 } from "@/stores/useWorkspaceStore";
 import { Flex } from "@radix-ui/themes";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "react-query";
-import { ErrorResponse, Outlet, useNavigate, useParams } from "react-router-dom";
+import {
+  ErrorResponse,
+  Outlet,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { toast } from "react-toastify";
 import { useShallow } from "zustand/shallow";
 
@@ -28,6 +33,13 @@ function isErrorResponse(obj: unknown): obj is ErrorResponse {
 export default function WorkspaceEditorPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
+  const hasLoadedRef = useRef(true);
+  
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      hasLoadedRef.current = false;
+    }
+  }, [workspaceId]);
 
   const {
     workspace,
@@ -60,6 +72,16 @@ export default function WorkspaceEditorPage() {
       navigate("/");
     }
   }, [wsError, navigate]);
+
+  useEffect(() => {
+    if (!isWsLoading && !wsError) {
+      hasLoadedRef.current = true;
+    }
+    // only auto navigate to flow-editor after first loading
+    if (!hasLoadedRef.current) {
+      navigate("flow-editor");
+    }
+  }, [isWsLoading, wsError]);
 
   // 组件卸载时清理workspace状态
   useEffect(() => {

@@ -1,6 +1,6 @@
 import json
 from typing import Dict, Any
-from .models import Pipeline, ExecutionResults
+from .models import Pipeline, ExecutionResults, PipelineResult
 from .processor import PipelineExecutor
 
 def execute_pipeline(pipeline_json: str) -> Dict[str, Any]:
@@ -16,7 +16,23 @@ def execute_pipeline(pipeline_json: str) -> Dict[str, Any]:
     results = executor.execute(pipeline_data)
     
     # Convert results to dict format for JSON serialization
-    return {
+    # return {
+    #     "success": results.success,
+    #     "error": results.error,
+    #     "results": {
+    #         node_id: [
+    #             {
+    #                 "node_id": result.node_id,
+    #                 "index_value": result.index_value,
+    #                 "result_data": result.result_data,
+    #                 "error": result.error
+    #             }
+    #             for result in node_results
+    #         ]
+    #         for node_id, node_results in results.results.items()
+    #     }
+    # }
+    final_results = {
         "success": results.success,
         "error": results.error,
         "results": {
@@ -32,6 +48,12 @@ def execute_pipeline(pipeline_json: str) -> Dict[str, Any]:
             for node_id, node_results in results.results.items()
         }
     }
+    return PipelineResult(
+        success=final_results["success"],
+        error=final_results["error"],
+        results=final_results["results"]
+    )
+    
 
 def test_pipeline_node(pipeline_json: str, node_id: str) -> Dict[str, Any]:
     """

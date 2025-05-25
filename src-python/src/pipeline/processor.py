@@ -378,7 +378,7 @@ class PipelineExecutor:
             index_sources = [node for node in node_map.values() if node.type == NodeType.INDEX_SOURCE]
             
             if not index_sources:
-                raise ValueError("No index source nodes found")
+                raise ValueError("未找到任何索引源节点")
             
             results = ExecutionResults()
             
@@ -398,8 +398,8 @@ class PipelineExecutor:
             self._merge_aggregator_results(results, node_map)
             
             # 如果没有指定目标节点或目标节点不是输出节点，处理所有输出节点
-            if not target_node_id or target_node_id not in [n.id for n in output_nodes]:
-                self._process_output_nodes(graph, node_map, files, results, output_nodes)
+            # if not target_node_id or target_node_id not in [n.id for n in output_nodes]:
+            #     self._process_output_nodes(graph, node_map, files, results, output_nodes)
             
             return results
             
@@ -434,8 +434,9 @@ class PipelineExecutor:
                 for node_id, node_results in index_results.items():
                     if node_id not in temp_results.results:
                         temp_results.results[node_id] = []
+                    # print(f"node_results: {node_results}")
                     temp_results.results[node_id].extend(node_results)
-            
+            # return temp_results
             # 合并聚合节点结果
             self._merge_aggregator_results(temp_results, node_map)
             

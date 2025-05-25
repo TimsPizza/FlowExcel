@@ -703,6 +703,10 @@ video {
   max-height: 3rem;
 }
 
+.max-h-48 {
+  max-height: 12rem;
+}
+
 .max-h-6 {
   max-height: 1.5rem;
 }
@@ -713,10 +717,6 @@ video {
 
 .max-h-72 {
   max-height: 18rem;
-}
-
-.max-h-48 {
-  max-height: 12rem;
 }
 
 .min-h-48 {

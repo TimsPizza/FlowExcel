@@ -15,8 +15,8 @@ import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
 import { useNodeColumns } from "@/hooks/useNodeColumns";
 import { transformSingleNodeResults, PipelineNodeResult, TransformedNodeResult } from "@/lib/dataTransforms";
-import { toast } from "react-toastify";
 import { SimpleDataframe } from "@/types";
+import useToast from "@/hooks/useToast";
 
 const AGGREGATION_METHODS = [
   { value: "sum", label: "求和" },
@@ -27,6 +27,7 @@ const AGGREGATION_METHODS = [
 ];
 
 export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const toast = useToast();
   const nodeId = useNodeId();
   const nodeData = data as AggregatorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
