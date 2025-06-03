@@ -52,8 +52,11 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
           <Table.Header>
             <Table.Row>
               {columns?.map((column, index) => (
-                <Table.ColumnHeaderCell key={index} className="border-r">
-                  <div className="max-w-18 overflow-hidden text-ellipsis whitespace-nowrap">
+                <Table.ColumnHeaderCell
+                  key={index}
+                  className={`${index !== columns.length - 1 ? "border-r" : ""} ${index !== 0 ? "border-l" : ""}`}
+                >
+                  <div className="max-w-20 overflow-hidden text-ellipsis whitespace-nowrap">
                     {column}
                   </div>
                 </Table.ColumnHeaderCell>
@@ -62,10 +65,10 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
           </Table.Header>
           <Table.Body>
             {currentPageData?.map((row, rowIndex) => (
-              <Table.Row key={rowIndex} className="max-h-12">
-                {row?.map((cell, cellIndex) => (
-                  <Table.Cell key={cellIndex}>
-                    <div className="max-w-18 overflow-hidden text-ellipsis whitespace-nowrap">
+              <Table.Row key={rowIndex} className="max-h-16">
+                {row?.map?.((cell, cellIndex) => (
+                  <Table.Cell key={cellIndex} className="max-w-20 border-r">
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
                       {cell}
                     </div>
                   </Table.Cell>

@@ -1,5 +1,5 @@
+import ExcelPreview from "@/components/ExcelPreview";
 import { useGetExcelPreview } from "@/hooks/workspaceQueries";
-import ExcelPreview from "@/routes/ExcelPreview";
 import {
   fileSelector,
   useWorkspaceStore,
@@ -113,7 +113,9 @@ const AddFileModal = () => {
       }}
     >
       <Dialog.Trigger>
-        <Button variant="soft" size="2">添加文件</Button>
+        <Button variant="soft" size="2">
+          添加文件
+        </Button>
       </Dialog.Trigger>
       <Dialog.Content>
         <Dialog.Title>

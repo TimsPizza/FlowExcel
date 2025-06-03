@@ -10,7 +10,12 @@ import {
   SheetSelectorNodeDataContext,
 } from "@/types/nodes";
 import { SimpleDataframe } from "@/types";
-import { FilePlusIcon, PlayIcon, PlusIcon } from "@radix-ui/react-icons";
+import {
+  FilePlusIcon,
+  PlayIcon,
+  PlusIcon,
+  SizeIcon,
+} from "@radix-ui/react-icons";
 import { Button, Dialog, Flex, Select, Text } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,11 +35,16 @@ import ReactFlow, {
   Panel,
   useEdgesState,
   useNodesState,
+  ReactFlowProvider,
+  useReactFlow,
 } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import nodeTypes from "./nodes/NodeFactory";
 import { useExecutePipelineMutation } from "@/hooks/workspaceQueries";
 import useToast from "@/hooks/useToast";
+import { isValidConnection, validateFlow } from "@/lib/flowValidation";
+import { FlowValidationPanel } from "./FlowValidationPanel";
+import { getAutoLayoutedElements } from "@/lib/flowLayout";
 
 function isNodePositionChange(
   change: NodeChange,
@@ -108,7 +118,7 @@ const getInitialNodeData = (type: NodeType, nodeId: string): FlowNodeData => {
       return {
         id: nodeId,
         nodeType: NodeType.AGGREGATOR,
-        label: "统计",
+        label: "统计/聚合",
         statColumn: undefined,
         method: "sum",
         outputAs: "",
@@ -133,7 +143,8 @@ interface FlowEditorProps {
   workspaceId?: string;
 }
 
-export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
+// 内部FlowEditor组件，在ReactFlowProvider内部
+const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const toast = useToast();
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
   const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
@@ -146,9 +157,10 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     (state) => state.currentWorkspace?.flow_edges,
   );
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  
+
   const executePipelineMutation = useExecutePipelineMutation();
-  
+  const { fitView } = useReactFlow();
+
   const [nodes, setNodes, rfOnNodesChange] = useNodesState<FlowNodeData>([]);
   const [edges, setEdges, rfOnEdgesChange] = useEdgesState([]);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>(
@@ -156,6 +168,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   );
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
+  const [layoutDirection, setLayoutDirection] = useState<"TB" | "LR">("LR");
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const activelyDraggedNodeId = useRef<string | null>(null);
 
@@ -205,6 +218,42 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     addFlowNode(newNode);
   }, [selectedNodeType, addFlowNode]);
 
+  // 自动排版功能
+  const handleAutoLayout = useCallback(
+    (direction: "TB" | "LR" = layoutDirection) => {
+      if (nodes.length === 0) {
+        toast.warning("没有节点需要排版");
+        return;
+      }
+
+      try {
+        // 使用Dagre算法进行自动排版
+        const layoutedNodes = getAutoLayoutedElements(nodes, edges, direction);
+
+        // 更新节点位置
+        setNodes(layoutedNodes);
+
+        // 同步更新到工作区store
+        layoutedNodes.forEach((node) => {
+          addFlowNode(node);
+        });
+
+        // 调整视图以适应新的布局
+        setTimeout(() => {
+          fitView({ duration: 500 });
+        }, 100);
+
+        toast.success(
+          `已使用${direction === "TB" ? "垂直" : "水平"}布局重新排版`,
+        );
+      } catch (error) {
+        console.error("自动排版失败:", error);
+        toast.error("自动排版失败，请检查节点连接是否正确");
+      }
+    },
+    [nodes, edges, layoutDirection, setNodes, addFlowNode, fitView, toast],
+  );
+
   // 处理节点变更并同步到zustand store
   const handleOnNodesChange: OnNodesChange = useCallback(
     (changes) => {
@@ -245,9 +294,6 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     [rfOnNodesChange, nodes, addFlowNode],
   );
 
-  // Update ReactFlow component to use our handler
-  // const onNodesChange = handleOnNodesChange;
-
   // Update handleOnEdgesChange to better handle edge changes
   const handleOnEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
@@ -264,8 +310,6 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           }
         }
       });
-      // Process changes if needed - can sync to backend/storage if required
-      // For now, we're just letting useEffect handle syncing edges to the workspace
     },
     [rfOnEdgesChange, edges, removeFlowEdge],
   );
@@ -274,9 +318,17 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const handleOnConnect: OnConnect = useCallback(
     (connection: Connection) => {
       console.log("FlowEditor handleOnConnect", connection);
+
+      // 验证连接是否有效
+      const validation = isValidConnection(connection, nodes, edges);
+      if (!validation.isValid) {
+        toast.error(`连接失败: ${validation.reason}`);
+        return;
+      }
+
       onConnect(connection);
     },
-    [onConnect],
+    [onConnect, nodes, edges, toast],
   );
 
   // 保存为模板
@@ -301,12 +353,29 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       console.error("保存模板失败:", error);
       toast.error("保存模板失败");
     }
-  }, [templateName, nodes, edges, workspaceId]);
+  }, [templateName, nodes, edges, workspaceId, toast]);
 
-  // 执行流程
-  const runFlow = useCallback(async () => {
-    if (nodes.length === 0) {
-      toast.error("流程为空，请先添加节点");
+  // 执行流程前验证
+  const runFlow = useCallback(() => {
+    // 先验证流程
+    const flowValidation = validateFlow(nodes, edges);
+
+    if (!flowValidation.isValid) {
+      toast.error(`流程验证失败: ${flowValidation.errors.join(", ")}`);
+      return;
+    }
+
+    // 显示警告（如果有）
+    if (flowValidation.warnings.length > 0) {
+      toast.warning(`流程警告: ${flowValidation.warnings.join(", ")}`);
+    }
+
+    const outputNodes = nodes.filter(
+      (node) => node.data.nodeType === NodeType.OUTPUT,
+    );
+
+    if (outputNodes.length === 0) {
+      toast.error("流程中必须包含至少一个输出节点");
       return;
     }
 
@@ -315,13 +384,29 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       return;
     }
 
+    // 使用第一个输出节点作为目标节点
+    const targetNodeId = outputNodes[0].id;
+
     executePipelineMutation.mutate(
-      currentWorkspace.id,
+      {
+        workspaceId: currentWorkspace.id,
+        targetNodeId: targetNodeId,
+        executionMode: "production",
+      },
       {
         onSuccess: (result) => {
+          // Handle the result based on the new response structure
+          // result is already the inner execution result data
+          const pipelineResult = result;
+
+          if (!pipelineResult.success) {
+            toast.error(`流程执行失败: ${pipelineResult.error || "未知错误"}`);
+            return;
+          }
+
           // 更新节点的结果数据
           const updatedNodes = nodes.map((node) => {
-            const nodeResults = result.results[node.id];
+            const nodeResults = pipelineResult.results[node.id];
             if (nodeResults && nodeResults.length > 0) {
               // 根据节点类型处理结果数据
               switch (node.data.nodeType) {
@@ -330,22 +415,37 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   const nodeResult = nodeResults[0]; // 索引源节点只有一个结果
                   if (nodeResult.result_data) {
                     const { columns, data } = nodeResult.result_data;
-                    
+
                     // 将数据转换为前端需要的格式
                     const formattedData = [];
                     if (data && data.length > 0) {
                       // 如果是按列索引，提取唯一值
-                      if ((node.data as IndexSourceNodeDataContext).byColumn && columns.length > 0) {
+                      if (
+                        (node.data as IndexSourceNodeDataContext).byColumn &&
+                        columns.length > 0
+                      ) {
                         const columnName = columns[0];
-                        const uniqueValues = [...new Set(data.map((row: Record<string, any>) => row[columnName]))];
+                        const uniqueValues = [
+                          ...new Set(
+                            data.map(
+                              (row: Record<string, any>) => row[columnName],
+                            ),
+                          ),
+                        ];
                         formattedData.push(uniqueValues);
-                      } 
+                      }
                       // 如果是按工作表名索引
-                      else if ((node.data as IndexSourceNodeDataContext).bySheetName) {
-                        formattedData.push(data.map((row: Record<string, any>) => Object.values(row)[0]));
+                      else if (
+                        (node.data as IndexSourceNodeDataContext).bySheetName
+                      ) {
+                        formattedData.push(
+                          data.map(
+                            (row: Record<string, any>) => Object.values(row)[0],
+                          ),
+                        );
                       }
                     }
-                    
+
                     return {
                       ...node,
                       data: {
@@ -364,7 +464,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   // 聚合节点的结果是多个索引值的聚合结果
                   const formattedData: any[][] = [];
                   let columns: string[] = ["索引值", "聚合结果"];
-                  
+
                   nodeResults.forEach((nodeResult: any) => {
                     if (nodeResult.result_data && nodeResult.result_data.data) {
                       const resultData = nodeResult.result_data.data;
@@ -378,14 +478,19 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       }
                     }
                   });
-                  
+
                   // 使用实际的输出列名
-                  if (nodeResults.length > 0 && nodeResults[0].result_data?.data?.length > 0) {
+                  if (
+                    nodeResults.length > 0 &&
+                    nodeResults[0].result_data?.data?.length > 0
+                  ) {
                     const firstRow = nodeResults[0].result_data.data[0];
-                    const outputColumnName = firstRow.output_column_name || `${(node.data as AggregatorNodeDataContext).method}_${(node.data as AggregatorNodeDataContext).statColumn}`;
+                    const outputColumnName =
+                      firstRow.output_column_name ||
+                      `${(node.data as AggregatorNodeDataContext).method}_${(node.data as AggregatorNodeDataContext).statColumn}`;
                     columns = ["索引值", outputColumnName];
                   }
-                  
+
                   return {
                     ...node,
                     data: {
@@ -403,22 +508,27 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   // 合并所有索引值的结果用于预览
                   const combinedData: any[][] = [];
                   let columns: string[] = [];
-                  
+
                   nodeResults.forEach((nodeResult: any) => {
                     if (nodeResult.result_data && nodeResult.result_data.data) {
                       // 获取列名（只需要第一次）
-                      if (columns.length === 0 && nodeResult.result_data.columns) {
+                      if (
+                        columns.length === 0 &&
+                        nodeResult.result_data.columns
+                      ) {
                         columns = nodeResult.result_data.columns;
                       }
-                      
+
                       // 转换数据为二维数组格式
-                      nodeResult.result_data.data.forEach((row: Record<string, any>) => {
-                        const rowArray = columns.map(col => row[col]);
-                        combinedData.push(rowArray);
-                      });
+                      nodeResult.result_data.data.forEach(
+                        (row: Record<string, any>) => {
+                          const rowArray = columns.map((col) => row[col]);
+                          combinedData.push(rowArray);
+                        },
+                      );
                     }
                   });
-                  
+
                   return {
                     ...node,
                     data: {
@@ -433,7 +543,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                 }
               }
             }
-            
+
             // 如果没有结果或处理失败，返回错误状态
             return {
               ...node,
@@ -446,18 +556,28 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           });
 
           setNodes(updatedNodes);
-          
+
           // 同步更新到工作区store
-          updatedNodes.forEach(node => {
+          updatedNodes.forEach((node) => {
             updateNodeData(node.id, node.data);
           });
+
+          toast.success("流程执行完成");
         },
         onError: (error) => {
           toast.error(`流程执行失败: ${error.message}`);
         },
-      }
+      },
     );
-  }, [nodes, currentWorkspace, executePipelineMutation, setNodes, updateNodeData]);
+  }, [
+    nodes,
+    edges,
+    currentWorkspace,
+    executePipelineMutation,
+    setNodes,
+    updateNodeData,
+    toast,
+  ]);
 
   return (
     <div style={{ width: "100%", height: "100%" }} ref={reactFlowWrapper}>
@@ -470,7 +590,6 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         nodeTypes={nodeTypes}
         fitView
         nodeDragThreshold={10}
-        // elementsSelectable={false}
         onNodeDragStart={(_event, node) => {
           activelyDraggedNodeId.current = node.id;
         }}
@@ -479,7 +598,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         }}
       >
         <Panel position="top-left">
-          <Flex gap="2" align="center">
+          <Flex gap="2" align="center" wrap="wrap">
             <Text weight="bold">添加节点:</Text>
             <Select.Root
               value={selectedNodeType}
@@ -499,8 +618,42 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
             <Button onClick={handleAddNode}>
               <PlusIcon /> 添加
             </Button>
-            <Button color="green" disabled={executePipelineMutation.isLoading} onClick={runFlow}>
-              <PlayIcon /> {executePipelineMutation.isLoading ? "执行中..." : "执行流程"}
+
+            {/* 自动排版控件 */}
+            <Flex gap="1" align="center">
+              <Text size="2" weight="medium">
+                排版:
+              </Text>
+              <Select.Root
+                value={layoutDirection}
+                onValueChange={(value) =>
+                  setLayoutDirection(value as "TB" | "LR")
+                }
+              >
+                <Select.Trigger style={{ minWidth: "80px" }} />
+                <Select.Content>
+                  <Select.Item value="LR">水平</Select.Item>
+                  <Select.Item value="TB">垂直</Select.Item>
+                </Select.Content>
+              </Select.Root>
+              <Button
+                variant="soft"
+                color="blue"
+                onClick={() => handleAutoLayout()}
+                disabled={nodes.length === 0}
+                title="根据节点连接关系自动排版"
+              >
+                <SizeIcon /> 自动排版
+              </Button>
+            </Flex>
+
+            <Button
+              color="green"
+              disabled={executePipelineMutation.isLoading}
+              onClick={runFlow}
+            >
+              <PlayIcon />{" "}
+              {executePipelineMutation.isLoading ? "执行中..." : "执行流程"}
             </Button>
             <Button
               variant="soft"
@@ -511,8 +664,10 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           </Flex>
         </Panel>
 
-        {/* <Controls /> */}
-        {/* <MiniMap /> */}
+        <Panel position="top-right">
+          <FlowValidationPanel />
+        </Panel>
+
         <Background />
       </ReactFlow>
 
@@ -556,5 +711,14 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         </Dialog.Content>
       </Dialog.Root>
     </div>
+  );
+};
+
+// 外部导出的组件，用ReactFlowProvider包装
+export const FlowEditor: React.FC<FlowEditorProps> = (props) => {
+  return (
+    <ReactFlowProvider>
+      <FlowEditorInner {...props} />
+    </ReactFlowProvider>
   );
 };

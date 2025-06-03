@@ -17,10 +17,12 @@ export interface PreviewData {
   data: (string | number)[][];
 }
 
-export interface ApiResponse<T> {
-  status: string;
-  message?: string;
+// Updated to match backend APIResponse structure
+export interface ApiResponse<T = any> {
+  success: boolean;
   data?: T;
+  error?: string;
+  message?: string;
 }
 
 /* Zustand Store Types */
@@ -70,10 +72,10 @@ export interface TryReadHeaderRowResponse {
   column_names: string[];
 }
 
-interface SheetInfo {
+export interface SheetInfo {
   sheet_name: string;
   columns: string[];
-  preview_data: Array<string | null>[];
+  data: Array<Array<string | number | null>>;
 }
 
 export interface ErrorResponse {
@@ -105,7 +107,11 @@ export interface WorkspaceState {
 
   // Flow Actions
   addFlowNode: (node: Node<FlowNodeData>) => void;
-  updateNodeData: (nodeId: string, data: Partial<FlowNodeData>, markDirty?: boolean) => void;
+  updateNodeData: (
+    nodeId: string,
+    data: Partial<FlowNodeData>,
+    markDirty?: boolean,
+  ) => void;
   removeFlowNode: (nodeId: string) => void;
 
   removeFlowEdge: (edgeId: string) => void;
@@ -118,3 +124,117 @@ export interface WorkspaceState {
   resetDirty: () => void; // 新增：重置dirty状态
   markAsDirty: () => void; // 新增：标记为已修改
 }
+
+// --- Data type from Python pipeline ---
+// Updated to match backend's new response structure
+
+// Backend PipelineNodeResult structure
+export interface PipelineNodeResult {
+  node_id: string;
+  node_type: string;
+  success: boolean;
+  execution_time_ms: number;
+  sheets?: SheetInfo[];
+  result_data?: {
+    columns: string[];
+    data: Array<string | number | null>[];
+    total_rows: number;
+  };
+  error?: string;
+  message?: string;
+}
+
+// Backend PipelineExecutionResult structure
+export interface PipelineExecutionResult {
+  result: {
+    success: boolean;
+    error?: string;
+    results: Record<string, PipelineNodeResult[]>;
+    execution_time?: number;
+  };
+  execution_time?: number;
+}
+
+// Node test response structure
+export interface NodeTestResult {
+  success: boolean;
+  node_id: string;
+  node_type: string;
+  execution_time_ms: number;
+  sheets?: SheetInfo[];
+  result_data?: {
+    columns: string[];
+    data: Array<string | number | null>[];
+    total_rows: number;
+  };
+  error?: string;
+  message?: string;
+}
+
+// Legacy interface for compatibility
+export interface PipelineResult {
+  success: boolean;
+  error: string | null;
+  results: Record<string, PipelineNodeResult[]>;
+}
+
+// New: Node preview result types for the enhanced preview API
+export interface NodePreviewResult {
+  success: boolean;
+  node_id: string;
+  node_type: string;
+  execution_time_ms?: number;
+  error?: string;
+}
+
+export interface IndexSourcePreviewResult extends NodePreviewResult {
+  index_values: string[];
+  source_column?: string;
+  preview_data: {
+    sheet_name: string;
+    columns: string[];
+    data: string[][];
+    metadata: {
+      total_count: number;
+      preview_count: number;
+    };
+  };
+}
+
+export interface DataFramePreviewResult extends NodePreviewResult {
+  dataframe_previews: Array<{
+    sheet_name: string;
+    columns: string[];
+    data: Array<Array<string | number | null>>;
+    metadata: {
+      total_rows: number;
+      preview_rows: number;
+      index_value: string;
+      [key: string]: any;
+    };
+  }>;
+}
+
+export interface AggregationPreviewResult extends NodePreviewResult {
+  aggregation_results: Array<{
+    index_value: string;
+    column_name: string;
+    operation: string;
+    result_value: any;
+  }>;
+  preview_data: {
+    sheet_name: string;
+    columns: string[];
+    data: Array<Array<string | number | null>>;
+    metadata: {
+      total_count: number;
+    };
+  };
+}
+
+// Union type for all possible preview results
+export type PreviewNodeResult =
+  | IndexSourcePreviewResult
+  | DataFramePreviewResult
+  | AggregationPreviewResult
+  | NodePreviewResult;

@@ -1,15 +1,22 @@
 import {
   useGetIndexValues,
+  usePreviewNodeMutation,
   useTryReadHeaderRow,
   useTryReadSheetNames,
 } from "@/hooks/workspaceQueries";
+import {
+  convertPreviewToSheets,
+  getPreviewMetadata,
+  isIndexSourcePreview,
+} from "@/lib/utils";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, IndexSourceNodeDataContext } from "@/types/nodes";
-import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
+import { Button, Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 import { BaseNode } from "./BaseNode";
+import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
@@ -20,11 +27,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   );
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
-  const { sheetNamesArr, isSheetNamesLoading, sheetNamesError } =
-    useTryReadSheetNames(
-      files?.find((file) => file.id === nodeData.sourceFileID)?.path || "",
-      nodeData.bySheetName || false,
-    );
+  const previewNodeMutation = usePreviewNodeMutation();
 
   const [indexMode, setIndexMode] = useState<"sheet" | "column">(() => {
     if (nodeData.bySheetName) return "sheet";
@@ -114,49 +117,65 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     });
   };
 
-  const testRun = async () => {
+  const previewNode = async () => {
+    if (!currentWorkspace) {
+      console.error("未找到当前工作区");
+      return;
+    }
+
     if (!nodeData.sourceFileID) {
       updateIndexSourceNodeData(nodeId, { error: "请选择源文件" });
       return;
     }
-    if (indexMode === "sheet") {
-      updateIndexSourceNodeData(
-        nodeId,
-        {
-          testResult: {
-            // columns: ["获取到的sheet名称"],
-            columns: sheetNamesArr?.sheet_names || [],
-          },
-          error: sheetNamesError ? "获取工作表名失败" : undefined,
+
+    previewNodeMutation.mutate(
+      {
+        workspaceId: currentWorkspace.id,
+        nodeId: nodeData.id,
+        testModeMaxRows: 100,
+      },
+      {
+        onSuccess: (result) => {
+          console.log("IndexSource Preview result:", result);
+
+          if (result.success) {
+            if (isIndexSourcePreview(result)) {
+              console.log("Index values:", result.index_values);
+              console.log("Source column:", result.source_column);
+
+              const sheets = convertPreviewToSheets(result);
+              console.log("sheets", sheets);
+
+              updateIndexSourceNodeData(nodeId, {
+                testResult: sheets,
+                error: undefined,
+              });
+            }
+          } else {
+            updateIndexSourceNodeData(nodeId, {
+              error: result.error || "预览失败",
+              testResult: undefined,
+            });
+          }
         },
-        false,
-      );
-    } else {
-      if (!nodeData.sheetName || !nodeData.columnName) {
-        updateIndexSourceNodeData(nodeId, { error: "请选择工作表和索引列" });
-        return;
-      }
-      updateIndexSourceNodeData(
-        nodeId,
-        {
-          testResult: {
-            columns: indexValues?.map((value) => value.column) || [],
-            data: indexValues?.map((value) => value.data) || [],
-          },
-          error: indexValuesError ? "获取索引值失败" : undefined,
+        onError: (error: Error) => {
+          console.error("Preview failed:", error);
+          updateIndexSourceNodeData(nodeId, {
+            error: `预览失败: ${error.message}`,
+            testResult: undefined,
+          });
         },
-        false,
-      );
-    }
+      },
+    );
   };
 
   return (
     <>
-      <BaseNode
+      <EnhancedBaseNode
         data={nodeData}
         isSource={true}
         isTarget={false}
-        onTestRun={testRun}
+        onTestRun={previewNode}
         testable
       >
         <Flex direction="column" gap="3">
@@ -247,7 +266,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   <Select.Trigger placeholder="选择索引列" />
                   <Select.Content>
                     <Select.Group>
-                      {headerRow?.column_names?.map((column) => (
+                      {headerRow?.column_names?.map((column: string) => (
                         <Select.Item value={column} key={column}>
                           {column}
                         </Select.Item>
@@ -278,7 +297,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
             </Text>
           )}
         </Flex>
-      </BaseNode>
+      </EnhancedBaseNode>
     </>
   );
 };

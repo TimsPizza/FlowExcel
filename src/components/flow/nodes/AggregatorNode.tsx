@@ -1,22 +1,29 @@
-import { useCallback, useRef, useState } from "react";
-import { FlowNodeProps, AggregatorNodeDataContext, NodeType } from "@/types/nodes";
-import { BaseNode } from "./BaseNode";
-import {
-  Select,
-  Flex,
-  Text,
-  TextArea,
-  TextField,
-  Badge,
-} from "@radix-ui/themes";
-import { useNodeId } from "reactflow";
-import _ from "lodash";
-import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
 import { useNodeColumns } from "@/hooks/useNodeColumns";
-import { transformSingleNodeResults, PipelineNodeResult, TransformedNodeResult } from "@/lib/dataTransforms";
-import { SimpleDataframe } from "@/types";
 import useToast from "@/hooks/useToast";
+import {
+  usePreviewNodeMutation,
+  useTestPipelineNodeMutation,
+} from "@/hooks/workspaceQueries";
+import {
+  TransformedNodeResult,
+  transformSingleNodeResults,
+} from "@/lib/dataTransforms";
+import {
+  convertPreviewToSheets,
+  getPreviewMetadata,
+  isAggregationPreview,
+} from "@/lib/utils";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { PipelineNodeResult, SimpleDataframe } from "@/types";
+import {
+  AggregatorNodeDataContext,
+  FlowNodeProps,
+  NodeType,
+} from "@/types/nodes";
+import { Badge, Flex, Select, Text, TextField } from "@radix-ui/themes";
+import { useCallback, useState } from "react";
+import { useNodeId } from "reactflow";
+import { EnhancedBaseNode } from "./EnhancedBaseNode";
 
 const AGGREGATION_METHODS = [
   { value: "sum", label: "求和" },
@@ -31,13 +38,22 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId();
   const nodeData = data as AggregatorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+
+  // 使用新的预览API作为主要方法
+  const previewNodeMutation = usePreviewNodeMutation();
+  // 保留旧API作为备选
   const testPipelineNodeMutation = useTestPipelineNodeMutation();
-  
+
   // 保存转换后的结果
-  const [transformedResult, setTransformedResult] = useState<TransformedNodeResult | null>(null);
+  const [transformedResult, setTransformedResult] =
+    useState<TransformedNodeResult | null>(null);
 
   // 使用真实的列数据
-  const { columns: availableColumns, isLoading: isLoadingColumns, error: columnsError } = useNodeColumns();
+  const {
+    columns: availableColumns,
+    isLoading: isLoadingColumns,
+    error: columnsError,
+  } = useNodeColumns();
 
   const updateAggregatorNodeDataInStore = useWorkspaceStore(
     (state) => state.updateNodeData,
@@ -84,7 +100,9 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     });
   };
 
-  const testPipelineRun = async () => {
+  // 新的预览函数，使用新API
+  const previewNode = async () => {
+    console.log("test run aggregator node");
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
       return;
@@ -103,50 +121,47 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
       return;
     }
 
-    testPipelineNodeMutation.mutate(
+    previewNodeMutation.mutate(
       {
         workspaceId: currentWorkspace.id,
         nodeId: nodeData.id,
+        testModeMaxRows: 100,
       },
       {
         onSuccess: (result) => {
-          const nodeResults = result.results[nodeData.id];
-          if (nodeResults && nodeResults.length > 0) {
-            // 使用数据转换函数处理结果
-            const transformed = transformSingleNodeResults(
-              nodeData.id,
-              NodeType.AGGREGATOR,
-              nodeResults as PipelineNodeResult[]
-            );
+          console.log("Preview result:", result);
 
-            setTransformedResult(transformed);
+          if (result.success) {
+            if (isAggregationPreview(result)) {
+              // 新API返回的聚合结果，直接使用预览数据
+              const sheets = convertPreviewToSheets(result);
 
-            if (transformed.error) {
+              console.log("Aggregation results:", result.aggregation_results);
+              console.log("Preview sheets:", sheets);
+
               updateLocalNodeData({
-                error: transformed.error,
-                testResult: undefined,
+                testResult: sheets,
+                error: undefined,
               });
             } else {
-              // 转换为SimpleDataframe格式
-              const simpleDataframe: SimpleDataframe = Array.isArray(transformed.displayData) 
-                ? { columns: [], data: [] }  // 如果是多sheet，转为空dataframe
-                : transformed.displayData || { columns: [], data: [] };
-              
+              // 通用处理，转换为SheetInfo格式
+              const sheets = convertPreviewToSheets(result);
               updateLocalNodeData({
-                testResult: simpleDataframe,
+                testResult: sheets,
                 error: undefined,
               });
             }
           } else {
             updateLocalNodeData({
-              error: "未获取到测试结果",
+              error: result.error || "预览失败",
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
+          console.error("Preview failed:", error);
           updateLocalNodeData({
-            error: `测试运行失败: ${error.message}`,
+            error: `预览失败: ${error.message}`,
             testResult: undefined,
           });
         },
@@ -155,9 +170,9 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <BaseNode
+    <EnhancedBaseNode
       data={nodeData}
-      onTestRun={testPipelineRun}
+      onTestRun={previewNode}
       isSource={true}
       isTarget={true}
       testable={true}
@@ -187,7 +202,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
             >
               <Select.Trigger />
               <Select.Content>
-                {availableColumns.map((column) => (
+                {availableColumns.map((column: string) => (
                   <Select.Item key={column} value={column}>
                     {column}
                   </Select.Item>
@@ -238,11 +253,15 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
           )}
           {nodeData.method && (
             <Badge color="blue" size="1">
-              方法: {AGGREGATION_METHODS.find(m => m.value === nodeData.method)?.label}
+              方法:{" "}
+              {
+                AGGREGATION_METHODS.find((m) => m.value === nodeData.method)
+                  ?.label
+              }
             </Badge>
           )}
         </Flex>
       </Flex>
-    </BaseNode>
+    </EnhancedBaseNode>
   );
 };

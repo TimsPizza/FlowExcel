@@ -27,3 +27,4 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 uuid = { version = "1.4", features = ["v4", "serde"] }
+tokio = { version = "1.0", features = ["sync"] }

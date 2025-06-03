@@ -1,22 +1,6 @@
-import { SimpleDataframe, SheetInfo } from "@/types";
+import { SimpleDataframe, SheetInfo, PipelineNodeResult } from "@/types";
 import { NodeType } from "@/types/nodes";
 
-export interface PipelineNodeResult {
-  node_id: string;
-  index_value?: string;
-  result_data?: {
-    columns: string[];
-    data: any[][];
-    total_rows: number;
-    format?: "single_sheet" | "multi_sheet";
-    sheets?: Record<string, {
-      columns: string[];
-      data: any[][];
-      total_rows: number;
-    }>;
-  };
-  error?: string;
-}
 
 export interface TransformedNodeResult {
   nodeId: string;
@@ -31,7 +15,7 @@ export interface TransformedNodeResult {
  */
 export function transformPipelineResults(
   results: Record<string, PipelineNodeResult[]>,
-  nodeType: NodeType
+  nodeType: NodeType,
 ): TransformedNodeResult[] {
   return Object.entries(results).map(([nodeId, nodeResults]) => {
     return transformSingleNodeResults(nodeId, nodeType, nodeResults);
@@ -44,17 +28,19 @@ export function transformPipelineResults(
 export function transformSingleNodeResults(
   nodeId: string,
   nodeType: NodeType,
-  nodeResults: PipelineNodeResult[]
+  nodeResults: PipelineNodeResult[],
 ): TransformedNodeResult {
   // 检查是否有错误
-  const errors = nodeResults.filter(result => result.error).map(result => result.error);
+  const errors = nodeResults
+    .filter((result) => result.error)
+    .map((result) => result.error);
   if (errors.length > 0) {
     return {
       nodeId,
       nodeType,
       displayData: null,
       error: errors.join("; "),
-      rawData: nodeResults
+      rawData: nodeResults,
     };
   }
 
@@ -62,20 +48,20 @@ export function transformSingleNodeResults(
   switch (nodeType) {
     case NodeType.INDEX_SOURCE:
       return transformIndexSourceResults(nodeId, nodeType, nodeResults);
-    
+
     case NodeType.SHEET_SELECTOR:
       return transformSheetSelectorResults(nodeId, nodeType, nodeResults);
-    
+
     case NodeType.ROW_FILTER:
     case NodeType.ROW_LOOKUP:
       return transformDataFrameResults(nodeId, nodeType, nodeResults);
-    
+
     case NodeType.AGGREGATOR:
       return transformAggregatorResults(nodeId, nodeType, nodeResults);
-    
+
     case NodeType.OUTPUT:
       return transformOutputResults(nodeId, nodeType, nodeResults);
-    
+
     default:
       return transformDataFrameResults(nodeId, nodeType, nodeResults);
   }
@@ -87,14 +73,14 @@ export function transformSingleNodeResults(
 function transformIndexSourceResults(
   nodeId: string,
   nodeType: NodeType,
-  nodeResults: PipelineNodeResult[]
+  nodeResults: PipelineNodeResult[],
 ): TransformedNodeResult {
   if (nodeResults.length === 0 || !nodeResults[0].result_data) {
     return {
       nodeId,
       nodeType,
       displayData: { columns: [], data: [] },
-      rawData: nodeResults
+      rawData: nodeResults,
     };
   }
 
@@ -104,9 +90,9 @@ function transformIndexSourceResults(
     nodeType,
     displayData: {
       columns: result.columns,
-      data: result.data
+      data: result.data,
     },
-    rawData: nodeResults
+    rawData: nodeResults,
   };
 }
 
@@ -116,21 +102,21 @@ function transformIndexSourceResults(
 function transformSheetSelectorResults(
   nodeId: string,
   nodeType: NodeType,
-  nodeResults: PipelineNodeResult[]
+  nodeResults: PipelineNodeResult[],
 ): TransformedNodeResult {
   const sheets: SheetInfo[] = nodeResults.map((result, index) => {
     if (!result.result_data) {
       return {
-        sheet_name: result.index_value || `Sheet ${index + 1}`,
+        sheet_name: `Sheet ${index + 1}`,
         columns: [],
-        preview_data: []
+        data: [],
       };
     }
 
     return {
-      sheet_name: result.index_value || `Sheet ${index + 1}`,
+      sheet_name: `Sheet ${index + 1}`,
       columns: result.result_data.columns,
-      preview_data: result.result_data.data.slice(0, 10) // 限制预览行数
+      data: result.result_data.data.slice(0, 10), // 限制预览行数
     };
   });
 
@@ -138,7 +124,7 @@ function transformSheetSelectorResults(
     nodeId,
     nodeType,
     displayData: sheets,
-    rawData: nodeResults
+    rawData: nodeResults,
   };
 }
 
@@ -148,7 +134,7 @@ function transformSheetSelectorResults(
 function transformDataFrameResults(
   nodeId: string,
   nodeType: NodeType,
-  nodeResults: PipelineNodeResult[]
+  nodeResults: PipelineNodeResult[],
 ): TransformedNodeResult {
   // 合并所有结果到一个dataframe中
   if (nodeResults.length === 0) {
@@ -156,14 +142,14 @@ function transformDataFrameResults(
       nodeId,
       nodeType,
       displayData: { columns: [], data: [] },
-      rawData: nodeResults
+      rawData: nodeResults,
     };
   }
 
   let allColumns: string[] = [];
   let allData: any[][] = [];
 
-  nodeResults.forEach(result => {
+  nodeResults.forEach((result) => {
     if (result.result_data) {
       if (allColumns.length === 0) {
         allColumns = result.result_data.columns;
@@ -177,9 +163,9 @@ function transformDataFrameResults(
     nodeType,
     displayData: {
       columns: allColumns,
-      data: allData
+      data: allData,
     },
-    rawData: nodeResults
+    rawData: nodeResults,
   };
 }
 
@@ -189,14 +175,14 @@ function transformDataFrameResults(
 function transformAggregatorResults(
   nodeId: string,
   nodeType: NodeType,
-  nodeResults: PipelineNodeResult[]
+  nodeResults: PipelineNodeResult[],
 ): TransformedNodeResult {
   if (nodeResults.length === 0 || !nodeResults[0].result_data) {
     return {
       nodeId,
       nodeType,
       displayData: { columns: [], data: [] },
-      rawData: nodeResults
+      rawData: nodeResults,
     };
   }
 
@@ -207,9 +193,9 @@ function transformAggregatorResults(
     nodeType,
     displayData: {
       columns: result.columns,
-      data: result.data
+      data: result.data,
     },
-    rawData: nodeResults
+    rawData: nodeResults,
   };
 }
 
@@ -219,7 +205,7 @@ function transformAggregatorResults(
 export function transformOutputResults(
   nodeId: string,
   nodeType: NodeType,
-  results: PipelineNodeResult[]
+  results: PipelineNodeResult[],
 ): TransformedNodeResult {
   if (!results || results.length === 0) {
     return {
@@ -227,20 +213,20 @@ export function transformOutputResults(
       nodeType,
       displayData: { columns: [], data: [] },
       error: "没有结果数据",
-      rawData: results
+      rawData: results,
     };
   }
 
   // 输出节点应该只有一个结果（合并后的结果）
   const result = results[0];
-  
+
   if (result.error) {
     return {
       nodeId,
       nodeType,
       displayData: { columns: [], data: [] },
       error: result.error,
-      rawData: results
+      rawData: results,
     };
   }
 
@@ -250,57 +236,51 @@ export function transformOutputResults(
       nodeType,
       displayData: { columns: [], data: [] },
       error: "输出数据格式无效",
-      rawData: results
+      rawData: results,
     };
   }
 
-  // 检查是否为多sheet格式
-  if (result.result_data.format === "multi_sheet" && result.result_data.sheets) {
-    // 多sheet格式：转换为SheetInfo[]格式
-    const sheets: SheetInfo[] = Object.entries(result.result_data.sheets).map(([sheetName, sheetData]: [string, any]) => ({
-      sheet_name: sheetName,
-      columns: sheetData.columns || [],
-      preview_data: sheetData.data || []
-    }));
-
-    return {
-      nodeId,
-      nodeType,
-      displayData: sheets,
-      rawData: results
-    };
-  } else if (result.result_data.format === "single_sheet" || (result.result_data.columns && result.result_data.data)) {
-    // 单sheet格式：返回SimpleDataframe格式
-    return {
-      nodeId,
-      nodeType,
-      displayData: {
-        columns: result.result_data.columns || [],
-        data: result.result_data.data || [],
-      },
-      rawData: results
-    };
-  } else {
-    return {
-      nodeId,
-      nodeType,
-      displayData: { columns: [], data: [] },
-      error: "不支持的输出数据格式",
-      rawData: results
-    };
-  }
+  // 对于输出节点，直接返回单sheet格式
+  return {
+    nodeId,
+    nodeType,
+    displayData: {
+      columns: result.result_data.columns || [],
+      data: result.result_data.data || [],
+    },
+    rawData: results,
+  };
 }
 
 /**
  * 检查结果是否为多Sheet格式
  */
-export function isMultiSheetResult(data: SimpleDataframe | SheetInfo[] | null): data is SheetInfo[] {
-  return Array.isArray(data) && data.length > 0 && 'sheet_name' in data[0];
+export function isMultiSheetResult(
+  data: SimpleDataframe | SheetInfo[] | null,
+): data is SheetInfo[] {
+  return Array.isArray(data) && data.length > 0 && "sheet_name" in data[0];
 }
 
 /**
  * 检查结果是否为单个DataFrame格式
  */
-export function isDataFrameResult(data: SimpleDataframe | SheetInfo[] | null): data is SimpleDataframe {
-  return data !== null && !Array.isArray(data) && 'columns' in data;
-} 
+export function isDataFrameResult(
+  data: SimpleDataframe | SheetInfo[] | null,
+): data is SimpleDataframe {
+  return data !== null && !Array.isArray(data) && "columns" in data;
+}
+
+export function dataframeToSheetInfo(data: SimpleDataframe): SheetInfo {
+  if (!data.columns || !data.data) {
+    return {
+      sheet_name: "Sheet1",
+      columns: [],
+      data: [],
+    };
+  }
+  return {
+    sheet_name: "Sheet1",
+    columns: data.columns || [],
+    data: data.data || [],
+  };
+}

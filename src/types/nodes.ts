@@ -15,7 +15,7 @@ export interface CustomNodeBaseData {
   id: string;
   label: string;
   nodeType: NodeType;
-  testResult?: SimpleDataframe | SheetInfo[]; // temporary for ui only, will not be saved to json
+  testResult?: SheetInfo[]; // temporary for ui only, will not be saved to json
   error?: string;
 }
 

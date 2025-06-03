@@ -1,24 +1,23 @@
 import useToast from "@/hooks/useToast";
+import { apiClient } from "@/lib/apiClient";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import {
-  ApiResponse,
   FilePreviewResponse,
   IndexValues,
-  TryReadHeaderRowResponse,
+  SheetInfo,
   TryReadSheetNamesResponse,
-  WorkspaceConfig,
+  WorkspaceConfig
 } from "@/types";
 import {
+  AggregatorNodeDataContext,
   FlowNodeData,
-  NodeType,
   IndexSourceNodeDataContext,
-  SheetSelectorNodeDataContext,
+  NodeType,
+  OutputNodeDataContext,
   RowFilterNodeDataContext,
   RowLookupNodeDataContext,
-  AggregatorNodeDataContext,
-  OutputNodeDataContext,
+  SheetSelectorNodeDataContext,
 } from "@/types/nodes";
-import { invoke } from "@tauri-apps/api/core";
 import { useMutation, useQuery, UseQueryResult } from "react-query";
 import { Node as ReactFlowNode } from "reactflow";
 
@@ -26,13 +25,8 @@ import { Node as ReactFlowNode } from "reactflow";
 
 async function fetchWorkspaces(): Promise<WorkspaceListItem[]> {
   try {
-    const result = await invoke<string>("list_workspaces");
-    const parsedResult = JSON.parse(result) as ApiResponse<WorkspaceListItem[]>;
-    if (parsedResult.status !== "success") {
-      console.error("Error from backend:", parsedResult.message);
-      throw new Error(parsedResult.message);
-    }
-    return parsedResult.data as WorkspaceListItem[];
+    const result = await apiClient.listWorkspaces();
+    return result.workspaces as WorkspaceListItem[];
   } catch (error) {
     console.error("Failed to fetch workspaces:", error);
     if (error instanceof Error) {
@@ -65,14 +59,8 @@ export const useWorkspaceListQuery = () => {
 
 /* Get workspace by ID */
 async function getWorkspaceByID(workspaceID: string): Promise<WorkspaceConfig> {
-  const result = await invoke<string>("load_workspace", {
-    workspaceId: workspaceID,
-  });
-  const parsedResult = JSON.parse(result) as ApiResponse<WorkspaceConfig>;
-  if (parsedResult.status !== "success") {
-    throw new Error(parsedResult.message);
-  }
-  return parsedResult.data as WorkspaceConfig;
+  const result = await apiClient.loadWorkspace(workspaceID);
+  return result as WorkspaceConfig;
 }
 
 export const useWorkspaceQuery = ({ workspaceID }: { workspaceID: string }) => {
@@ -242,15 +230,8 @@ async function saveWorkspace(
   const sanitizedWorkspace = sanitizeWorkspaceData(workspace);
 
   const configJson = JSON.stringify(sanitizedWorkspace);
-  const result = await invoke<string>("save_workspace", {
-    workspaceId: id,
-    configJson,
-  });
-  const parsedResult = JSON.parse(result) as ApiResponse<WorkspaceConfig>;
-  if (parsedResult.status === "error") {
-    throw new Error(parsedResult.message);
-  }
-  return parsedResult.data;
+  const result = await apiClient.saveWorkspace(id, configJson);
+  return result as WorkspaceConfig;
 }
 
 export const useSaveWorkspaceMutation = () => {
@@ -292,17 +273,12 @@ export const getExcelPreview = async (filePath?: string) => {
     return null;
   }
   console.log("filePath", filePath);
-  const result = await invoke<string>("preview_excel_data", {
-    filePath,
-  });
+  const result = await apiClient.previewExcelData(filePath);
   console.log("result-raw", result);
-  const parsedResult = JSON.parse(result) as ApiResponse<FilePreviewResponse>;
-  if (parsedResult.status !== "success") {
-    throw new Error(parsedResult.message);
-  }
-  console.log("parsedResult", parsedResult);
+  
+  // The API client already handles the response parsing and error checking
   const unemptySheets =
-    parsedResult?.data?.sheets?.filter((sheet) => sheet?.columns?.length > 0) ??
+    result?.sheets?.filter((sheet: any) => sheet?.columns?.length > 0) ??
     [];
   console.log("unemptySheets", unemptySheets);
   const sanitizedResult = {
@@ -343,18 +319,9 @@ const getIndexValues = async (
   columnName: string,
 ) => {
   console.log("getIndexValues", filePath, sheetName, columnName);
-  const result = await invoke<string>("get_index_values", {
-    filePath,
-    sheetName,
-    headerRow,
-    columnName,
-  });
-  const parsedResult = JSON.parse(result) as ApiResponse<IndexValues>;
-  if (parsedResult.status !== "success") {
-    throw new Error(parsedResult.message);
-  }
-  console.log("getIndexValues result", parsedResult);
-  return parsedResult.data;
+  const result = await apiClient.getIndexValues(filePath, sheetName, headerRow, columnName);
+  console.log("getIndexValues result", result);
+  return result;
 };
 
 export const useGetIndexValues = (
@@ -389,20 +356,9 @@ const tryReadHeaderRow = async (
   sheetName: string,
   headerRow: number,
 ) => {
-  const result = await invoke<string>("try_read_header_row", {
-    filePath,
-    sheetName,
-    headerRow,
-  });
+  const result = await apiClient.tryReadHeaderRow(filePath, sheetName, headerRow);
   console.log("tryReadHeaderRow result", result);
-  const parsedResult = JSON.parse(
-    result,
-  ) as ApiResponse<TryReadHeaderRowResponse>;
-  console.log("tryReadHeaderRow parsedResult", parsedResult);
-  if (parsedResult.status !== "success") {
-    throw new Error(parsedResult.message);
-  }
-  return parsedResult.data;
+  return result;
 };
 
 export const useTryReadHeaderRow = (
@@ -426,17 +382,9 @@ export const useTryReadHeaderRow = (
 };
 
 const tryReadSheetNames = async (filePath: string) => {
-  const result = await invoke<string>("try_read_sheet_names", {
-    filePath,
-  });
+  const result = await apiClient.tryReadSheetNames(filePath);
   console.log("tryReadSheetNames raw result:", result);
-  const parsedResult = JSON.parse(
-    result,
-  ) as ApiResponse<TryReadSheetNamesResponse>;
-  if (parsedResult.status !== "success") {
-    throw new Error(parsedResult.message);
-  }
-  return parsedResult.data as TryReadSheetNamesResponse;
+  return result as TryReadSheetNamesResponse;
 };
 
 export const useTryReadSheetNames = (
@@ -467,18 +415,29 @@ interface PipelineExecutionResult {
   results: Record<string, any[]>;
 }
 
-const executePipeline = async (
-  workspaceId: string,
-): Promise<PipelineExecutionResult> => {
-  const result = await invoke<string>("execute_pipeline", {
-    pipelineJson: JSON.stringify({ workspaceId }),
-  });
-  return JSON.parse(result) as PipelineExecutionResult;
+// Updated to match new backend API signature
+const executePipeline = async (params: {
+  workspaceId: string;
+  targetNodeId: string;
+  executionMode?: string;
+  outputFilePath?: string;
+}): Promise<PipelineExecutionResult> => {
+  const result = await apiClient.executePipeline(
+    params.workspaceId,
+    params.targetNodeId,
+    params.executionMode || 'production',
+    params.outputFilePath
+  );
+  return result as PipelineExecutionResult;
 };
 
 export const useExecutePipelineMutation = () => {
   const toast = useToast();
-  return useMutation<PipelineExecutionResult, Error, string>({
+  return useMutation<
+    PipelineExecutionResult, 
+    Error, 
+    { workspaceId: string; targetNodeId: string; executionMode?: string; outputFilePath?: string }
+  >({
     mutationFn: executePipeline,
     onSuccess: () => {
       toast.success("Pipeline执行完成");
@@ -490,26 +449,62 @@ export const useExecutePipelineMutation = () => {
   });
 };
 
-/* Pipeline node testing */
+/* Pipeline node testing - unified interface */
 
+// Updated to use new backend API parameters
+const testPipelineNodeUnified = async (params: {
+  workspaceId: string;
+  nodeId: string;
+  executionMode?: string;
+  testModeMaxRows?: number;
+}): Promise<SheetInfo[]> => {
+  console.log("testPipelineNodeUnified params", params);
+  const result = await apiClient.testPipelineNodeUnified(
+    params.workspaceId,
+    params.nodeId,
+    params.executionMode || 'test',
+    params.testModeMaxRows || 100
+  );
+  console.log("testPipelineNodeUnified result", result);
+  return result;
+};
+
+export const useTestPipelineNodeUnifiedMutation = () => {
+  const toast = useToast();
+  return useMutation<
+    SheetInfo[],
+    Error,
+    { workspaceId: string; nodeId: string; executionMode?: string; testModeMaxRows?: number }
+  >({
+    mutationFn: testPipelineNodeUnified,
+    onSuccess: () => {
+      toast.success("Pipeline测试完成");
+    },
+    onError: (error) => {
+      console.error("Pipeline测试失败:", error);
+      toast.error(`Pipeline测试失败: ${error.message}`);
+    },
+  });
+};
+
+/* Pipeline node testing - legacy interface */
+
+// Updated to use new backend API parameters
 const testPipelineNode = async (params: {
   workspaceId: string;
   nodeId: string;
+  executionMode?: string;
+  testModeMaxRows?: number;
 }): Promise<PipelineExecutionResult> => {
   console.log("testPipelineNode params", params);
-  const result = await invoke<string>("test_pipeline_node", {
-    workspaceId: params.workspaceId,
-    nodeId: params.nodeId,
-  });
-  console.log("testPipelineNode raw result", result);
-  try {
-    const parsedResult = JSON.parse(result) as PipelineExecutionResult;
-    console.log("testPipelineNode parsed result", parsedResult);
-    return parsedResult;
-  } catch (error) {
-    console.error("testPipelineNode error", error);
-    throw error;
-  }
+  const result = await apiClient.testPipelineNode(
+    params.workspaceId,
+    params.nodeId,
+    params.executionMode || 'test',
+    params.testModeMaxRows || 100
+  );
+  console.log("testPipelineNode result", result);
+  return result as PipelineExecutionResult;
 };
 
 export const useTestPipelineNodeMutation = () => {
@@ -517,7 +512,7 @@ export const useTestPipelineNodeMutation = () => {
   return useMutation<
     PipelineExecutionResult,
     Error,
-    { workspaceId: string; nodeId: string }
+    { workspaceId: string; nodeId: string; executionMode?: string; testModeMaxRows?: number }
   >({
     mutationFn: testPipelineNode,
     onSuccess: () => {
@@ -526,6 +521,46 @@ export const useTestPipelineNodeMutation = () => {
     onError: (error) => {
       console.error("Pipeline测试失败:", error);
       toast.error(`Pipeline测试失败: ${error.message}`);
+    },
+    
+  });
+};
+
+/* Enhanced Node Preview - using new /preview-node endpoint */
+
+const previewNode = async (params: {
+  workspaceId: string;
+  nodeId: string;
+  testModeMaxRows?: number;
+}): Promise<import('@/types').PreviewNodeResult> => {
+  console.log("previewNode params", params);
+  const result = await apiClient.previewNode(
+    params.workspaceId,
+    params.nodeId,
+    params.testModeMaxRows || 100
+  );
+  console.log("previewNode result", result);
+  return result;
+};
+
+export const usePreviewNodeMutation = () => {
+  const toast = useToast();
+  return useMutation<
+    import('@/types').PreviewNodeResult,
+    Error,
+    { workspaceId: string; nodeId: string; testModeMaxRows?: number }
+  >({
+    mutationFn: previewNode,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("节点预览完成");
+      } else {
+        toast.error(`节点预览失败: ${data.error}`);
+      }
+    },
+    onError: (error) => {
+      console.error("节点预览失败:", error);
+      toast.error(`节点预览失败: ${error.message}`);
     },
   });
 };

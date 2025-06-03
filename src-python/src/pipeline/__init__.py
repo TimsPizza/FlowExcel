@@ -1,85 +1,129 @@
-import json
-from typing import Dict, Any
-from .models import Pipeline, ExecutionResults, PipelineResult
-from .processor import PipelineExecutor
+"""
+重构后的Pipeline执行系统
+提供强类型、分层上下文、分治执行的现代化pipeline架构
+"""
 
-def execute_pipeline(pipeline_json: str) -> Dict[str, Any]:
-    """
-    Execute a pipeline from a JSON string
-    """
-    # Parse the pipeline
+from .execution.executor import PipelineExecutor
+from .models import (
+    # 基础类型
+    ExecutionMode, NodeType, AggregationOperation, IndexValue, DataFrame,
     
-    pipeline_data = json.loads(pipeline_json)
+    # 请求和响应类型
+    ExecutePipelineRequest, PipelineExecutionResult, WorkspaceConfig,
     
-    # Execute the pipeline
+    # 节点输入输出类型
+    IndexSourceInput, IndexSourceOutput,
+    SheetSelectorInput, SheetSelectorOutput,
+    RowFilterInput, RowFilterOutput,
+    RowLookupInput, RowLookupOutput,
+    AggregatorInput, AggregatorOutput, AggregationResult,
+    OutputInput, OutputResult, SheetData,
+    
+    # 上下文类型
+    GlobalContext, PathContext, BranchContext, FileInfo,
+    
+    # 节点和配置类型
+    BaseNode, Edge,
+    
+    # 执行结果类型
+    NodeExecutionResult, IndexExecutionResult, BranchExecutionResult,
+    PipelineExecutionSummary
+)
+
+# 主要API函数
+def execute_pipeline(request: ExecutePipelineRequest) -> PipelineExecutionResult:
+    """
+    执行Pipeline的主API函数
+    
+    Args:
+        request: Pipeline执行请求，包含工作区配置、目标节点、执行模式等
+        
+    Returns:
+        Pipeline执行结果，包含输出数据、执行统计、错误信息等
+        
+    Example:
+        >>> from pipeline import execute_pipeline, ExecutePipelineRequest, ExecutionMode
+        >>> request = ExecutePipelineRequest(
+        ...     workspace_config=workspace_config,
+        ...     target_node_id="output_node_1",
+        ...     execution_mode=ExecutionMode.TEST
+        ... )
+        >>> result = execute_pipeline(request)
+        >>> if result.success:
+        ...     print(f"执行成功，输出了 {result.output_data.total_sheets} 个Sheet")
+        ... else:
+        ...     print(f"执行失败：{result.error}")
+    """
     executor = PipelineExecutor()
-    results = executor.execute(pipeline_data)
+    return executor.execute_pipeline(request)
+
+
+# 便捷API函数
+def execute_pipeline_simple(
+    workspace_config: WorkspaceConfig,
+    target_node_id: str,
+    execution_mode: ExecutionMode = ExecutionMode.PRODUCTION,
+    output_file_path: str = None
+) -> PipelineExecutionResult:
+    """
+    简化的Pipeline执行API
     
-    # Convert results to dict format for JSON serialization
-    # return {
-    #     "success": results.success,
-    #     "error": results.error,
-    #     "results": {
-    #         node_id: [
-    #             {
-    #                 "node_id": result.node_id,
-    #                 "index_value": result.index_value,
-    #                 "result_data": result.result_data,
-    #                 "error": result.error
-    #             }
-    #             for result in node_results
-    #         ]
-    #         for node_id, node_results in results.results.items()
-    #     }
-    # }
-    final_results = {
-        "success": results.success,
-        "error": results.error,
-        "results": {
-            node_id: [
-                {
-                    "node_id": result.node_id,
-                    "index_value": result.index_value,
-                    "result_data": result.result_data,
-                    "error": result.error
-                }
-                for result in node_results
-            ]
-            for node_id, node_results in results.results.items()
-        }
-    }
-    return PipelineResult(
-        success=final_results["success"],
-        error=final_results["error"],
-        results=final_results["results"]
+    Args:
+        workspace_config: 工作区配置
+        target_node_id: 目标节点ID
+        execution_mode: 执行模式（默认生产模式）
+        output_file_path: 输出文件路径（可选）
+        
+    Returns:
+        Pipeline执行结果
+    """
+    request = ExecutePipelineRequest(
+        workspace_config=workspace_config,
+        target_node_id=target_node_id,
+        execution_mode=execution_mode,
+        output_file_path=output_file_path
     )
-    
+    return execute_pipeline(request)
 
-def test_pipeline_node(pipeline_json: str, node_id: str) -> Dict[str, Any]:
-    """
-    Test a single node in a pipeline
-    """
-    # Parse the pipeline
-    pipeline_data = json.loads(pipeline_json)
+
+# 版本信息
+__version__ = "2.0.0"
+__author__ = "Pipeline Team"
+__description__ = "强类型、分层上下文的现代化Pipeline执行系统"
+
+# 导出所有公共API
+__all__ = [
+    # 主要API函数
+    "execute_pipeline",
+    "execute_pipeline_simple",
     
-    # Execute the pipeline up to the target node
-    executor = PipelineExecutor()
-    results = executor.execute(pipeline_data, target_node_id=node_id)
+    # 执行器类
+    "PipelineExecutor",
     
-    # Convert results to dict format for JSON serialization
-    return {
-        "success": results.success,
-        "error": results.error,
-        "results": {
-            node_id: [
-                {
-                    "node_id": result.node_id,
-                    "index_value": result.index_value,
-                    "result_data": result.result_data,
-                    "error": result.error
-                }
-                for result in node_results
-            ]
-            for node_id, node_results in results.results.items()
-        }
-    } 
+    # 基础类型
+    "ExecutionMode", "NodeType", "AggregationOperation", "IndexValue", "DataFrame",
+    
+    # 请求响应类型
+    "ExecutePipelineRequest", "PipelineExecutionResult", "WorkspaceConfig",
+    
+    # 节点输入输出类型
+    "IndexSourceInput", "IndexSourceOutput",
+    "SheetSelectorInput", "SheetSelectorOutput", 
+    "RowFilterInput", "RowFilterOutput",
+    "RowLookupInput", "RowLookupOutput",
+    "AggregatorInput", "AggregatorOutput", "AggregationResult",
+    "OutputInput", "OutputResult", "SheetData",
+    
+    # 上下文类型
+    "GlobalContext", "PathContext", "BranchContext", "FileInfo",
+    
+    # 节点和配置类型
+    "BaseNode", "Edge",
+    
+    # 执行结果类型
+    "NodeExecutionResult", "IndexExecutionResult", "BranchExecutionResult",
+    "PipelineExecutionSummary",
+    
+    # 版本信息
+    "__version__", "__author__", "__description__"
+] 

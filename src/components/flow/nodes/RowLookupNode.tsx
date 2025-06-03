@@ -1,24 +1,46 @@
 import { useCallback, useState } from "react";
-import { FlowNodeProps, RowLookupNodeDataContext, NodeType } from "@/types/nodes";
+import {
+  FlowNodeProps,
+  RowLookupNodeDataContext,
+  NodeType,
+} from "@/types/nodes";
 import { BaseNode } from "./BaseNode";
-import { Select, Flex, Text, Checkbox, ScrollArea, Badge } from "@radix-ui/themes";
+import {
+  Select,
+  Flex,
+  Text,
+  Checkbox,
+  ScrollArea,
+  Badge,
+  Button,
+} from "@radix-ui/themes";
 import { useNodeId } from "reactflow";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
+import {
+  useTestPipelineNodeMutation,
+  usePreviewNodeMutation,
+} from "@/hooks/workspaceQueries";
 import { useNodeColumns } from "@/hooks/useNodeColumns";
-import { transformSingleNodeResults, PipelineNodeResult } from "@/lib/dataTransforms";
-import { SimpleDataframe } from "@/types";
+import { transformSingleNodeResults } from "@/lib/dataTransforms";
+import { PipelineNodeResult, SimpleDataframe } from "@/types";
 import { toast } from "react-toastify";
+import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
+import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
 
 export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
   const nodeData = data as RowLookupNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const testPipelineMutation = useTestPipelineNodeMutation();
-  
+  const previewNodeMutation = usePreviewNodeMutation();
+
   // 使用真实的列数据
-  const { columns: availableColumns, isLoading: isLoadingColumns, error: columnsError } = useNodeColumns();
-  
+  const {
+    columns: availableColumns,
+    isLoading: isLoadingColumns,
+    error: columnsError,
+  } = useNodeColumns();
+
   const [enableLookup, setEnableLookup] = useState<boolean>(
     !!nodeData.matchColumn,
   );
@@ -66,6 +88,53 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
     });
   };
 
+  // 新的预览函数，使用新API
+  const previewNode = async () => {
+    console.log("test run row lookup node");
+    if (!currentWorkspace) {
+      toast.error("未找到当前工作区");
+      return;
+    }
+
+    previewNodeMutation.mutate(
+      {
+        workspaceId: currentWorkspace.id,
+        nodeId: nodeData.id,
+        testModeMaxRows: 100,
+      },
+      {
+        onSuccess: (result) => {
+          console.log("Preview result:", result);
+
+          if (result.success) {
+            const sheets = convertPreviewToSheets(result);
+            const metadata = getPreviewMetadata(result);
+
+            console.log("Preview sheets:", sheets);
+
+            updateLocalNodeData({
+              testResult: sheets,
+              error: undefined,
+            });
+          } else {
+            updateLocalNodeData({
+              error: result.error || "预览失败",
+              testResult: undefined,
+            });
+          }
+        },
+        onError: (error: Error) => {
+          console.error("Preview failed:", error);
+          updateLocalNodeData({
+            error: `预览失败: ${error.message}`,
+            testResult: undefined,
+          });
+        },
+      },
+    );
+  };
+
+  // 保留旧的测试函数作为备选
   const testPipelineRun = async () => {
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
@@ -82,7 +151,7 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
             const transformed = transformSingleNodeResults(
               nodeData.id,
               NodeType.ROW_LOOKUP,
-              nodeResults as PipelineNodeResult[]
+              nodeResults as PipelineNodeResult[],
             );
 
             if (transformed.error) {
@@ -92,10 +161,12 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
               });
             } else {
               // 转换为SimpleDataframe格式
-              const simpleDataframe: SimpleDataframe = Array.isArray(transformed.displayData) 
-                ? { columns: [], data: [] }  // 如果是多sheet，转为空dataframe
+              const simpleDataframe: SimpleDataframe = Array.isArray(
+                transformed.displayData,
+              )
+                ? { columns: [], data: [] } // 如果是多sheet，转为空dataframe
                 : transformed.displayData || { columns: [], data: [] };
-              
+
               updateLocalNodeData({
                 testResult: simpleDataframe,
                 error: undefined,
@@ -119,9 +190,9 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <BaseNode
+    <EnhancedBaseNode
       data={nodeData}
-      onTestRun={testPipelineRun}
+      onTestRun={previewNode}
       isSource={true}
       isTarget={true}
       testable={true}
@@ -141,7 +212,7 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
             加载列名中...
           </Text>
         )}
-        
+
         {columnsError && (
           <Text size="1" color="red">
             无法获取列名：{columnsError.message}
@@ -162,7 +233,7 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
               <Select.Content>
                 <Select.Group>
                   <ScrollArea className="max-h-60">
-                    {availableColumns.map((col) => (
+                    {availableColumns.map((col: string) => (
                       <Select.Item key={col} value={col}>
                         {col}
                       </Select.Item>
@@ -210,7 +281,19 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
             </Badge>
           )}
         </Flex>
+
+        {/* 双重API支持 - 演示新旧API */}
+        <Flex gap="2" style={{ marginTop: "8px" }}>
+          <Button
+            size="1"
+            variant="outline"
+            onClick={testPipelineRun}
+            disabled={testPipelineMutation.isLoading}
+          >
+            {testPipelineMutation.isLoading ? "旧版测试中..." : "旧版测试"}
+          </Button>
+        </Flex>
       </Flex>
-    </BaseNode>
+    </EnhancedBaseNode>
   );
 };

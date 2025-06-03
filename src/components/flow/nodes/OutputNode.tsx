@@ -1,34 +1,43 @@
-import { useCallback } from "react";
-import { FlowNodeProps, OutputNodeDataContext, NodeType } from "@/types/nodes";
-import { BaseNode } from "./BaseNode";
+import useToast from "@/hooks/useToast";
 import {
-  Select,
-  Flex,
+  useTestPipelineNodeMutation,
+  usePreviewNodeMutation,
+} from "@/hooks/workspaceQueries";
+import {
+  isDataFrameResult,
+  isMultiSheetResult,
+  transformOutputResults,
+} from "@/lib/dataTransforms";
+import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { PipelineNodeResult, SheetInfo, SimpleDataframe } from "@/types";
+import { FlowNodeProps, NodeType, OutputNodeDataContext } from "@/types/nodes";
+import { CopyIcon, FileIcon } from "@radix-ui/react-icons";
+import {
+  Badge,
   Button,
+  Card,
+  Flex,
+  ScrollArea,
+  Select,
   Text,
   TextField,
-  Badge,
-  ScrollArea,
-  Card,
 } from "@radix-ui/themes";
+import { useCallback } from "react";
 import { useNodeId } from "reactflow";
-import { CopyIcon, DownloadIcon, FileIcon } from "@radix-ui/react-icons";
-import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { useTestPipelineNodeMutation } from "@/hooks/workspaceQueries";
-import {
-  transformOutputResults,
-  PipelineNodeResult,
-  isMultiSheetResult,
-  isDataFrameResult,
-} from "@/lib/dataTransforms";
-import { SimpleDataframe, SheetInfo } from "@/types";
-import useToast from "@/hooks/useToast";
+import { BaseNode } from "./BaseNode";
+import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
 
 export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   const toast = useToast();
   const nodeId = useNodeId()!;
   const nodeData = data as OutputNodeDataContext;
+
+  // 使用新的预览API作为主要方法
+  const previewNodeMutation = usePreviewNodeMutation();
+  // 保留旧API作为备选
   const { mutate: testPipelineMutation } = useTestPipelineNodeMutation();
+
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const updateOutputNodeDataInStore = useWorkspaceStore(
     (state) => state.updateNodeData,
@@ -113,7 +122,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
           csvContent += `# ${sheet.sheet_name}\n`;
           if (sheet.columns.length > 0) {
             csvContent += sheet.columns.join(",") + "\n";
-            for (const row of sheet.preview_data) {
+            for (const row of sheet.data) {
               csvContent += row.map((cell) => String(cell)).join(",") + "\n";
             }
           }
@@ -149,63 +158,57 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
   };
 
-  const testPipelineRun = async () => {
+  // 新的预览函数，使用新API
+  const previewNode = async () => {
+    console.log("test run output node");
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
       return;
     }
 
-    testPipelineMutation(
-      { workspaceId: currentWorkspace.id, nodeId },
+    console.log("OutputNode previewNode");
+    previewNodeMutation.mutate(
+      {
+        workspaceId: currentWorkspace.id,
+        nodeId: nodeData.id,
+        testModeMaxRows: 100,
+      },
       {
         onSuccess: (result) => {
-          const nodeResults = result.results[nodeData.id];
-          if (nodeResults && nodeResults.length > 0) {
-            // 使用数据转换函数处理结果
-            const transformed = transformOutputResults(
-              nodeData.id,
-              NodeType.OUTPUT,
-              nodeResults as PipelineNodeResult[],
-            );
+          console.log("Preview result:", result);
 
-            if (transformed.error) {
-              updateLocalNodeData({
-                error: transformed.error,
-                testResult: undefined,
-              });
-            } else {
-              // 直接使用转换后的displayData
-              updateLocalNodeData({
-                testResult: transformed.displayData || undefined,
-                error: undefined,
-              });
+          if (result.success) {
+            // 转换预览结果为SheetInfo格式
+            const sheets = convertPreviewToSheets(result);
+            const metadata = getPreviewMetadata(result);
 
-              // 如果设置了输出路径且有数据，显示保存成功消息
-              if (nodeData.outputPath && transformed.displayData) {
-                if (
-                  isMultiSheetResult(transformed.displayData) &&
-                  transformed.displayData.length > 0
-                ) {
-                  toast.success("多sheet数据已保存到指定路径");
-                } else if (
-                  isDataFrameResult(transformed.displayData) &&
-                  transformed.displayData.data &&
-                  transformed.displayData.data.length > 0
-                ) {
-                  toast.success("数据已保存到指定路径");
-                }
+            console.log("Preview sheets:", sheets);
+            console.log("Preview metadata:", metadata);
+
+            updateLocalNodeData({
+              testResult: sheets,
+              error: undefined,
+            });
+
+            // 显示成功消息
+            if (sheets.length > 0) {
+              if (sheets.length > 1) {
+                toast.success(`输出预览完成：${sheets.length} 个数据表`);
+              } else {
+                toast.success("输出预览完成");
               }
             }
           } else {
             updateLocalNodeData({
-              error: "未获取到测试结果",
+              error: result.error || "预览失败",
               testResult: undefined,
             });
           }
         },
-        onError: (error) => {
+        onError: (error: Error) => {
+          console.error("Preview failed:", error);
           updateLocalNodeData({
-            error: `测试运行失败: ${error.message}`,
+            error: `预览失败: ${error.message}`,
             testResult: undefined,
           });
         },
@@ -219,7 +222,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
 
     if (isMultiSheetResult(nodeData.testResult)) {
       return nodeData.testResult.reduce(
-        (total, sheet) => total + sheet.preview_data.length,
+        (total, sheet) => total + sheet.data.length,
         0,
       );
     } else if (isDataFrameResult(nodeData.testResult)) {
@@ -244,7 +247,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
                     {sheet.sheet_name}
                   </Text>
                   <Text size="1" color="gray">
-                    {sheet.columns.length} 列 × {sheet.preview_data.length} 行
+                    {sheet.columns.length} 列 × {sheet.data.length} 行
                   </Text>
                   {sheet.columns.length > 0 && (
                     <Text size="1" style={{ fontFamily: "monospace" }}>
@@ -281,11 +284,11 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   return (
-    <BaseNode
+    <EnhancedBaseNode
       data={nodeData}
+      onTestRun={previewNode}
       isSource={false}
       isTarget={true}
-      onTestRun={testPipelineRun}
       testable={true}
     >
       <Flex direction="column" gap="3">
@@ -376,6 +379,6 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
           )}
         </Flex>
       </Flex>
-    </BaseNode>
+    </EnhancedBaseNode>
   );
 };

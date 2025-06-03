@@ -11,12 +11,11 @@ import {
 } from "@/hooks/workspaceQueries";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { PlusCircledIcon } from "@radix-ui/react-icons";
-import { Button, Flex, Heading, Text, Box } from "@radix-ui/themes";
-import { useEffect } from "react";
+import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
 import { useQueryClient } from "react-query";
-import { Link, useNavigate } from "react-router-dom";
-import { v4 as uuidv4 } from "uuid";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { v4 as uuidv4 } from "uuid";
 
 type WorkspaceListItem = {
   id: string;
@@ -38,7 +37,7 @@ export function WorkspaceListPage() {
   const { workspaces, isLoading, error } = useWorkspaceListQuery();
   const {
     saveWorkspace,
-    isLoading: isSaving,
+    isSaving,
   } = useSaveWorkspaceMutation();
 
   const handleCreateNew = async () => {

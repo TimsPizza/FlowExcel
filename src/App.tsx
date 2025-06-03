@@ -5,7 +5,13 @@ import { RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { ReactFlowProvider } from "reactflow";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function App() {
   return (

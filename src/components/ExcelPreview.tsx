@@ -21,7 +21,7 @@ export default function ExcelPreview({
   const tranformedPreviewData = useMemo(() => {
     console.log("selectedSheetName", selectedSheetName);
     if (sheets?.length === 0) return [];
-    if (!selectedSheetName) return [];
+    if (!selectedSheetName) return sheets[0];
     const sheet = sheets?.find(
       (sheet) => sheet.sheet_name === selectedSheetName,
     );
@@ -43,7 +43,7 @@ export default function ExcelPreview({
           onValueChange={setSelectedSheetName}
         >
           <Tabs.List>
-            {sheets?.map((sheet) => (
+            {sheets && sheets?.map((sheet) => (
               <Tabs.Trigger key={sheet.sheet_name} value={sheet.sheet_name}>
                 {sheet?.sheet_name}
               </Tabs.Trigger>
@@ -58,7 +58,7 @@ export default function ExcelPreview({
             }
             data={
               sheets?.find((sheet) => sheet.sheet_name === selectedSheetName)
-                ?.preview_data ?? ([] as any)
+                ?.data ?? ([] as any)
             }
             // eSize={10}
           />

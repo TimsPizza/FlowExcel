@@ -12,4 +12,8 @@ dependencies = [
     "pyinstaller>=6.13.0",
     "xlrd>=2.0.1",
     "networkx>=2.7.0",
+    "debugpy>=1.8.14",
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.2",
+    "requests>=2.31.0",
 ]

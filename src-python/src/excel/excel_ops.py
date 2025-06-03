@@ -1,7 +1,7 @@
 import datetime
 from typing import List
 import pandas as pd
-from models import (
+from app.models import (
     FilePreviewResponse,
     IndexValues,
     PreviewResponse,
@@ -10,7 +10,9 @@ from models import (
     TryReadHeaderRowResponse,
     TryReadSheetNamesResponse,
 )
-from utils import serialize_value as serialize
+from app.utils import serialize_value as serialize
+
+
 
 
 # 自定义 Pydantic 模型 JSON 编码器，以便使用我们的 serialize 函数
@@ -74,25 +76,18 @@ def try_read_header_row(file_path: str, sheet_name: str, header_row: int) -> int
     """
     try:
         df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row)
-        column_names = df.columns.tolist()
-        resp = TryReadHeaderRowResponse(column_names=column_names)
-        return PythonResponse(status="success", data=resp, message="")
+        return df.columns.tolist()
     except Exception as e:
-        return PythonResponse(status="error", message=str(e), data=None)
+        raise e
     
 def try_read_sheet_names(file_path: str) -> List[str]:
     """
     Try to read the sheet names from an Excel file.
     """
-    try:
-        sheets = pd.ExcelFile(file_path).sheet_names
-        resp = TryReadSheetNamesResponse(sheet_names=sheets)
-        return PythonResponse(status="success", data=resp, message="")
-    except Exception as e:
-        return PythonResponse(status="error", message=str(e), data=None)
+    return pd.ExcelFile(file_path).sheet_names
 
 
-def get_index_values(file_path, sheet_name, header_row, column_name):
+def get_index_values(file_path, sheet_name, header_row, column_name) -> IndexValues:
     """获取指定列的所有唯一值作为索引"""
     try:
         # 读取指定sheet的数据
@@ -100,21 +95,14 @@ def get_index_values(file_path, sheet_name, header_row, column_name):
 
         # 检查列是否存在
         if column_name not in df.columns:
-            return PythonResponse(
-                status="error",
-                message=f"列 '{column_name}' 在工作表 '{sheet_name}' 中不存在",
-                data=None,
-            )
+            raise ValueError(f"列 '{column_name}' 在工作表 '{sheet_name}' 中不存在")
 
         # 根据选择的列组合构建索引值
         unique_values = df[column_name].dropna().astype(str).unique().tolist()
-        result = IndexValues(
+        return IndexValues(
             column=column_name,
             data=unique_values,
         )
 
-        return PythonResponse(status="success", data=result)
     except Exception as e:
-        return PythonResponse(
-            status="error", message=f"获取索引值时发生错误: {str(e)}", data=None
-        )
+        raise e
