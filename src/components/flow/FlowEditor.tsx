@@ -9,7 +9,7 @@ import {
   RowLookupNodeDataContext,
   SheetSelectorNodeDataContext,
 } from "@/types/nodes";
-import { SimpleDataframe } from "@/types";
+import { SimpleDataframe, SheetInfo } from "@/types";
 import {
   FilePlusIcon,
   PlayIcon,
@@ -37,6 +37,7 @@ import ReactFlow, {
   useNodesState,
   ReactFlowProvider,
   useReactFlow,
+  MarkerType,
 } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import nodeTypes from "./nodes/NodeFactory";
@@ -142,6 +143,21 @@ interface FlowEditorProps {
   initialEdges?: Edge[];
   workspaceId?: string;
 }
+
+// 默认边样式配置
+const defaultEdgeOptions = {
+  animated: true,
+  style: {
+    strokeWidth: 2,
+    stroke: '#3b82f6', // 蓝色
+  },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    width: 15,
+    height: 15,
+    color: '#3b82f6', // 与连线颜色一致
+  },
+};
 
 // 内部FlowEditor组件，在ReactFlowProvider内部
 const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
@@ -396,7 +412,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       {
         onSuccess: (result) => {
           // Handle the result based on the new response structure
-          // result is already the inner execution result data
           const pipelineResult = result;
 
           if (!pipelineResult.success) {
@@ -411,13 +426,13 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
               // 根据节点类型处理结果数据
               switch (node.data.nodeType) {
                 case NodeType.INDEX_SOURCE: {
-                  // 索引源节点的结果是索引值列表
-                  const nodeResult = nodeResults[0]; // 索引源节点只有一个结果
+                  // 索引源节点的结果是索引值列表，使用SheetInfo[]格式
+                  const nodeResult = nodeResults[0];
                   if (nodeResult.result_data) {
                     const { columns, data } = nodeResult.result_data;
 
-                    // 将数据转换为前端需要的格式
-                    const formattedData = [];
+                    // 将数据转换为SheetInfo[]格式
+                    const sheetInfos: SheetInfo[] = [];
                     if (data && data.length > 0) {
                       // 如果是按列索引，提取唯一值
                       if (
@@ -428,21 +443,25 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                         const uniqueValues = [
                           ...new Set(
                             data.map(
-                              (row: Record<string, any>) => row[columnName],
+                              (row: any[]) => row[0], // 取第一列数据
                             ),
                           ),
                         ];
-                        formattedData.push(uniqueValues);
+                        sheetInfos.push({
+                          sheet_name: "索引值",
+                          columns: [columnName],
+                          data: uniqueValues.map(val => [val as string | number | null]),
+                        });
                       }
                       // 如果是按工作表名索引
                       else if (
                         (node.data as IndexSourceNodeDataContext).bySheetName
                       ) {
-                        formattedData.push(
-                          data.map(
-                            (row: Record<string, any>) => Object.values(row)[0],
-                          ),
-                        );
+                        sheetInfos.push({
+                          sheet_name: "工作表名称",
+                          columns: ["sheet_name"],
+                          data: data.map((row: any[]) => [row[0] as string | number | null]),
+                        });
                       }
                     }
 
@@ -450,10 +469,7 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       ...node,
                       data: {
                         ...node.data,
-                        testResult: {
-                          columns,
-                          data: formattedData,
-                        },
+                        testResult: sheetInfos,
                         error: undefined,
                       },
                     };
@@ -461,44 +477,42 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   break;
                 }
                 case NodeType.AGGREGATOR: {
-                  // 聚合节点的结果是多个索引值的聚合结果
-                  const formattedData: any[][] = [];
+                  // 聚合节点的结果是多个索引值的聚合结果，使用SimpleDataframe格式
+                  const formattedData: (string | number | null)[][] = [];
                   let columns: string[] = ["索引值", "聚合结果"];
 
                   nodeResults.forEach((nodeResult: any) => {
                     if (nodeResult.result_data && nodeResult.result_data.data) {
                       const resultData = nodeResult.result_data.data;
                       if (resultData.length > 0) {
-                        resultData.forEach((row: Record<string, any>) => {
+                        resultData.forEach((row: any[]) => {
                           // 对于聚合节点，通常结果是索引值和聚合结果
-                          const indexValue = row.index_value || "";
-                          const resultValue = row.result || 0;
-                          formattedData.push([indexValue, resultValue]);
+                          formattedData.push(row.map(cell => cell as string | number | null));
                         });
                       }
                     }
                   });
 
-                  // 使用实际的输出列名
+                  // 使用实际的列名
                   if (
                     nodeResults.length > 0 &&
-                    nodeResults[0].result_data?.data?.length > 0
+                    nodeResults[0].result_data?.columns
                   ) {
-                    const firstRow = nodeResults[0].result_data.data[0];
-                    const outputColumnName =
-                      firstRow.output_column_name ||
-                      `${(node.data as AggregatorNodeDataContext).method}_${(node.data as AggregatorNodeDataContext).statColumn}`;
-                    columns = ["索引值", outputColumnName];
+                    columns = nodeResults[0].result_data.columns;
                   }
+
+                  // 创建一个包含SimpleDataframe的SheetInfo数组
+                  const sheetInfos: SheetInfo[] = [{
+                    sheet_name: "聚合结果",
+                    columns,
+                    data: formattedData,
+                  }];
 
                   return {
                     ...node,
                     data: {
                       ...node.data,
-                      testResult: {
-                        columns,
-                        data: formattedData,
-                      },
+                      testResult: sheetInfos,
                       error: undefined,
                     },
                   };
@@ -506,7 +520,7 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                 default: {
                   // 其他节点类型的通用处理
                   // 合并所有索引值的结果用于预览
-                  const combinedData: any[][] = [];
+                  const combinedData: (string | number | null)[][] = [];
                   let columns: string[] = [];
 
                   nodeResults.forEach((nodeResult: any) => {
@@ -519,24 +533,27 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                         columns = nodeResult.result_data.columns;
                       }
 
-                      // 转换数据为二维数组格式
+                      // 添加数据行
                       nodeResult.result_data.data.forEach(
-                        (row: Record<string, any>) => {
-                          const rowArray = columns.map((col) => row[col]);
-                          combinedData.push(rowArray);
+                        (row: any[]) => {
+                          combinedData.push(row.map(cell => cell as string | number | null));
                         },
                       );
                     }
                   });
 
+                  // 创建一个包含合并数据的SheetInfo数组
+                  const sheetInfos: SheetInfo[] = [{
+                    sheet_name: "结果数据",
+                    columns,
+                    data: combinedData,
+                  }];
+
                   return {
                     ...node,
                     data: {
                       ...node.data,
-                      testResult: {
-                        columns,
-                        data: combinedData,
-                      } as SimpleDataframe,
+                      testResult: sheetInfos,
                       error: undefined,
                     },
                   };
@@ -588,6 +605,7 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         onEdgesChange={handleOnEdgesChange}
         onConnect={handleOnConnect}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
         fitView
         nodeDragThreshold={10}
         onNodeDragStart={(_event, node) => {

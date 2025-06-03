@@ -133,7 +133,8 @@ class PipelineRequest(BaseModel):
 
 class TestNodeRequest(BaseModel):
     """测试Pipeline节点请求模型"""
-    workspace_id: str = Field(..., description="工作区ID")
+    workspace_id: Optional[str] = Field(None, description="工作区ID（用于向后兼容）")
+    workspace_config_json: Optional[str] = Field(None, description="工作区配置JSON（优先使用）")
     node_id: str = Field(..., description="节点ID")
     execution_mode: str = Field(default="test", description="执行模式: test 或 production")
     test_mode_max_rows: int = Field(default=100, description="测试模式最大行数限制")

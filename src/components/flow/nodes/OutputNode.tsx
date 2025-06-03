@@ -1,17 +1,13 @@
+import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
 import useToast from "@/hooks/useToast";
 import {
-  useTestPipelineNodeMutation,
-  usePreviewNodeMutation,
+  usePreviewNodeMutation
 } from "@/hooks/workspaceQueries";
-import {
-  isDataFrameResult,
-  isMultiSheetResult,
-  transformOutputResults,
-} from "@/lib/dataTransforms";
+import { isDataFrameResult, isMultiSheetResult } from "@/lib/dataTransforms";
 import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { PipelineNodeResult, SheetInfo, SimpleDataframe } from "@/types";
-import { FlowNodeProps, NodeType, OutputNodeDataContext } from "@/types/nodes";
+import { SheetInfo, SimpleDataframe } from "@/types";
+import { FlowNodeProps, OutputNodeDataContext } from "@/types/nodes";
 import { CopyIcon, FileIcon } from "@radix-ui/react-icons";
 import {
   Badge,
@@ -25,8 +21,6 @@ import {
 } from "@radix-ui/themes";
 import { useCallback } from "react";
 import { useNodeId } from "reactflow";
-import { BaseNode } from "./BaseNode";
-import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
 
 export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   const toast = useToast();
@@ -35,8 +29,6 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   // 使用新的预览API作为主要方法
   const previewNodeMutation = usePreviewNodeMutation();
-  // 保留旧API作为备选
-  const { mutate: testPipelineMutation } = useTestPipelineNodeMutation();
 
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const updateOutputNodeDataInStore = useWorkspaceStore(
@@ -169,9 +161,9 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
     console.log("OutputNode previewNode");
     previewNodeMutation.mutate(
       {
-        workspaceId: currentWorkspace.id,
         nodeId: nodeData.id,
         testModeMaxRows: 100,
+        workspaceConfig: currentWorkspace || undefined,
       },
       {
         onSuccess: (result) => {

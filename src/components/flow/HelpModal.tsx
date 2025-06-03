@@ -32,6 +32,7 @@ const TextModal = ({
           color={buttonColor}
           size="1"
           variant={buttonVariant}
+          className="!h-5 !py-1"
         >
           {label}
         </Button>

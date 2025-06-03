@@ -12,11 +12,14 @@ import {
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, IndexSourceNodeDataContext } from "@/types/nodes";
 import { Button, Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 import { BaseNode } from "./BaseNode";
-import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
+import {
+  BadgeConfig,
+  EnhancedBaseNode,
+} from "@/components/flow/nodes/EnhancedBaseNode";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
@@ -130,9 +133,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
 
     previewNodeMutation.mutate(
       {
-        workspaceId: currentWorkspace.id,
         nodeId: nodeData.id,
         testModeMaxRows: 100,
+        workspaceConfig: currentWorkspace || undefined,
       },
       {
         onSuccess: (result) => {
@@ -169,6 +172,54 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     );
   };
 
+  const badges: BadgeConfig[] = useMemo(() => {
+    const badges: BadgeConfig[] = [];
+    if (nodeData.sourceFileID) {
+      badges.push({
+        color: "green",
+        variant: "soft",
+        label:
+          files?.find((file) => file.id === nodeData.sourceFileID)?.name ||
+          "未指定!",
+      });
+    }
+
+    if (indexMode === "column") {
+      badges.push({
+        color: "orange",
+        variant: "soft",
+        label: "列名索引",
+      });
+    } else {
+      badges.push({
+        color: "blue",
+        variant: "soft",
+        label: "工作表索引",
+      });
+    }
+    if (indexMode === "column" && nodeData.sheetName) {
+      badges.push({
+        color: "blue",
+        variant: "soft",
+        label: nodeData.sheetName,
+      });
+    }
+    if (nodeData.columnName) {
+      badges.push({
+        color: "green",
+        variant: "soft",
+        label: nodeData.columnName,
+      });
+    }
+    return badges;
+  }, [
+    nodeData.sourceFileID,
+    nodeData.sheetName,
+    nodeData.columnName,
+    indexMode,
+    files,
+  ]);
+
   return (
     <>
       <EnhancedBaseNode
@@ -177,6 +228,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         isTarget={false}
         onTestRun={previewNode}
         testable
+        badges={badges}
       >
         <Flex direction="column" gap="3">
           <Flex align="center" gap="2">

@@ -1,15 +1,16 @@
 import ExcelPreview from "@/components/ExcelPreview";
 import { Button } from "@/components/ui/button";
 import { SheetInfo } from "@/types";
-import { Box, Dialog } from "@radix-ui/themes";
+import { Box, Dialog, Skeleton } from "@radix-ui/themes";
 import { useEffect, useMemo } from "react";
 
 interface TestRunModalProps {
   runResult?: SheetInfo[];
   onTestRun?: () => void;
+  onClose?: () => void; // clear the run result
 }
 
-const TestRunModal = ({ runResult, onTestRun }: TestRunModalProps) => {
+const TestRunModal = ({ runResult, onTestRun, onClose }: TestRunModalProps) => {
   useEffect(() => {
     console.log("TestRunModal runResult", runResult);
   }, [runResult]);
@@ -24,9 +25,15 @@ const TestRunModal = ({ runResult, onTestRun }: TestRunModalProps) => {
     }
     return [runResult];
   }, [runResult]);
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      console.log("testrunmodal onclose");
+      onClose?.();
+    }
+  };
 
   return (
-    <Dialog.Root>
+    <Dialog.Root onOpenChange={handleOpenChange}>
       <Dialog.Trigger>
         <Button
           color="blue"
@@ -39,14 +46,16 @@ const TestRunModal = ({ runResult, onTestRun }: TestRunModalProps) => {
       </Dialog.Trigger>
       <Dialog.Content className="">
         <Dialog.Title>测试运行结果</Dialog.Title>
-        {runResult && (
-          <Box className="max-h-72 overflow-auto rounded-md border p-2">
+        {runResult ? (
+          <Box className="max-h-72 overflow-auto">
             <ExcelPreview
               sheets={sanitizedResult}
               hide={false}
               loading={false}
             />
           </Box>
+        ) : (
+          <Skeleton className="h-32 w-full" />
         )}
       </Dialog.Content>
     </Dialog.Root>

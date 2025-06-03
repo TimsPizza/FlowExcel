@@ -241,23 +241,40 @@ class PipelineService:
             )
 
     def preview_node(
-        self, workspace_id: str, node_id: str, test_mode_max_rows: int = 100
+        self, 
+        node_id: str, 
+        test_mode_max_rows: int = 100,
+        workspace_id: str = None,
+        workspace_config_json: str = None
     ) -> Dict[str, Any]:
         """
         预览单个节点的执行结果，根据节点类型调用不同的预览方法
 
         Args:
-            workspace_id: 工作区ID
             node_id: 要预览的节点ID
             test_mode_max_rows: 预览数据的最大行数
+            workspace_id: 工作区ID（向后兼容）
+            workspace_config_json: 工作区配置JSON（优先使用）
 
         Returns:
             节点预览结果
         """
         try:
-            # 加载工作区配置
-            workspace_data = WorkspaceService.load_workspace(workspace_id)
-            workspace_config = convert_workspace_config_from_json(workspace_data)
+            # 优先使用 workspace_config_json，如果没有则使用 workspace_id
+            if workspace_config_json:
+                import json
+                workspace_data = json.loads(workspace_config_json)
+                workspace_config = convert_workspace_config_from_json(workspace_data)
+            elif workspace_id:
+                # 加载工作区配置（向后兼容）
+                workspace_data = WorkspaceService.load_workspace(workspace_id)
+                workspace_config = convert_workspace_config_from_json(workspace_data)
+            else:
+                return {
+                    "success": False,
+                    "error": "必须提供 workspace_config_json 或 workspace_id 参数",
+                    "node_id": node_id,
+                }
 
             # 查找目标节点
             target_node = None

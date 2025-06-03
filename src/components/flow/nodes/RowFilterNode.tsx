@@ -1,11 +1,14 @@
-import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
+import { useNodeColumns } from "@/hooks/useNodeColumns";
 import {
-  FlowNodeProps,
-  RowFilterNodeDataContext,
-  NodeType,
-} from "@/types/nodes";
+  usePreviewNodeMutation
+} from "@/hooks/workspaceQueries";
+import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { FlowNodeProps, RowFilterNodeDataContext } from "@/types/nodes";
 import { PlusIcon, TrashIcon } from "@radix-ui/react-icons";
 import {
+  Badge,
   Button,
   Flex,
   Grid,
@@ -14,21 +17,9 @@ import {
   Select,
   Text,
   TextField,
-  Badge,
 } from "@radix-ui/themes";
-import { useState } from "react";
-import { useNodeId } from "reactflow";
-import { BaseNode } from "./BaseNode";
-import { useNodeColumns } from "@/hooks/useNodeColumns";
-import {
-  useTestPipelineNodeMutation,
-  usePreviewNodeMutation,
-} from "@/hooks/workspaceQueries";
-import { transformSingleNodeResults } from "@/lib/dataTransforms";
-import { PipelineNodeResult, SimpleDataframe } from "@/types";
 import { toast } from "react-toastify";
-import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
-import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
+import { useNodeId } from "reactflow";
 
 const OPERATORS = [
   { value: "==", label: "等于" },
@@ -45,7 +36,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
   const nodeData = data as RowFilterNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
-  const testPipelineNodeMutation = useTestPipelineNodeMutation();
   const previewNodeMutation = usePreviewNodeMutation();
 
   // 使用真实的列数据
@@ -110,9 +100,9 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
 
     previewNodeMutation.mutate(
       {
-        workspaceId: currentWorkspace.id,
         nodeId: nodeData.id,
         testModeMaxRows: 100,
+        workspaceConfig: currentWorkspace || undefined,
       },
       {
         onSuccess: (result) => {
@@ -120,7 +110,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
 
           if (result.success) {
             const sheets = convertPreviewToSheets(result);
-            const metadata = getPreviewMetadata(result);
 
             console.log("Preview sheets:", sheets);
 
@@ -139,84 +128,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
           console.error("Preview failed:", error);
           updateRowFilterNodeDataInStore(nodeId, {
             error: `预览失败: ${error.message}`,
-            testResult: undefined,
-          });
-        },
-      },
-    );
-  };
-
-  const testPipelineRun = async () => {
-    if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
-      return;
-    }
-
-    if (!nodeData.conditions?.length) {
-      updateRowFilterNodeDataInStore(nodeId, {
-        error: "请至少添加一个过滤条件",
-        testResult: undefined,
-      });
-      return;
-    }
-
-    // 验证每个条件是否完整
-    const incomplete = nodeData.conditions.some(
-      (condition) => !condition.column || !condition.operator,
-    );
-
-    if (incomplete) {
-      updateRowFilterNodeDataInStore(nodeId, {
-        error: "过滤条件不完整",
-        testResult: undefined,
-      });
-      return;
-    }
-
-    testPipelineNodeMutation.mutate(
-      {
-        workspaceId: currentWorkspace.id,
-        nodeId: nodeData.id,
-      },
-      {
-        onSuccess: (result) => {
-          const nodeResults = result.results[nodeData.id];
-          if (nodeResults && nodeResults.length > 0) {
-            // 使用数据转换函数处理结果
-            const transformed = transformSingleNodeResults(
-              nodeData.id,
-              NodeType.ROW_FILTER,
-              nodeResults as PipelineNodeResult[],
-            );
-
-            if (transformed.error) {
-              updateRowFilterNodeDataInStore(nodeId, {
-                error: transformed.error,
-                testResult: undefined,
-              });
-            } else {
-              // 转换为SimpleDataframe格式
-              const simpleDataframe: SimpleDataframe = Array.isArray(
-                transformed.displayData,
-              )
-                ? { columns: [], data: [] } // 如果是多sheet，转为空dataframe
-                : transformed.displayData || { columns: [], data: [] };
-
-              updateRowFilterNodeDataInStore(nodeId, {
-                testResult: simpleDataframe,
-                error: undefined,
-              });
-            }
-          } else {
-            updateRowFilterNodeDataInStore(nodeId, {
-              error: "未获取到测试结果",
-              testResult: undefined,
-            });
-          }
-        },
-        onError: (error: Error) => {
-          updateRowFilterNodeDataInStore(nodeId, {
-            error: `测试运行失败: ${error.message}`,
             testResult: undefined,
           });
         },
@@ -355,18 +266,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
           )}
         </Flex>
       </ScrollArea>
-
-      {/* 双重API支持 - 演示新旧API */}
-      <Flex gap="2" style={{ marginTop: "8px" }}>
-        <Button
-          size="1"
-          variant="outline"
-          onClick={testPipelineRun}
-          disabled={testPipelineNodeMutation.isLoading}
-        >
-          {testPipelineNodeMutation.isLoading ? "旧版测试中..." : "旧版测试"}
-        </Button>
-      </Flex>
     </EnhancedBaseNode>
   );
 };

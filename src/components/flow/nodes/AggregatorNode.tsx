@@ -1,29 +1,13 @@
 import { useNodeColumns } from "@/hooks/useNodeColumns";
 import useToast from "@/hooks/useToast";
-import {
-  usePreviewNodeMutation,
-  useTestPipelineNodeMutation,
-} from "@/hooks/workspaceQueries";
-import {
-  TransformedNodeResult,
-  transformSingleNodeResults,
-} from "@/lib/dataTransforms";
-import {
-  convertPreviewToSheets,
-  getPreviewMetadata,
-  isAggregationPreview,
-} from "@/lib/utils";
+import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
+import { convertPreviewToSheets, isAggregationPreview } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { PipelineNodeResult, SimpleDataframe } from "@/types";
-import {
-  AggregatorNodeDataContext,
-  FlowNodeProps,
-  NodeType,
-} from "@/types/nodes";
-import { Badge, Flex, Select, Text, TextField } from "@radix-ui/themes";
-import { useCallback, useState } from "react";
+import { AggregatorNodeDataContext, FlowNodeProps } from "@/types/nodes";
+import { Flex, Select, Text, TextField } from "@radix-ui/themes";
+import { useCallback, useMemo } from "react";
 import { useNodeId } from "reactflow";
-import { EnhancedBaseNode } from "./EnhancedBaseNode";
+import { BadgeConfig, EnhancedBaseNode } from "./EnhancedBaseNode";
 
 const AGGREGATION_METHODS = [
   { value: "sum", label: "求和" },
@@ -41,12 +25,6 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   // 使用新的预览API作为主要方法
   const previewNodeMutation = usePreviewNodeMutation();
-  // 保留旧API作为备选
-  const testPipelineNodeMutation = useTestPipelineNodeMutation();
-
-  // 保存转换后的结果
-  const [transformedResult, setTransformedResult] =
-    useState<TransformedNodeResult | null>(null);
 
   // 使用真实的列数据
   const {
@@ -75,6 +53,29 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     },
     [nodeId, updateAggregatorNodeDataInStore],
   );
+
+  const badges: BadgeConfig[] = useMemo(() => {
+    const badges: BadgeConfig[] = [];
+    if (nodeData.statColumn) {
+      badges.push({
+        color: "green",
+        variant: "soft",
+        label: nodeData.statColumn,
+      });
+    }
+
+    if (nodeData.method) {
+      badges.push({
+        color: "blue",
+        variant: "soft",
+        label:
+          "方法: " +
+          AGGREGATION_METHODS.find((m) => m.value === nodeData.method)?.label,
+      });
+    }
+
+    return badges;
+  }, [nodeData.statColumn, nodeData.method]);
 
   const handleSelectColumn = (column: string) => {
     updateLocalNodeData({
@@ -123,9 +124,9 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
     previewNodeMutation.mutate(
       {
-        workspaceId: currentWorkspace.id,
         nodeId: nodeData.id,
         testModeMaxRows: 100,
+        workspaceConfig: currentWorkspace || undefined,
       },
       {
         onSuccess: (result) => {
@@ -176,6 +177,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
       isSource={true}
       isTarget={true}
       testable={true}
+      badges={badges}
     >
       <Flex direction="column" gap="2">
         {/* 列选择 */}
@@ -242,24 +244,6 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
             onChange={(e) => handleOutputAsChange(e.target.value)}
             placeholder={`${nodeData.method || "method"}_${nodeData.statColumn || "column"}`}
           />
-        </Flex>
-
-        {/* 状态指示 */}
-        <Flex gap="1" align="center">
-          {nodeData.statColumn && (
-            <Badge color="green" size="1">
-              列: {nodeData.statColumn}
-            </Badge>
-          )}
-          {nodeData.method && (
-            <Badge color="blue" size="1">
-              方法:{" "}
-              {
-                AGGREGATION_METHODS.find((m) => m.value === nodeData.method)
-                  ?.label
-              }
-            </Badge>
-          )}
         </Flex>
       </Flex>
     </EnhancedBaseNode>

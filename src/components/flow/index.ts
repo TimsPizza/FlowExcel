@@ -1,6 +1,6 @@
 import { FlowEditor } from './FlowEditor';
 import nodeTypes from './nodes/NodeFactory';
-import { BaseNode } from './nodes/BaseNode';
+import { EnhancedBaseNode } from './nodes/EnhancedBaseNode';
 import { IndexSourceNode } from './nodes/IndexSourceNode';
 import { SheetSelectorNode } from './nodes/SheetSelectorNode';
 import { RowFilterNode } from './nodes/RowFilterNode';
@@ -11,7 +11,7 @@ import { OutputNode } from './nodes/OutputNode';
 export {
   FlowEditor,
   nodeTypes,
-  BaseNode,
+  EnhancedBaseNode,
   IndexSourceNode,
   SheetSelectorNode,
   RowFilterNode,

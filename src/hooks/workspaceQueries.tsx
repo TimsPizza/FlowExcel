@@ -6,7 +6,8 @@ import {
   IndexValues,
   SheetInfo,
   TryReadSheetNamesResponse,
-  WorkspaceConfig
+  WorkspaceConfig,
+  PreviewNodeResult,
 } from "@/types";
 import {
   AggregatorNodeDataContext,
@@ -132,12 +133,14 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
       type: reactFlowNode.type as string, // RF type, e.g., "indexSource"
       position: reactFlowNode.position,
       data: {
-        // Spread all properties from currentData first
+        // Spread all properties from currentData first, excluding testResult
         ...currentData,
         // Ensure essential base properties exist
         label: currentData.label || `Node ${reactFlowNode.id.substring(0, 5)}`,
         nodeType: currentData.nodeType, // This must exist due to the check above
-        // testResult and error are optional and can remain as they are or undefined
+        // 过滤掉 testResult 字段，因为这个字段没必要保存
+        testResult: undefined,
+        // error is optional and can remain as they are or undefined
       } as FlowNodeData, // Explicitly cast to FlowNodeData
     };
 
@@ -150,6 +153,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         sanitizedNode.data = {
           ...indexData,
           label: indexData.label || "索引源",
+          testResult: undefined, // 过滤掉 testResult
           // sourceFileID, sheetName, columnNames are optional per definition
         };
         break;
@@ -159,6 +163,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           ...sheetData,
           label: sheetData.label || "Sheet定位",
           mode: sheetData.mode || "auto_by_index", // mode is mandatory
+          testResult: undefined, // 过滤掉 testResult
           // targetFileID, manualSheetName are optional
         };
         break;
@@ -168,6 +173,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           ...filterData,
           label: filterData.label || "行过滤",
           conditions: filterData.conditions || [], // conditions is mandatory
+          testResult: undefined, // 过滤掉 testResult
         };
         break;
       case NodeType.ROW_LOOKUP:
@@ -175,6 +181,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         sanitizedNode.data = {
           ...lookupData,
           label: lookupData.label || "行查找/列匹配",
+          testResult: undefined, // 过滤掉 testResult
           // matchColumn is optional
         };
         break;
@@ -184,6 +191,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           ...aggData,
           label: aggData.label || "统计",
           method: aggData.method || "sum", // method is mandatory
+          testResult: undefined, // 过滤掉 testResult
           // statColumn is optional
         };
         break;
@@ -193,6 +201,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           ...outputData,
           label: outputData.label || "输出",
           outputFormat: outputData.outputFormat || "table", // outputFormat is optional but good to default
+          testResult: undefined, // 过滤掉 testResult
         };
         break;
       default:
@@ -275,11 +284,10 @@ export const getExcelPreview = async (filePath?: string) => {
   console.log("filePath", filePath);
   const result = await apiClient.previewExcelData(filePath);
   console.log("result-raw", result);
-  
+
   // The API client already handles the response parsing and error checking
   const unemptySheets =
-    result?.sheets?.filter((sheet: any) => sheet?.columns?.length > 0) ??
-    [];
+    result?.sheets?.filter((sheet: any) => sheet?.columns?.length > 0) ?? [];
   console.log("unemptySheets", unemptySheets);
   const sanitizedResult = {
     sheets: unemptySheets,
@@ -319,7 +327,12 @@ const getIndexValues = async (
   columnName: string,
 ) => {
   console.log("getIndexValues", filePath, sheetName, columnName);
-  const result = await apiClient.getIndexValues(filePath, sheetName, headerRow, columnName);
+  const result = await apiClient.getIndexValues(
+    filePath,
+    sheetName,
+    headerRow,
+    columnName,
+  );
   console.log("getIndexValues result", result);
   return result;
 };
@@ -356,7 +369,11 @@ const tryReadHeaderRow = async (
   sheetName: string,
   headerRow: number,
 ) => {
-  const result = await apiClient.tryReadHeaderRow(filePath, sheetName, headerRow);
+  const result = await apiClient.tryReadHeaderRow(
+    filePath,
+    sheetName,
+    headerRow,
+  );
   console.log("tryReadHeaderRow result", result);
   return result;
 };
@@ -425,8 +442,8 @@ const executePipeline = async (params: {
   const result = await apiClient.executePipeline(
     params.workspaceId,
     params.targetNodeId,
-    params.executionMode || 'production',
-    params.outputFilePath
+    params.executionMode || "production",
+    params.outputFilePath,
   );
   return result as PipelineExecutionResult;
 };
@@ -434,9 +451,14 @@ const executePipeline = async (params: {
 export const useExecutePipelineMutation = () => {
   const toast = useToast();
   return useMutation<
-    PipelineExecutionResult, 
-    Error, 
-    { workspaceId: string; targetNodeId: string; executionMode?: string; outputFilePath?: string }
+    PipelineExecutionResult,
+    Error,
+    {
+      workspaceId: string;
+      targetNodeId: string;
+      executionMode?: string;
+      outputFilePath?: string;
+    }
   >({
     mutationFn: executePipeline,
     onSuccess: () => {
@@ -449,95 +471,24 @@ export const useExecutePipelineMutation = () => {
   });
 };
 
-/* Pipeline node testing - unified interface */
-
-// Updated to use new backend API parameters
-const testPipelineNodeUnified = async (params: {
-  workspaceId: string;
-  nodeId: string;
-  executionMode?: string;
-  testModeMaxRows?: number;
-}): Promise<SheetInfo[]> => {
-  console.log("testPipelineNodeUnified params", params);
-  const result = await apiClient.testPipelineNodeUnified(
-    params.workspaceId,
-    params.nodeId,
-    params.executionMode || 'test',
-    params.testModeMaxRows || 100
-  );
-  console.log("testPipelineNodeUnified result", result);
-  return result;
-};
-
-export const useTestPipelineNodeUnifiedMutation = () => {
-  const toast = useToast();
-  return useMutation<
-    SheetInfo[],
-    Error,
-    { workspaceId: string; nodeId: string; executionMode?: string; testModeMaxRows?: number }
-  >({
-    mutationFn: testPipelineNodeUnified,
-    onSuccess: () => {
-      toast.success("Pipeline测试完成");
-    },
-    onError: (error) => {
-      console.error("Pipeline测试失败:", error);
-      toast.error(`Pipeline测试失败: ${error.message}`);
-    },
-  });
-};
-
-/* Pipeline node testing - legacy interface */
-
-// Updated to use new backend API parameters
-const testPipelineNode = async (params: {
-  workspaceId: string;
-  nodeId: string;
-  executionMode?: string;
-  testModeMaxRows?: number;
-}): Promise<PipelineExecutionResult> => {
-  console.log("testPipelineNode params", params);
-  const result = await apiClient.testPipelineNode(
-    params.workspaceId,
-    params.nodeId,
-    params.executionMode || 'test',
-    params.testModeMaxRows || 100
-  );
-  console.log("testPipelineNode result", result);
-  return result as PipelineExecutionResult;
-};
-
-export const useTestPipelineNodeMutation = () => {
-  const toast = useToast();
-  return useMutation<
-    PipelineExecutionResult,
-    Error,
-    { workspaceId: string; nodeId: string; executionMode?: string; testModeMaxRows?: number }
-  >({
-    mutationFn: testPipelineNode,
-    onSuccess: () => {
-      toast.success("Pipeline测试完成");
-    },
-    onError: (error) => {
-      console.error("Pipeline测试失败:", error);
-      toast.error(`Pipeline测试失败: ${error.message}`);
-    },
-    
-  });
-};
-
 /* Enhanced Node Preview - using new /preview-node endpoint */
 
 const previewNode = async (params: {
-  workspaceId: string;
   nodeId: string;
   testModeMaxRows?: number;
-}): Promise<import('@/types').PreviewNodeResult> => {
+  workspaceId?: string;
+  workspaceConfig?: WorkspaceConfig;
+}): Promise<PreviewNodeResult> => {
+  if (!params.workspaceConfig) {
+    throw new Error("workspaceConfig is required");
+  }
   console.log("previewNode params", params);
+  const sanitizedWorkspaceConfig = sanitizeWorkspaceData(params.workspaceConfig);
   const result = await apiClient.previewNode(
-    params.workspaceId,
     params.nodeId,
-    params.testModeMaxRows || 100
+    params.testModeMaxRows || 100,
+    params.workspaceId,
+    JSON.stringify(sanitizedWorkspaceConfig),
   );
   console.log("previewNode result", result);
   return result;
@@ -546,9 +497,14 @@ const previewNode = async (params: {
 export const usePreviewNodeMutation = () => {
   const toast = useToast();
   return useMutation<
-    import('@/types').PreviewNodeResult,
+    PreviewNodeResult,
     Error,
-    { workspaceId: string; nodeId: string; testModeMaxRows?: number }
+    {
+      nodeId: string;
+      testModeMaxRows: number;
+      workspaceId?: string;
+      workspaceConfig?: WorkspaceConfig;
+    }
   >({
     mutationFn: previewNode,
     onSuccess: (data) => {

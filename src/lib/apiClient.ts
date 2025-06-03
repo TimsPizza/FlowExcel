@@ -3,8 +3,8 @@
  * Replaces Tauri invoke calls with HTTP requests
  */
 
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { SheetInfo } from '@/types';
+import axios, { AxiosInstance, AxiosResponse } from "axios";
+import { SheetInfo } from "@/types";
 
 // API Response types matching the Python server
 interface APIResponse<T = any> {
@@ -45,16 +45,11 @@ interface PipelineRequest {
   output_file_path?: string;
 }
 
-interface TestNodeRequest {
-  workspace_id: string;
-  node_id: string;
-  execution_mode?: string;
-  test_mode_max_rows?: number;
-}
 
 // New: Preview Node request interface
 interface PreviewNodeRequest {
-  workspace_id: string;
+  workspace_id?: string;
+  workspace_config_json?: string;
   node_id: string;
   test_mode_max_rows?: number;
 }
@@ -114,7 +109,11 @@ interface AggregationPreviewResult extends NodePreviewResult {
 }
 
 // Union type for all possible preview results
-type PreviewNodeResult = IndexSourcePreviewResult | DataFramePreviewResult | AggregationPreviewResult | NodePreviewResult;
+type PreviewNodeResult =
+  | IndexSourcePreviewResult
+  | DataFramePreviewResult
+  | AggregationPreviewResult
+  | NodePreviewResult;
 
 // Workspace management request types
 interface SaveWorkspaceRequest {
@@ -122,7 +121,8 @@ interface SaveWorkspaceRequest {
   config_json: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:11017';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:11017";
 
 class ApiClient {
   private client: AxiosInstance;
@@ -132,9 +132,9 @@ class ApiClient {
     this.baseURL = API_BASE_URL;
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: 30000, // 30 seconds timeout
+      timeout: 60000, // 60 seconds timeout, as some operations may take a long time
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -142,22 +142,22 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error('API Client Error:', error);
+        console.error("API Client Error:", error);
         if (error.response?.data?.error) {
           throw new Error(error.response.data.error);
         }
-        if (error.code === 'ECONNREFUSED') {
-          throw new Error('API server is not running. Please check if the Python server is started.');
+        if (error.code === "ECONNREFUSED") {
+          throw new Error("后端服务未启动，这可能是个bug");
         }
         throw error;
-      }
+      },
     );
   }
 
   // Health check
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await this.client.get('/health');
+      const response = await this.client.get("/health");
       return response.status === 200;
     } catch (error) {
       return false;
@@ -167,12 +167,15 @@ class ApiClient {
   // Preview Excel data
   async previewExcelData(filePath: string): Promise<any> {
     const request: PreviewRequest = { file_path: filePath };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/excel/preview', request);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/excel/preview",
+      request,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to preview Excel data');
+      throw new Error(response.data.error || "预览数据失败");
     }
-    
+
     return response.data.data;
   }
 
@@ -181,7 +184,7 @@ class ApiClient {
     filePath: string,
     sheetName: string,
     headerRow: number,
-    columnName: string
+    columnName: string,
   ): Promise<any> {
     const request: IndexValuesRequest = {
       file_path: filePath,
@@ -189,12 +192,15 @@ class ApiClient {
       header_row: headerRow,
       column_name: columnName,
     };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/excel/index-values', request);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/excel/index-values",
+      request,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to get index values');
+      throw new Error(response.data.error || "获取索引值失败");
     }
-    
+
     return response.data.data;
   }
 
@@ -202,145 +208,119 @@ class ApiClient {
   async tryReadHeaderRow(
     filePath: string,
     sheetName: string,
-    headerRow: number
+    headerRow: number,
   ): Promise<any> {
     const request: HeaderRowRequest = {
       file_path: filePath,
       sheet_name: sheetName,
       header_row: headerRow,
     };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/excel/header-row', request);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/excel/header-row",
+      request,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to read header row');
+      throw new Error(response.data.error || "读取表头失败");
     }
-    
+
     return response.data.data;
   }
 
   // Try to read sheet names
   async tryReadSheetNames(filePath: string): Promise<any> {
     const request: SheetNamesRequest = { file_path: filePath };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/excel/sheet-names', request);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/excel/sheet-names",
+      request,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to read sheet names');
+      throw new Error(response.data.error || "读取表名失败");
     }
-    
+
     return response.data.data;
   }
 
   // Execute pipeline - updated to use target_node_id
   async executePipeline(
-    workspaceId: string, 
+    workspaceId: string,
     targetNodeId: string,
-    executionMode: string = 'production',
-    outputFilePath?: string
+    executionMode: string = "production",
+    outputFilePath?: string,
   ): Promise<any> {
-    const request: PipelineRequest = { 
+    const request: PipelineRequest = {
       workspace_id: workspaceId,
       target_node_id: targetNodeId,
       execution_mode: executionMode,
-      output_file_path: outputFilePath
+      output_file_path: outputFilePath,
     };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/pipeline/execute', request);
-    
-    if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to execute pipeline');
-    }
-    
-    return response.data.data;
-  }
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/pipeline/execute",
+      request,
+    );
 
-  // Test pipeline node - updated to use new request format
-  async testPipelineNode(
-    workspaceId: string, 
-    nodeId: string,
-    executionMode: string = 'test',
-    testModeMaxRows: number = 100
-  ): Promise<any> {
-    const request: TestNodeRequest = {
-      workspace_id: workspaceId,
-      node_id: nodeId,
-      execution_mode: executionMode,
-      test_mode_max_rows: testModeMaxRows,
-    };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/pipeline/test-node', request);
-    
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to test pipeline node');
+      throw new Error(response.data.error || "执行流程失败");
     }
-    
+
     return response.data.data;
   }
 
   // New: Preview pipeline node - uses the new /preview-node endpoint
   async previewNode(
-    workspaceId: string,
     nodeId: string,
-    testModeMaxRows: number = 100
+    testModeMaxRows: number = 100,
+    workspaceId?: string,
+    workspaceConfigJson?: string,
   ): Promise<PreviewNodeResult> {
     const request: PreviewNodeRequest = {
-      workspace_id: workspaceId,
       node_id: nodeId,
       test_mode_max_rows: testModeMaxRows,
     };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/pipeline/preview-node', request);
-    
-    if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to preview pipeline node');
-    }
-    
-    return response.data.data as PreviewNodeResult;
-  }
 
-  // Test pipeline node - unified interface (updated)
-  async testPipelineNodeUnified(
-    workspaceId: string, 
-    nodeId: string,
-    executionMode: string = 'test',
-    testModeMaxRows: number = 100
-  ): Promise<SheetInfo[]> {
-    const request: TestNodeRequest = {
-      workspace_id: workspaceId,
-      node_id: nodeId,
-      execution_mode: executionMode,
-      test_mode_max_rows: testModeMaxRows,
-    };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/pipeline/test-node', request);
-    
+    // 添加工作区参数（优先使用 workspaceConfigJson）
+    if (workspaceConfigJson) {
+      request.workspace_config_json = workspaceConfigJson;
+    } else if (workspaceId) {
+      request.workspace_id = workspaceId;
+    } else {
+      throw new Error("必须提供 workspaceId 或 workspaceConfigJson 参数");
+    }
+
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/pipeline/preview-node",
+      request,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to test pipeline node');
+      throw new Error(response.data.error || "预览流程节点失败");
     }
-    
-    // Extract sheets from the normalized response data
-    const responseData = response.data.data;
-    if (responseData && responseData.sheets) {
-      return responseData.sheets;
-    }
-    
-    // 返回空数组作为fallback
-    return [];
+
+    return response.data.data as PreviewNodeResult;
   }
 
   // Workspace management methods
   async listWorkspaces(): Promise<any> {
-    const response: AxiosResponse<APIResponse> = await this.client.get('/workspace/list');
-    
+    const response: AxiosResponse<APIResponse> =
+      await this.client.get("/workspace/list");
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to list workspaces');
+      throw new Error(response.data.error || "获取工作空间列表失败");
     }
-    
+
     return response.data.data;
   }
 
   async loadWorkspace(workspaceId: string): Promise<any> {
-    const response: AxiosResponse<APIResponse> = await this.client.get(`/workspace/load/${workspaceId}`);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.get(
+      `/workspace/load/${workspaceId}`,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to load workspace');
+      throw new Error(response.data.error || "加载工作区失败");
     }
-    
+
     return response.data.data;
   }
 
@@ -349,29 +329,34 @@ class ApiClient {
       workspace_id: workspaceId,
       config_json: configJson,
     };
-    const response: AxiosResponse<APIResponse> = await this.client.post('/workspace/save', request);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      "/workspace/save",
+      request,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to save workspace');
+      throw new Error(response.data.error || "保存工作区失败");
     }
-    
+
     return response.data.data;
   }
 
   async deleteWorkspace(workspaceId: string): Promise<any> {
-    const response: AxiosResponse<APIResponse> = await this.client.delete(`/workspace/delete/${workspaceId}`);
-    
+    const response: AxiosResponse<APIResponse> = await this.client.delete(
+      `/workspace/delete/${workspaceId}`,
+    );
+
     if (!response.data.success) {
-      throw new Error(response.data.error || 'Failed to delete workspace');
+      throw new Error(response.data.error || "删除工作区失败");
     }
-    
+
     return response.data.data;
   }
 
   // Shutdown server (for cleanup)
   async shutdown(): Promise<void> {
     try {
-      await this.client.post('/shutdown');
+      await this.client.post("/shutdown");
     } catch (error) {
       // Ignore errors during shutdown as the server will close the connection
     }
@@ -382,4 +367,4 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 // Export the class for testing purposes
-export { ApiClient }; 
+export { ApiClient };

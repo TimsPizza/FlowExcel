@@ -9,10 +9,25 @@ import TestRunModal from "@/components/flow/TestRunModal";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { CustomNodeBaseData, NodeType } from "@/types/nodes";
 import { PlusIcon } from "@radix-ui/react-icons";
-import { Box, Button, Flex, Grid, Select, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Flex, Grid, Select, Text } from "@radix-ui/themes";
 import { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
+
+export interface BadgeConfig {
+  color:
+    | "red"
+    | "green"
+    | "yellow"
+    | "blue"
+    | "purple"
+    | "orange"
+    | "pink"
+    | "brown"
+    | "gray";
+  variant: "soft" | "outline" | "solid" | "surface";
+  label: string;
+}
 
 interface EnhancedBaseNodeProps {
   data: CustomNodeBaseData;
@@ -22,6 +37,7 @@ interface EnhancedBaseNodeProps {
   onTestRun?: () => void;
   onNodeDelete?: () => void;
   testable?: boolean;
+  badges?: BadgeConfig[];
 }
 
 export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
@@ -31,6 +47,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
   isTarget = true,
   onTestRun,
   testable = false,
+  badges = [],
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
@@ -41,8 +58,9 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
   const removeFlowNode = useWorkspaceStore((state) => state.removeFlowNode);
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
   const onConnect = useWorkspaceStore((state) => state.onConnect);
+  const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
 
-  const { getNodes, getEdges } = useReactFlow();
+  const { getNodes, getEdges, setNodes } = useReactFlow();
   const nodes = getNodes();
   const edges = getEdges();
 
@@ -89,25 +107,56 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
     [data.id, nodes, addFlowNode, onConnect],
   );
 
+  const handleSelect = () => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === data.id
+          ? { ...node, selected: true }
+          : { ...node, selected: false },
+      ),
+    );
+  };
+
   return (
     <>
       <Flex
         direction="column"
         gap="2"
-        className="rounded-md border border-gray-200 bg-white p-2 shadow-sm"
-        style={{ minWidth: "200px" }}
+        className="min-w-[200px] max-w-[15rem] rounded-md border border-gray-200 bg-white p-2 shadow-sm"
+        onClick={handleSelect}
       >
         <Flex justify="between" align="center" mb="1">
           <Flex
             direction="column"
             gap="1"
-            align="center"
+            align="start"
             justify="start"
             className="mt-1 self-start"
           >
             <Text weight="bold" size="2">
               {data.label}
             </Text>
+
+            {badges.map((badge) => (
+              <Badge
+                key={badge.label}
+                color={badge.color}
+                variant={badge.variant}
+                className="max-w-20 overflow-clip text-ellipsis whitespace-nowrap text-xs"
+              >
+                {badge.label}
+              </Badge>
+            ))}
+
+            {data.error && (
+              <TextModal
+                buttonColor="red"
+                content={data.error}
+                label="!"
+                title="错误"
+                buttonVariant="outline"
+              />
+            )}
           </Flex>
           <Grid columns="2" gap="1" align="center">
             <Button
@@ -119,7 +168,13 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
               删除
             </Button>
             {testable && (
-              <TestRunModal runResult={data.testResult} onTestRun={onTestRun} />
+              <TestRunModal
+                runResult={data.testResult}
+                onTestRun={onTestRun}
+                onClose={() => {
+                  updateNodeData(data.id, { testResult: undefined });
+                }}
+              />
             )}
             <TextModal
               content={NODE_TYPE_DESCRIPTIONS[data.nodeType as NodeType]}
@@ -129,8 +184,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
               color="gray"
               size="1"
               className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 setExpanded(!expanded);
               }}
             >
@@ -139,26 +193,10 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
           </Grid>
         </Flex>
 
-        {data.error && (
-          <Flex
-            direction="column"
-            gap="1"
-            align="center"
-            justify="start"
-            className="ml-auto mt-1 self-start"
-          >
-            <TextModal
-              buttonColor="red"
-              content={data.error}
-              label="!"
-              title="错误"
-              buttonVariant="outline"
-            />
-          </Flex>
-        )}
-
         {expanded && (
-          <Box className="rounded-md bg-[var(--accent-2)] p-2">{children}</Box>
+          <Box className="max-w-[14rem] rounded-md bg-[var(--accent-2)] p-2">
+            {children}
+          </Box>
         )}
 
         {/* 从输出端点创建新节点的按钮 */}

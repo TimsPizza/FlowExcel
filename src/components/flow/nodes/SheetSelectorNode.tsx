@@ -1,16 +1,15 @@
-import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
 import {
-  usePreviewNodeMutation,
-  useTestPipelineNodeMutation,
+  BadgeConfig,
+  EnhancedBaseNode,
+} from "@/components/flow/nodes/EnhancedBaseNode";
+import {
+  usePreviewNodeMutation
 } from "@/hooks/workspaceQueries";
-import {
-  convertPreviewToSheets,
-  getPreviewMetadata
-} from "@/lib/utils";
+import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { SheetInfo } from "@/types";
 import { FlowNodeProps, SheetSelectorNodeDataContext } from "@/types/nodes";
-import { Button, Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
+import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
+import { useMemo } from "react";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
 
@@ -19,7 +18,6 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeData = data as SheetSelectorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const { files } = useWorkspaceStore(useShallow(fileSelector));
-  const testPipelineNodeMutation = useTestPipelineNodeMutation();
   const previewNodeMutation = usePreviewNodeMutation();
   const updateSheetSelectorNodeData = useWorkspaceStore(
     (state) => state.updateNodeData,
@@ -74,9 +72,9 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
       previewNodeMutation.mutate(
         {
-          workspaceId: currentWorkspace?.id || "",
           nodeId: nodeData.id,
           testModeMaxRows: 50,
+          workspaceConfig: currentWorkspace || undefined,
         },
         {
           onSuccess: (result) => {
@@ -113,52 +111,23 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
   };
 
-  const testRun = async () => {
-    try {
-      // Validate required fields
-      if (!nodeData.targetFileID) {
-        updateSheetSelectorNodeData(nodeId, { error: "请选择目标Excel文件" });
-        return;
-      }
-
-      if (nodeData.mode === "manual" && !nodeData.manualSheetName) {
-        updateSheetSelectorNodeData(nodeId, {
-          error: "请选择手动指定的sheet名称",
-        });
-        return;
-      }
-
-      testPipelineNodeMutation.mutate(
-        {
-          workspaceId: currentWorkspace?.id || "",
-          nodeId: nodeData.id,
-        },
-        {
-          onSuccess: (result) => {
-            console.log("testPipelineNode result", result);
-            // @ts-ignore
-            const resultsData = result.results[nodeData.id];
-            let sheets: SheetInfo[] = [];
-            for (const result of resultsData) {
-              sheets.push({
-                sheet_name: result.index_value,
-                data: result.result_data.data,
-                columns: result.result_data.columns,
-              });
-            }
-            console.log("transformed sheets", sheets);
-            updateSheetSelectorNodeData(nodeId, {
-              testResult: sheets,
-              error: undefined,
-            });
-          },
-        },
-      );
-    } catch (error) {
-      console.error("测试运行失败:", error);
-      updateSheetSelectorNodeData(nodeId, { error: "测试运行失败" });
+  const badges: BadgeConfig[] = useMemo(() => {
+    const badges: BadgeConfig[] = [];
+    if (nodeData.mode === "manual") {
+      badges.push({
+        color: "green",
+        variant: "soft",
+        label: nodeData.manualSheetName || "未指定",
+      });
+    } else {
+      badges.push({
+        color: "blue",
+        variant: "soft",
+        label: "自动匹配",
+      });
     }
-  };
+    return badges;
+  }, [nodeData.mode, nodeData.manualSheetName, nodeData.targetFileID]);
 
   return (
     <EnhancedBaseNode
@@ -167,6 +136,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
       isTarget={true}
       onTestRun={previewNode}
       testable
+      badges={badges}
     >
       <Flex direction="column" gap="2">
         <Flex align="center" gap="2">
@@ -244,17 +214,6 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
             </Select.Root>
           </Flex>
         )}
-
-        <Flex gap="2" style={{ marginTop: "8px" }}>
-          <Button
-            size="1"
-            variant="outline"
-            onClick={testRun}
-            disabled={testPipelineNodeMutation.isLoading}
-          >
-            {testPipelineNodeMutation.isLoading ? "测试中..." : "旧版测试"}
-          </Button>
-        </Flex>
       </Flex>
     </EnhancedBaseNode>
   );
