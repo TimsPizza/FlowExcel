@@ -1,25 +1,18 @@
 import {
-  useGetIndexValues,
-  usePreviewNodeMutation,
-  useTryReadHeaderRow,
-  useTryReadSheetNames,
-} from "@/hooks/workspaceQueries";
-import {
-  convertPreviewToSheets,
-  getPreviewMetadata,
-  isIndexSourcePreview,
-} from "@/lib/utils";
-import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { FlowNodeProps, IndexSourceNodeDataContext } from "@/types/nodes";
-import { Button, Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
-import { useMemo, useState } from "react";
-import { useNodeId } from "reactflow";
-import { useShallow } from "zustand/react/shallow";
-import { BaseNode } from "./BaseNode";
-import {
   BadgeConfig,
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
+import {
+  usePreviewNodeMutation,
+  useTryReadHeaderRow,
+} from "@/hooks/workspaceQueries";
+import { convertPreviewToSheets, isIndexSourcePreview } from "@/lib/utils";
+import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { FlowNodeProps, IndexSourceNodeDataContext } from "@/types/nodes";
+import { Flex, TextField, RadioGroup, Select, Text } from "@radix-ui/themes";
+import { useMemo, useState } from "react";
+import { useNodeId } from "reactflow";
+import { useShallow } from "zustand/react/shallow";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeId = useNodeId()!;
@@ -38,7 +31,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     return "column";
   });
 
-  const { headerRow, isHeaderRowLoading, headerRowError } = useTryReadHeaderRow(
+  const { headerRow, headerRowError } = useTryReadHeaderRow(
     files?.find((file) => file.id === nodeData.sourceFileID)?.path || "",
     nodeData.sheetName || "",
     nodeData.sourceFileID && nodeData.sheetName
@@ -47,22 +40,6 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
           ?.sheet_metas.find((sheet) => sheet.sheet_name === nodeData.sheetName)
           ?.header_row || 0
       : 0,
-  );
-
-  const {
-    indexValuesArr: indexValues,
-    isIndexValuesLoading,
-    indexValuesError,
-  } = useGetIndexValues(
-    files?.find((file) => file.id === nodeData.sourceFileID)?.path || "",
-    nodeData.sheetName || "",
-    nodeData.sourceFileID && nodeData.sheetName
-      ? files
-          ?.find((file) => file.id === nodeData.sourceFileID)
-          ?.sheet_metas.find((sheet) => sheet.sheet_name === nodeData.sheetName)
-          ?.header_row || 0
-      : 0,
-    nodeData.columnName ? [nodeData.columnName] : [],
   );
 
   const handleSelectFile = async (fileId: string) => {
@@ -117,6 +94,12 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
       columnName: newColumnName,
       error: undefined,
       testResult: undefined,
+    });
+  };
+
+  const handleDisplayNameChange = (newDisplayName: string) => {
+    updateIndexSourceNodeData(nodeId, {
+      displayName: newDisplayName,
     });
   };
 
@@ -233,6 +216,17 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         <Flex direction="column" gap="3">
           <Flex align="center" gap="2">
             <Text size="1" weight="bold" style={{ width: "60px" }}>
+              输出名称:
+            </Text>
+            <TextField.Root
+              value={nodeData.displayName}
+              onChange={(e) => handleDisplayNameChange(e.target.value)}
+            >
+              <TextField.Slot />
+            </TextField.Root>
+          </Flex>
+          <Flex align="center" gap="2">
+            <Text size="1" weight="bold" style={{ width: "60px" }}>
               源文件:
             </Text>
             <Select.Root
@@ -329,23 +323,13 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
               </Flex>
             </>
           )}
-          {(headerRowError || indexValuesError) && (
+          {headerRowError && (
             <Text color="red" size="1">
-              {headerRowError && (
-                <span>
-                  {headerRowError instanceof Error
-                    ? headerRowError.message
-                    : String(headerRowError)}
-                </span>
-              )}
-              {headerRowError && indexValuesError ? <br /> : null}
-              {indexValuesError && (
-                <span>
-                  {indexValuesError instanceof Error
-                    ? indexValuesError.message
-                    : String(indexValuesError)}
-                </span>
-              )}
+              <span>
+                {headerRowError instanceof Error
+                  ? headerRowError.message
+                  : String(headerRowError)}
+              </span>
             </Text>
           )}
         </Flex>

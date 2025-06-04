@@ -3,42 +3,45 @@ Pipeline processing service.
 为不同类型节点提供专门的预览和执行方法，按照新的节点连接规则设计。
 """
 
-from typing import List, Dict, Any, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
 import pandas as pd
 
 # 使用新的API模型
-from app.models import PipelineExecutionResponse, APISheetData
+from app.models import APISheetData, PipelineExecutionResponse
+from app.services.workspace_service import WorkspaceService
 from app.utils import (
     convert_workspace_config_from_json,
     create_execute_pipeline_request,
 )
-from app.services.workspace_service import WorkspaceService
 
 # 使用新的pipeline模块
-from pipeline import execute_pipeline, PipelineExecutor
-from pipeline.models import (
-    WorkspaceConfig,
-    PipelineExecutionResult,
-    OutputResult,
-    SheetData,
-    ExecutionMode,
-    ExecutePipelineRequest,
-    BaseNode,
-    NodeType,
-    IndexValue,
-    GlobalContext,
-    PathContext,
-    BranchContext,
-)
+from pipeline import PipelineExecutor, execute_pipeline
 from pipeline.execution.context_manager import ContextManager
+from pipeline.models import (
+    BaseNode,
+    BranchContext,
+    ExecutePipelineRequest,
+    ExecutionMode,
+    GlobalContext,
+    IndexValue,
+    NodeType,
+    OutputResult,
+    PathContext,
+    PipelineExecutionResult,
+    SheetData,
+    WorkspaceConfig,
+)
 from pipeline.processors import (
+    AggregatorProcessor,
     IndexSourceProcessor,
-    SheetSelectorProcessor,
+    OutputProcessor,
     RowFilterProcessor,
     RowLookupProcessor,
-    AggregatorProcessor,
-    OutputProcessor,
+    SheetSelectorProcessor,
 )
+from config import APP_ROOT_DIR
+from pipeline.execution.path_analyzer import PathAnalyzer
 
 
 class NodePreviewResult:
@@ -163,6 +166,7 @@ class PipelineService:
             NodeType.AGGREGATOR: AggregatorProcessor(),
             NodeType.OUTPUT: OutputProcessor(),
         }
+        self.default_output_file_folder = APP_ROOT_DIR + "/output"
 
     def execute_pipeline_from_request(
         self,
@@ -206,6 +210,14 @@ class PipelineService:
                 )
 
             # 创建执行请求
+            if not output_file_path:
+                output_file_path = (
+                    self.default_output_file_folder
+                    + "/"
+                    + workspace_id
+                    + "_output.xlsx"
+                )
+
             request = create_execute_pipeline_request(
                 workspace_config=workspace_config,
                 target_node_id=target_node_id,
@@ -241,11 +253,11 @@ class PipelineService:
             )
 
     def preview_node(
-        self, 
-        node_id: str, 
+        self,
+        node_id: str,
         test_mode_max_rows: int = 100,
         workspace_id: str = None,
-        workspace_config_json: str = None
+        workspace_config_json: str = None,
     ) -> Dict[str, Any]:
         """
         预览单个节点的执行结果，根据节点类型调用不同的预览方法
@@ -263,6 +275,7 @@ class PipelineService:
             # 优先使用 workspace_config_json，如果没有则使用 workspace_id
             if workspace_config_json:
                 import json
+
                 workspace_data = json.loads(workspace_config_json)
                 workspace_config = convert_workspace_config_from_json(workspace_data)
             elif workspace_id:
@@ -781,124 +794,111 @@ class PipelineService:
     ) -> List[Dict[str, Any]]:
         """获取上游节点的DataFrame输出"""
         try:
-            # 递归找到索引源，然后执行到上游节点
-            edges = workspace_config.flow_edges
-            upstream_node_id = None
+            # 使用PathAnalyzer分析完整执行路径
+            analyzer = PathAnalyzer()
+            execution_branches, _ = analyzer.analyze(
+                workspace_config.flow_nodes,
+                workspace_config.flow_edges,
+                target_node.id,
+            )
+            if len(execution_branches) == 0:
+                return []
 
-            for edge in edges:
-                if edge.target == target_node.id:
-                    upstream_node_id = edge.source
+            branch = list(execution_branches.values())[0]  # 只取第一个分支
+            execution_nodes = branch.execution_nodes
+            
+            # 找到目标节点在执行路径中的位置
+            target_index = -1
+            for i, node_id in enumerate(execution_nodes):
+                if node_id == target_node.id:
+                    target_index = i
                     break
-            # 找到最接近的非聚合节点以获取完整输出
-            if upstream_node_id:
-                # 检查当前上游节点是否为聚合节点
-                current_upstream_node = None
-                for node in workspace_config.flow_nodes:
-                    if node.id == upstream_node_id:
-                        current_upstream_node = node
-                        break
-                
-                # 如果是聚合节点，继续向上查找非聚合节点
-                if current_upstream_node and current_upstream_node.type == NodeType.AGGREGATOR:
-                    visited_nodes = set([target_node.id])
-                    while current_upstream_node and current_upstream_node.type == NodeType.AGGREGATOR:
-                        visited_nodes.add(current_upstream_node.id)
-                        # 查找当前聚合节点的上游节点
-                        next_upstream_id = None
-                        for edge in edges:
-                            if edge.target == current_upstream_node.id and edge.source not in visited_nodes:
-                                next_upstream_id = edge.source
-                                break
-                        
-                        if not next_upstream_id:
-                            break  # 没有更多上游节点
-                        
-                        # 查找下一个上游节点
-                        current_upstream_node = None
-                        for node in workspace_config.flow_nodes:
-                            if node.id == next_upstream_id:
-                                current_upstream_node = node
-                                break
+            
+            if target_index <= 0:
+                return []  # 目标节点是第一个节点或未找到，没有上游
+            
+            # 获取上游节点（目标节点的前一个节点）
+            upstream_node_id = execution_nodes[target_index - 1]
+            upstream_node = self._get_node_by_id(workspace_config, upstream_node_id)
+            
+            if not upstream_node or upstream_node.type == NodeType.INDEX_SOURCE:
+                return []  # 上游是索引源节点，无DataFrame输出
+            
+            # 创建全局上下文
+            global_context = self.context_manager.create_global_context(
+                workspace_config, ExecutionMode.TEST
+            )
+            
+            # 首先获取索引值（从索引源节点开始）
+            index_source_node_id = execution_nodes[0]
+            index_source_node = self._get_node_by_id(workspace_config, index_source_node_id)
+            
+            if not index_source_node or index_source_node.type != NodeType.INDEX_SOURCE:
+                return []
+            
+            # 执行索引源节点获取索引值
+            temp_path_context = self.context_manager.create_path_context(IndexValue("temp"))
+            index_processor = self.processors[NodeType.INDEX_SOURCE]
+            from pipeline.models import IndexSourceInput
+            
+            index_input = IndexSourceInput()
+            index_output = index_processor.process(
+                index_source_node, index_input, global_context, temp_path_context
+            )
+            
+            # 为每个索引值执行到上游节点
+            outputs = []
+            for index_value in index_output.index_values:
+                try:
+                    path_context = self.context_manager.create_path_context(index_value)
+                    current_dataframe = None
                     
-                    # 更新上游节点ID为找到的非聚合节点
-                    if current_upstream_node and current_upstream_node.type != NodeType.AGGREGATOR:
-                        upstream_node_id = current_upstream_node.id
+                    # 按顺序执行每个节点直到上游节点
+                    for i in range(1, target_index):  # 跳过索引源，执行到上游节点
+                        node_id = execution_nodes[i]
+                        node = self._get_node_by_id(workspace_config, node_id)
+                        processor = self.processors[node.type]
+                        
+                        if node.type == NodeType.SHEET_SELECTOR:
+                            from pipeline.models import SheetSelectorInput
+                            input_data = SheetSelectorInput(index_value=index_value)
+                            output = processor.process(node, input_data, global_context, path_context)
+                            current_dataframe = output.dataframe
+                            path_context.current_dataframe = current_dataframe
+                            
+                        elif node.type == NodeType.ROW_FILTER:
+                            from pipeline.models import RowFilterInput
+                            input_data = RowFilterInput(dataframe=current_dataframe, index_value=index_value)
+                            output = processor.process(node, input_data, global_context, path_context)
+                            current_dataframe = output.dataframe
+                            path_context.current_dataframe = current_dataframe
+                            
+                        elif node.type == NodeType.ROW_LOOKUP:
+                            from pipeline.models import RowLookupInput
+                            input_data = RowLookupInput(dataframe=current_dataframe, index_value=index_value)
+                            output = processor.process(node, input_data, global_context, path_context)
+                            current_dataframe = output.dataframe
+                            path_context.current_dataframe = current_dataframe
+                            
+                        elif node.type == NodeType.AGGREGATOR:
+                            # 聚合节点不产生DataFrame输出，但需要更新last_non_aggregator_dataframe
+                            path_context.last_non_aggregator_dataframe = current_dataframe
+                    
+                    # 限制预览行数
+                    if current_dataframe:
+                        limited_df = current_dataframe.limit_rows(max_rows)
+                        outputs.append({
+                            "index_value": str(index_value),
+                            "dataframe": limited_df,
+                        })
+                        
+                except Exception as e:
+                    # 单个索引值失败不影响其他索引值
+                    continue
+                    
+            return outputs
 
-            if not upstream_node_id:
-                return []
-
-            # 找到上游节点
-            upstream_node = None
-            for node in workspace_config.flow_nodes:
-                if node.id == upstream_node_id:
-                    upstream_node = node
-                    break
-
-            if not upstream_node:
-                return []
-
-            # 根据上游节点类型递归获取输出
-            if upstream_node.type == NodeType.INDEX_SOURCE:
-                # 如果上游是索引源，无法提供DataFrame
-                return []
-            elif upstream_node.type == NodeType.SHEET_SELECTOR:
-                # 递归预览表选择节点
-                result = self._preview_sheet_selector_node(
-                    workspace_config, upstream_node, max_rows
-                )
-                if result.success:
-                    outputs = []
-                    for preview in result.dataframe_previews:
-                        from pipeline.models import DataFrame
-
-                        df = DataFrame(
-                            columns=preview.columns,
-                            data=preview.data,
-                            total_rows=preview.metadata.get(
-                                "total_rows", len(preview.data)
-                            ),
-                        )
-                        outputs.append(
-                            {
-                                "index_value": preview.metadata.get("index_value", ""),
-                                "dataframe": df,
-                            }
-                        )
-                    return outputs
-            elif upstream_node.type in [NodeType.ROW_FILTER, NodeType.ROW_LOOKUP]:
-                # 递归预览过滤/查找节点
-                if upstream_node.type == NodeType.ROW_FILTER:
-                    result = self._preview_row_filter_node(
-                        workspace_config, upstream_node, max_rows
-                    )
-                else:
-                    result = self._preview_row_lookup_node(
-                        workspace_config, upstream_node, max_rows
-                    )
-
-                if result.success:
-                    outputs = []
-                    for preview in result.dataframe_previews:
-                        from pipeline.models import DataFrame
-
-                        df = DataFrame(
-                            columns=preview.columns,
-                            data=preview.data,
-                            total_rows=preview.metadata.get(
-                                "total_rows", len(preview.data)
-                            ),
-                        )
-                        outputs.append(
-                            {
-                                "index_value": preview.metadata.get("index_value", ""),
-                                "dataframe": df,
-                            }
-                        )
-                    return outputs
-
-            return []
-
-        except Exception:
+        except Exception as e:
             return []
 
     # 保留原有的方法以保持兼容性
@@ -961,3 +961,11 @@ class PipelineService:
             )
 
         return cleaned_sheets
+
+    @staticmethod
+    def _get_node_by_id(workspace_config: WorkspaceConfig, node_id: str) -> BaseNode:
+        """根据节点ID获取节点"""
+        for node in workspace_config.flow_nodes:
+            if node.id == node_id:
+                return node
+        return None

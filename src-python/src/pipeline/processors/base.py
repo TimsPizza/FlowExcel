@@ -150,6 +150,7 @@ class AbstractNodeProcessor(ABC, Generic[InputType, OutputType]):
         # 检查缓存
         cache_key = f"{file_id}_{sheet_name}"
         if cache_key in global_context.loaded_dataframes:
+            print("df already loaded", cache_key)
             return global_context.loaded_dataframes[cache_key]
         
         # 获取header row信息
@@ -161,7 +162,7 @@ class AbstractNodeProcessor(ABC, Generic[InputType, OutputType]):
         
         # 加载DataFrame
         df = pd.read_excel(file_info.path, sheet_name=sheet_name, header=header_row)
-        
+        print("loading df from file", file_info.path, sheet_name)
         # 缓存DataFrame
         global_context.loaded_dataframes[cache_key] = df
         

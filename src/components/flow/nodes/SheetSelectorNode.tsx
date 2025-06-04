@@ -2,9 +2,7 @@ import {
   BadgeConfig,
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
-import {
-  usePreviewNodeMutation
-} from "@/hooks/workspaceQueries";
+import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, SheetSelectorNodeDataContext } from "@/types/nodes";
@@ -113,9 +111,17 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const badges: BadgeConfig[] = useMemo(() => {
     const badges: BadgeConfig[] = [];
-    if (nodeData.mode === "manual") {
+    if (nodeData.targetFileID) {
       badges.push({
         color: "green",
+        variant: "soft",
+        label:
+          files?.find((file) => file.id === nodeData.targetFileID)?.name || "",
+      });
+    }
+    if (nodeData.mode === "manual") {
+      badges.push({
+        color: "blue",
         variant: "soft",
         label: nodeData.manualSheetName || "未指定",
       });

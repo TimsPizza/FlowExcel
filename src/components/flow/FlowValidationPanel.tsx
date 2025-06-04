@@ -1,14 +1,12 @@
 import { validateFlow } from "@/lib/flowValidation";
-import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import {
   CheckIcon,
   CrossCircledIcon,
   ExclamationTriangleIcon,
 } from "@radix-ui/react-icons";
-import { useEdges, useNodes, useReactFlow } from "reactflow";
+import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
-import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { useShallow } from "zustand/shallow";
+import { useEdges, useNodes } from "reactflow";
 
 interface FlowValidationResult {
   isValid: boolean;

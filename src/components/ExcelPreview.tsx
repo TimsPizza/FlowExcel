@@ -44,7 +44,7 @@ export default function ExcelPreview({
         >
           <Tabs.List>
             {sheets && sheets?.map((sheet) => (
-              <Tabs.Trigger key={sheet.sheet_name} value={sheet.sheet_name}>
+              <Tabs.Trigger key={sheet.sheet_name} value={sheet.sheet_name} className="text-ellipsis whitespace-nowrap !p-0">
                 {sheet?.sheet_name}
               </Tabs.Trigger>
             ))}
@@ -60,7 +60,6 @@ export default function ExcelPreview({
               sheets?.find((sheet) => sheet.sheet_name === selectedSheetName)
                 ?.data ?? ([] as any)
             }
-            // eSize={10}
           />
         )}
       </Flex>

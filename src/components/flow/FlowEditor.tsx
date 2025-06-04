@@ -1,15 +1,14 @@
+import useToast from "@/hooks/useToast";
+import { useExecutePipelineMutation } from "@/hooks/workspaceQueries";
+import { getAutoLayoutedElements } from "@/lib/flowLayout";
+import { getInitialNodeData, isValidConnection, validateFlow } from "@/lib/flowValidation";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { SheetInfo } from "@/types";
 import {
-  AggregatorNodeDataContext,
   FlowNodeData,
   IndexSourceNodeDataContext,
-  NodeType,
-  OutputNodeDataContext,
-  RowFilterNodeDataContext,
-  RowLookupNodeDataContext,
-  SheetSelectorNodeDataContext,
+  NodeType
 } from "@/types/nodes";
-import { SimpleDataframe, SheetInfo } from "@/types";
 import {
   FilePlusIcon,
   PlayIcon,
@@ -22,9 +21,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Connection,
+  DefaultEdgeOptions,
   Edge,
   EdgeChange,
   EdgeRemoveChange,
+  MarkerType,
   Node,
   NodeChange,
   NodePositionChange,
@@ -33,19 +34,14 @@ import ReactFlow, {
   OnEdgesChange,
   OnNodesChange,
   Panel,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  ReactFlowProvider,
   useReactFlow,
-  MarkerType,
 } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
-import nodeTypes from "./nodes/NodeFactory";
-import { useExecutePipelineMutation } from "@/hooks/workspaceQueries";
-import useToast from "@/hooks/useToast";
-import { isValidConnection, validateFlow } from "@/lib/flowValidation";
 import { FlowValidationPanel } from "./FlowValidationPanel";
-import { getAutoLayoutedElements } from "@/lib/flowLayout";
+import nodeTypes from "./nodes/NodeFactory";
 
 function isNodePositionChange(
   change: NodeChange,
@@ -70,74 +66,6 @@ const NODE_TYPES = [
   { value: NodeType.OUTPUT, label: "输出" },
 ];
 
-// 初始节点默认数据
-const getInitialNodeData = (type: NodeType, nodeId: string): FlowNodeData => {
-  switch (type) {
-    case NodeType.INDEX_SOURCE:
-      return {
-        id: nodeId,
-        nodeType: NodeType.INDEX_SOURCE,
-        label: "索引源",
-        sourceFileID: undefined,
-        bySheetName: false,
-        sheetName: undefined,
-        byColumn: true,
-        columnName: "",
-        testResult: undefined,
-        error: undefined,
-      } as IndexSourceNodeDataContext;
-    case NodeType.SHEET_SELECTOR:
-      return {
-        id: nodeId,
-        nodeType: NodeType.SHEET_SELECTOR,
-        label: "Sheet定位",
-        targetFileID: undefined,
-        mode: "auto_by_index",
-        manualSheetName: undefined,
-        testResult: undefined,
-        error: undefined,
-      } as SheetSelectorNodeDataContext;
-    case NodeType.ROW_FILTER:
-      return {
-        id: nodeId,
-        nodeType: NodeType.ROW_FILTER,
-        label: "行过滤",
-        conditions: [],
-        testResult: undefined,
-        error: undefined,
-      } as RowFilterNodeDataContext;
-    case NodeType.ROW_LOOKUP:
-      return {
-        id: nodeId,
-        nodeType: NodeType.ROW_LOOKUP,
-        label: "行查找/列匹配",
-        matchColumn: undefined,
-        testResult: undefined,
-        error: undefined,
-      } as RowLookupNodeDataContext;
-    case NodeType.AGGREGATOR:
-      return {
-        id: nodeId,
-        nodeType: NodeType.AGGREGATOR,
-        label: "统计/聚合",
-        statColumn: undefined,
-        method: "sum",
-        outputAs: "",
-        testResult: undefined,
-        error: undefined,
-      } as AggregatorNodeDataContext;
-    case NodeType.OUTPUT:
-      return {
-        id: nodeId,
-        nodeType: NodeType.OUTPUT,
-        label: "输出",
-        outputFormat: "table",
-        testResult: undefined,
-        error: undefined,
-      } as OutputNodeDataContext;
-  }
-};
-
 interface FlowEditorProps {
   initialNodes?: Node<FlowNodeData>[];
   initialEdges?: Edge[];
@@ -145,17 +73,17 @@ interface FlowEditorProps {
 }
 
 // 默认边样式配置
-const defaultEdgeOptions = {
+const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
   style: {
     strokeWidth: 2,
-    stroke: '#3b82f6', // 蓝色
+    stroke: "#3b82f6", // 蓝色
   },
   markerEnd: {
-    type: MarkerType.ArrowClosed,
-    width: 15,
-    height: 15,
-    color: '#3b82f6', // 与连线颜色一致
+    type: MarkerType.Arrow,
+    width: 12,
+    height: 12,
+    color: "#3b82f6",
   },
 };
 
@@ -450,7 +378,9 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                         sheetInfos.push({
                           sheet_name: "索引值",
                           columns: [columnName],
-                          data: uniqueValues.map(val => [val as string | number | null]),
+                          data: uniqueValues.map((val) => [
+                            val as string | number | null,
+                          ]),
                         });
                       }
                       // 如果是按工作表名索引
@@ -460,7 +390,9 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                         sheetInfos.push({
                           sheet_name: "工作表名称",
                           columns: ["sheet_name"],
-                          data: data.map((row: any[]) => [row[0] as string | number | null]),
+                          data: data.map((row: any[]) => [
+                            row[0] as string | number | null,
+                          ]),
                         });
                       }
                     }
@@ -487,7 +419,9 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       if (resultData.length > 0) {
                         resultData.forEach((row: any[]) => {
                           // 对于聚合节点，通常结果是索引值和聚合结果
-                          formattedData.push(row.map(cell => cell as string | number | null));
+                          formattedData.push(
+                            row.map((cell) => cell as string | number | null),
+                          );
                         });
                       }
                     }
@@ -502,11 +436,13 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   }
 
                   // 创建一个包含SimpleDataframe的SheetInfo数组
-                  const sheetInfos: SheetInfo[] = [{
-                    sheet_name: "聚合结果",
-                    columns,
-                    data: formattedData,
-                  }];
+                  const sheetInfos: SheetInfo[] = [
+                    {
+                      sheet_name: "聚合结果",
+                      columns,
+                      data: formattedData,
+                    },
+                  ];
 
                   return {
                     ...node,
@@ -534,20 +470,22 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       }
 
                       // 添加数据行
-                      nodeResult.result_data.data.forEach(
-                        (row: any[]) => {
-                          combinedData.push(row.map(cell => cell as string | number | null));
-                        },
-                      );
+                      nodeResult.result_data.data.forEach((row: any[]) => {
+                        combinedData.push(
+                          row.map((cell) => cell as string | number | null),
+                        );
+                      });
                     }
                   });
 
                   // 创建一个包含合并数据的SheetInfo数组
-                  const sheetInfos: SheetInfo[] = [{
-                    sheet_name: "结果数据",
-                    columns,
-                    data: combinedData,
-                  }];
+                  const sheetInfos: SheetInfo[] = [
+                    {
+                      sheet_name: "结果数据",
+                      columns,
+                      data: combinedData,
+                    },
+                  ];
 
                   return {
                     ...node,

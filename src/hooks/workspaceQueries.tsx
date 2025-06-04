@@ -21,6 +21,7 @@ import {
 } from "@/types/nodes";
 import { useMutation, useQuery, UseQueryResult } from "react-query";
 import { Node as ReactFlowNode } from "reactflow";
+import { v4 as uuidv4 } from "uuid";
 
 /* List workspaces */
 
@@ -155,6 +156,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           label: indexData.label || "索引源",
           testResult: undefined, // 过滤掉 testResult
           // sourceFileID, sheetName, columnNames are optional per definition
+          displayName: indexData.displayName || "数据源-" + uuidv4().slice(0, 4),
         };
         break;
       case NodeType.SHEET_SELECTOR:

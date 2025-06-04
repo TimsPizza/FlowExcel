@@ -21,6 +21,7 @@ export interface CustomNodeBaseData {
 
 export interface IndexSourceNodeDataContext extends CustomNodeBaseData {
   sourceFileID?: string; // file id in workspace
+  displayName: string; // will be the output name for the branch connected to this node
   // by sheet names
   bySheetName?: boolean;
   sheetName?: string;

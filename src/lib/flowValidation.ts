@@ -9,6 +9,7 @@ import {
   SheetSelectorNodeDataContext,
 } from "@/types/nodes";
 import { Connection, Node, Edge } from "reactflow";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * 节点连接规则定义
@@ -44,10 +45,12 @@ export const NODE_TYPE_DESCRIPTIONS: Record<NodeType, string> = {
   [NodeType.SHEET_SELECTOR]:
     "关于索引项如何匹配工作表，如果索引项对应某个excel文件的表名，请选择自动匹配，否则请选择手动匹配",
   [NodeType.ROW_FILTER]: "对上一级的表的所有行进行条件过滤",
-  [NodeType.ROW_LOOKUP]: "筛选每个索引项对应的所有行，你不会想统计无关数据",
+  [NodeType.ROW_LOOKUP]:
+    "筛选每个索引项对应的所有行，如果没有这个节点，所有的行都将被传递给下一层 - 你不会想统计无关数据",
   [NodeType.AGGREGATOR]:
-    "对上一级的输出表的某列进行统计，串联多个该类型节点不会影响统计结果",
-  [NodeType.OUTPUT]: "指定数据输出到哪里？注意，每个输入都会被保存为一张工作表",
+    "对上一级的输出表的某列进行统计，串联多个该类型节点不会影响统计结果。测试时仅返回该节点的结果而不包括之前的统计节点，不过如果你测试了所有的统计节点且它们测试结果均正确，那么所有串联节点的最终结果会被合并到一张表中",
+  [NodeType.OUTPUT]:
+    "指定输出文件保存位置。注意，每个输入连线都会被保存为一张工作表",
 };
 
 export const NODE_TYPE_NAMES: Record<NodeType, string> = {
@@ -276,6 +279,7 @@ export const getInitialNodeData = (
         id: nodeId,
         nodeType: NodeType.INDEX_SOURCE,
         label: "索引源",
+        displayName: "数据源-" + uuidv4().slice(0, 4),
         sourceFileID: undefined,
         bySheetName: false,
         sheetName: undefined,
