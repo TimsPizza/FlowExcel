@@ -205,7 +205,7 @@ class BranchExecutor:
         input_data = self._prepare_node_input(node, index_value, path_context)
         
         # 执行节点
-        result = processor.execute(
+        result = processor.process(
             node, input_data, global_context, path_context, branch_context
         )
         

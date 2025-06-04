@@ -40,34 +40,44 @@ class RowFilterProcessor(AbstractNodeProcessor[RowFilterInput, RowFilterOutput])
         Returns:
             过滤后的DataFrame输出
         """
-        data = node.data
-        conditions = data.get("conditions", [])
-        
-        # 转换为pandas DataFrame进行处理
-        pandas_df = input_data.dataframe.to_pandas()
-        
-        if not conditions:
-            # 无过滤条件，返回原DataFrame
-            filtered_df = pandas_df
-        else:
-            # 应用过滤条件
-            filtered_df = self._apply_filter_conditions(pandas_df, conditions)
-        
-        # 应用测试模式限制
-        # filtered_df = self.apply_test_mode_limit(filtered_df, global_context)
-        
-        # 转换回自定义DataFrame格式
-        custom_df = DataFrame.from_pandas(filtered_df)
-        
-        # 更新路径上下文
-        path_context.current_dataframe = custom_df
-        path_context.last_non_aggregator_dataframe = custom_df
-        
-        return RowFilterOutput(
-            dataframe=custom_df,
-            index_value=input_data.index_value,
-            filtered_count=len(filtered_df)
-        )
+        try:
+            exec_id = self.analyzer.onStart(node.id, self.node_type.value)
+            data = node.data
+            conditions = data.get("conditions", [])
+            
+            # 获取pandas DataFrame（支持两种输入类型）
+            if hasattr(input_data.dataframe, 'to_pandas'):
+                pandas_df = input_data.dataframe.to_pandas()
+            else:
+                pandas_df = input_data.dataframe  # 已经是pandas DataFrame
+            
+            if not conditions:
+                # 无过滤条件，返回原DataFrame
+                filtered_df = pandas_df
+            else:
+                # 应用过滤条件
+                filtered_df = self._apply_filter_conditions(pandas_df, conditions)
+            
+            # 应用测试模式限制
+            # filtered_df = self.apply_test_mode_limit(filtered_df, global_context)
+            
+            # 直接返回pandas DataFrame，避免转换开销
+            # custom_df = DataFrame.from_pandas(filtered_df)  # 移除转换
+            
+            # 更新路径上下文
+            path_context.current_dataframe = filtered_df  # 直接使用pandas DataFrame
+            path_context.last_non_aggregator_dataframe = filtered_df
+            
+            self.analyzer.onFinish(exec_id)
+
+            return RowFilterOutput(
+                dataframe=filtered_df,  # 直接传递pandas DataFrame
+                index_value=input_data.index_value,
+                filtered_count=len(filtered_df)
+            )
+        except Exception as e:
+            self.analyzer.onError(exec_id, str(e))
+            raise e
     
     def _apply_filter_conditions(
         self, 

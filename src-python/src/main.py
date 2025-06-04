@@ -15,7 +15,7 @@ import uvicorn
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.models import APIResponse, HealthResponse
-from app.routers import excel_router, pipeline_router, workspace_router
+from app.routers import excel_router, pipeline_router, workspace_router, performance_routes
 
 # Create FastAPI application
 app = FastAPI(
@@ -36,7 +36,7 @@ app.add_middleware(
 app.include_router(excel_router)
 app.include_router(pipeline_router)
 app.include_router(workspace_router)
-
+app.include_router(performance_routes)
 
 @app.get("/health", response_model=APIResponse)
 async def health_check():

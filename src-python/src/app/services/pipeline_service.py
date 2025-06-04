@@ -4,6 +4,8 @@ Pipeline processing service.
 """
 
 from typing import Any, Dict, List, Optional, Union
+import time
+import json
 
 import pandas as pd
 
@@ -21,15 +23,20 @@ from pipeline.execution.context_manager import ContextManager
 from pipeline.models import (
     BaseNode,
     BranchContext,
+    DataFrame,
     ExecutePipelineRequest,
     ExecutionMode,
     GlobalContext,
+    IndexSourceOutput,
     IndexValue,
     NodeType,
     OutputResult,
     PathContext,
     PipelineExecutionResult,
+    RowFilterOutput,
+    RowLookupOutput,
     SheetData,
+    SheetSelectorOutput,
     WorkspaceConfig,
 )
 from pipeline.processors import (
@@ -42,6 +49,7 @@ from pipeline.processors import (
 )
 from config import APP_ROOT_DIR
 from pipeline.execution.path_analyzer import PathAnalyzer
+from pipeline.performance.analyzer import get_performance_analyzer
 
 
 class NodePreviewResult:
@@ -157,7 +165,10 @@ class PipelineService:
     """Service class for pipeline operations."""
 
     def __init__(self):
+        self.workspace_service = WorkspaceService()
         self.context_manager = ContextManager()
+
+        # 初始化节点处理器
         self.processors = {
             NodeType.INDEX_SOURCE: IndexSourceProcessor(),
             NodeType.SHEET_SELECTOR: SheetSelectorProcessor(),
@@ -166,6 +177,13 @@ class PipelineService:
             NodeType.AGGREGATOR: AggregatorProcessor(),
             NodeType.OUTPUT: OutputProcessor(),
         }
+
+        # 初始化上下文管理器
+        self.context_manager = ContextManager()
+
+        # 获取全局性能分析器
+        self.performance_analyzer = get_performance_analyzer()
+
         self.default_output_file_folder = APP_ROOT_DIR + "/output"
 
     def execute_pipeline_from_request(
@@ -259,34 +277,28 @@ class PipelineService:
         workspace_id: str = None,
         workspace_config_json: str = None,
     ) -> Dict[str, Any]:
-        """
-        预览单个节点的执行结果，根据节点类型调用不同的预览方法
+        """预览节点执行结果"""
+        # 重置性能统计，开始新的测量
+        self.performance_analyzer.reset()
 
-        Args:
-            node_id: 要预览的节点ID
-            test_mode_max_rows: 预览数据的最大行数
-            workspace_id: 工作区ID（向后兼容）
-            workspace_config_json: 工作区配置JSON（优先使用）
+        print("PERF: 开始新的preview操作，统计已重置")
 
-        Returns:
-            节点预览结果
-        """
+        # Performance monitoring now handled by analyzer
         try:
-            # 优先使用 workspace_config_json，如果没有则使用 workspace_id
-            if workspace_config_json:
-                import json
+            preview_start_time = time.time()
 
-                workspace_data = json.loads(workspace_config_json)
-                workspace_config = convert_workspace_config_from_json(workspace_data)
+            # 获取工作区配置
+            if workspace_config_json:
+                workspace_config = json.loads(workspace_config_json)
+                workspace_config = convert_workspace_config_from_json(workspace_config)
             elif workspace_id:
-                # 加载工作区配置（向后兼容）
-                workspace_data = WorkspaceService.load_workspace(workspace_id)
-                workspace_config = convert_workspace_config_from_json(workspace_data)
+                workspace_config = self.workspace_service.get_workspace_config(
+                    workspace_id
+                )
             else:
                 return {
                     "success": False,
-                    "error": "必须提供 workspace_config_json 或 workspace_id 参数",
-                    "node_id": node_id,
+                    "error": "必须提供workspace_config_json或workspace_id参数",
                 }
 
             # 查找目标节点
@@ -300,8 +312,11 @@ class PipelineService:
                 return {
                     "success": False,
                     "error": f"节点 {node_id} 不存在",
-                    "node_id": node_id,
                 }
+
+            print(
+                f"PERF: Starting preview for node {node_id} ({target_node.type.value})"
+            )
 
             # 根据节点类型调用不同的预览方法
             if target_node.type == NodeType.INDEX_SOURCE:
@@ -332,16 +347,34 @@ class PipelineService:
                 return {
                     "success": False,
                     "error": f"不支持的节点类型: {target_node.type}",
-                    "node_id": node_id,
                 }
 
-            return result.to_dict()
+            preview_time = (time.time() - preview_start_time) * 1000
+            print(f"PERF: Preview for node {node_id} completed in {preview_time:.2f}ms")
+
+            result_dict = result.to_dict()
+
+            # 打印性能分析报告和DataFrame转换统计
+            print("\nPERF: Preview操作完成，性能分析报告:")
+            self.performance_analyzer.print_stats()
+
+            return result_dict
 
         except Exception as e:
+            preview_time = (time.time() - preview_start_time) * 1000
+            print(
+                f"PERF: Preview for node {node_id} failed after {preview_time:.2f}ms - {str(e)}"
+            )
+
+            # 即使失败也打印统计
+            print("\nPERF: Preview操作失败，当前统计:")
+            self.performance_analyzer.print_stats()
+
             return {
                 "success": False,
-                "error": f"预览节点时发生错误: {str(e)}",
+                "error": str(e),
                 "node_id": node_id,
+                "node_type": target_node.type.value if target_node else "unknown",
             }
 
     def _preview_index_source_node(
@@ -419,16 +452,22 @@ class PipelineService:
                         node, input_data, global_context, path_context
                     )
 
-                    # 限制预览行数
-                    limited_df = output.dataframe.limit_rows(max_rows)
-                    # limited_df = output.dataframe
+                    # 在API边界转换为自定义DataFrame，只为DTO序列化
+                    if hasattr(output.dataframe, "limit_rows"):
+                        # 如果还是自定义DataFrame，直接使用
+                        custom_df = output.dataframe
+                    else:
+                        # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
+                        custom_df = DataFrame.from_pandas(output.dataframe)
+
+                    limited_df = custom_df.limit_rows(max_rows)
 
                     api_sheet = APISheetData(
                         sheet_name=f"索引: {index_value}",
                         columns=limited_df.columns,
                         data=limited_df.data,
                         metadata={
-                            "total_rows": output.dataframe.total_rows,
+                            "total_rows": custom_df.total_rows,
                             "preview_rows": limited_df.total_rows,
                             "index_value": str(index_value),
                             "sheet_name": output.sheet_name,
@@ -496,16 +535,22 @@ class PipelineService:
                         node, input_data, global_context, path_context
                     )
 
-                    # 限制预览行数
-                    limited_df = output.dataframe.limit_rows(max_rows)
-                    # limited_df = output.dataframe
+                    # 在API边界转换为自定义DataFrame，只为DTO序列化
+                    if hasattr(output.dataframe, "limit_rows"):
+                        # 如果还是自定义DataFrame，直接使用
+                        custom_df = output.dataframe
+                    else:
+                        # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
+                        custom_df = DataFrame.from_pandas(output.dataframe)
+
+                    limited_df = custom_df.limit_rows(max_rows)
 
                     api_sheet = APISheetData(
                         sheet_name=f"过滤结果 (索引: {index_value})",
                         columns=limited_df.columns,
                         data=limited_df.data,
                         metadata={
-                            "total_rows": output.dataframe.total_rows,
+                            "total_rows": custom_df.total_rows,
                             "preview_rows": limited_df.total_rows,
                             "filtered_count": output.filtered_count,
                             "index_value": str(index_value),
@@ -572,16 +617,22 @@ class PipelineService:
                         node, input_data, global_context, path_context
                     )
 
-                    # 限制预览行数
-                    limited_df = output.dataframe.limit_rows(max_rows)
-                    # limited_df = output.dataframe
+                    # 在API边界转换为自定义DataFrame，只为DTO序列化
+                    if hasattr(output.dataframe, "limit_rows"):
+                        # 如果还是自定义DataFrame，直接使用
+                        custom_df = output.dataframe
+                    else:
+                        # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
+                        custom_df = DataFrame.from_pandas(output.dataframe)
+
+                    limited_df = custom_df.limit_rows(max_rows)
 
                     api_sheet = APISheetData(
                         sheet_name=f"查找结果 (索引: {index_value})",
                         columns=limited_df.columns,
                         data=limited_df.data,
                         metadata={
-                            "total_rows": output.dataframe.total_rows,
+                            "total_rows": custom_df.total_rows,
                             "preview_rows": limited_df.total_rows,
                             "matched_count": output.matched_count,
                             "index_value": str(index_value),
@@ -722,15 +773,22 @@ class PipelineService:
             previews = []
             if result.output_data and result.output_data.sheets:
                 for sheet_data in result.output_data.sheets:
-                    limited_df = sheet_data.dataframe.limit_rows(max_rows)
-                    # limited_df = sheet_data.dataframe
+                    # 在API边界转换为自定义DataFrame，只为DTO序列化
+                    if hasattr(sheet_data.dataframe, "limit_rows"):
+                        # 如果还是自定义DataFrame，直接使用
+                        custom_df = sheet_data.dataframe
+                    else:
+                        # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
+                        custom_df = DataFrame.from_pandas(sheet_data.dataframe)
+
+                    limited_df = custom_df.limit_rows(max_rows)
 
                     api_sheet = APISheetData(
                         sheet_name=sheet_data.sheet_name,
                         columns=limited_df.columns,
                         data=limited_df.data,
                         metadata={
-                            "total_rows": sheet_data.dataframe.total_rows,
+                            "total_rows": custom_df.total_rows,
                             "preview_rows": limited_df.total_rows,
                             "branch_id": sheet_data.branch_id,
                             "source_name": sheet_data.source_name,
@@ -793,112 +851,208 @@ class PipelineService:
         self, workspace_config: WorkspaceConfig, target_node: BaseNode, max_rows: int
     ) -> List[Dict[str, Any]]:
         """获取上游节点的DataFrame输出"""
+        upstream_start_time = time.time()
+
+        # Performance monitoring handled by individual node executions
         try:
             # 使用PathAnalyzer分析完整执行路径
+            path_analysis_start = time.time()
             analyzer = PathAnalyzer()
             execution_branches, _ = analyzer.analyze(
                 workspace_config.flow_nodes,
                 workspace_config.flow_edges,
                 target_node.id,
             )
+            path_analysis_time = (time.time() - path_analysis_start) * 1000
+            print(f"PERF: Path analysis for upstream took {path_analysis_time:.2f}ms")
+
             if len(execution_branches) == 0:
                 return []
 
             branch = list(execution_branches.values())[0]  # 只取第一个分支
             execution_nodes = branch.execution_nodes
-            
+
             # 找到目标节点在执行路径中的位置
             target_index = -1
             for i, node_id in enumerate(execution_nodes):
                 if node_id == target_node.id:
                     target_index = i
                     break
-            
+
             if target_index <= 0:
                 return []  # 目标节点是第一个节点或未找到，没有上游
-            
+
             # 获取上游节点（目标节点的前一个节点）
             upstream_node_id = execution_nodes[target_index - 1]
             upstream_node = self._get_node_by_id(workspace_config, upstream_node_id)
-            
+
             if not upstream_node or upstream_node.type == NodeType.INDEX_SOURCE:
                 return []  # 上游是索引源节点，无DataFrame输出
-            
+
             # 创建全局上下文
             global_context = self.context_manager.create_global_context(
                 workspace_config, ExecutionMode.TEST
             )
-            
+
             # 首先获取索引值（从索引源节点开始）
+            index_fetch_start = time.time()
             index_source_node_id = execution_nodes[0]
-            index_source_node = self._get_node_by_id(workspace_config, index_source_node_id)
-            
+            index_source_node = self._get_node_by_id(
+                workspace_config, index_source_node_id
+            )
+
             if not index_source_node or index_source_node.type != NodeType.INDEX_SOURCE:
                 return []
-            
+
             # 执行索引源节点获取索引值
-            temp_path_context = self.context_manager.create_path_context(IndexValue("temp"))
-            index_processor = self.processors[NodeType.INDEX_SOURCE]
+            temp_path_context = self.context_manager.create_path_context(
+                IndexValue("temp")
+            )
+            index_processor: IndexSourceProcessor = self.processors[
+                NodeType.INDEX_SOURCE
+            ]
             from pipeline.models import IndexSourceInput
-            
+
             index_input = IndexSourceInput()
             index_output = index_processor.process(
                 index_source_node, index_input, global_context, temp_path_context
             )
-            
+
+            index_fetch_time = (time.time() - index_fetch_start) * 1000
+            index_count = len(index_output.index_values)
+            print(
+                f"PERF: Index fetch took {index_fetch_time:.2f}ms, got {index_count} index values"
+            )
+
+            # 性能警告：如果索引值过多
+            if index_count > 50:
+                print(
+                    f"PERF WARNING: Processing {index_count} index values - this may cause performance issues!"
+                )
+
             # 为每个索引值执行到上游节点
+            execution_start = time.time()
             outputs = []
-            for index_value in index_output.index_values:
+            processor_call_count = 0
+
+            for i, index_value in enumerate(index_output.index_values):
                 try:
                     path_context = self.context_manager.create_path_context(index_value)
                     current_dataframe = None
-                    
+
                     # 按顺序执行每个节点直到上游节点
-                    for i in range(1, target_index):  # 跳过索引源，执行到上游节点
-                        node_id = execution_nodes[i]
+                    for j in range(1, target_index):  # 跳过索引源，执行到上游节点
+                        node_id = execution_nodes[j]
                         node = self._get_node_by_id(workspace_config, node_id)
                         processor = self.processors[node.type]
-                        
+                        processor_call_count += 1
+
                         if node.type == NodeType.SHEET_SELECTOR:
                             from pipeline.models import SheetSelectorInput
+
                             input_data = SheetSelectorInput(index_value=index_value)
-                            output = processor.process(node, input_data, global_context, path_context)
+                            output: SheetSelectorOutput = processor.process(
+                                node, input_data, global_context, path_context
+                            )
                             current_dataframe = output.dataframe
                             path_context.current_dataframe = current_dataframe
-                            
+
                         elif node.type == NodeType.ROW_FILTER:
                             from pipeline.models import RowFilterInput
-                            input_data = RowFilterInput(dataframe=current_dataframe, index_value=index_value)
-                            output = processor.process(node, input_data, global_context, path_context)
+
+                            input_data = RowFilterInput(
+                                dataframe=current_dataframe, index_value=index_value
+                            )
+                            output: RowFilterOutput = processor.process(
+                                node, input_data, global_context, path_context
+                            )
                             current_dataframe = output.dataframe
                             path_context.current_dataframe = current_dataframe
-                            
+
                         elif node.type == NodeType.ROW_LOOKUP:
                             from pipeline.models import RowLookupInput
-                            input_data = RowLookupInput(dataframe=current_dataframe, index_value=index_value)
-                            output = processor.process(node, input_data, global_context, path_context)
+
+                            input_data = RowLookupInput(
+                                dataframe=current_dataframe, index_value=index_value
+                            )
+                            output: RowLookupOutput = processor.process(
+                                node, input_data, global_context, path_context
+                            )
                             current_dataframe = output.dataframe
                             path_context.current_dataframe = current_dataframe
-                            
+
                         elif node.type == NodeType.AGGREGATOR:
                             # 聚合节点不产生DataFrame输出，但需要更新last_non_aggregator_dataframe
-                            path_context.last_non_aggregator_dataframe = current_dataframe
-                    
-                    # 限制预览行数
-                    if current_dataframe:
-                        limited_df = current_dataframe.limit_rows(max_rows)
-                        outputs.append({
-                            "index_value": str(index_value),
-                            "dataframe": limited_df,
-                        })
-                        
+                            path_context.last_non_aggregator_dataframe = (
+                                current_dataframe
+                            )
+
+                    # 限制预览行数并转换为自定义DataFrame（仅在API边界）
+                    if current_dataframe is not None:
+                        # 检查DataFrame是否为空（安全的方式检查pandas DataFrame）
+                        try:
+                            if (
+                                hasattr(current_dataframe, "empty")
+                                and current_dataframe.empty
+                            ):
+                                continue  # 跳过空DataFrame
+                            elif (
+                                hasattr(current_dataframe, "__len__")
+                                and len(current_dataframe) == 0
+                            ):
+                                continue  # 跳过空DataFrame
+                        except ValueError:
+                            # 如果检查为空时出现ValueError，说明是pandas的布尔判断问题
+                            # 这种情况下我们假设DataFrame不为空，继续处理
+                            print(
+                                f"SHOULD NOT HAPPEN: DataFrame is empty: {current_dataframe}"
+                            )
+                            pass
+
+                        if hasattr(current_dataframe, "limit_rows"):
+                            # 如果还是自定义DataFrame，直接使用
+                            limited_df = current_dataframe.limit_rows(max_rows)
+                        else:
+                            # 如果是pandas DataFrame，转换后限制行数
+                            custom_df = DataFrame.from_pandas(current_dataframe)
+                            limited_df = custom_df.limit_rows(max_rows)
+
+                        outputs.append(
+                            {
+                                "index_value": str(index_value),
+                                "dataframe": limited_df,
+                            }
+                        )
+
                 except Exception as e:
                     # 单个索引值失败不影响其他索引值
                     continue
-                    
+
+            execution_time = (time.time() - execution_start) * 1000
+            total_time = (time.time() - upstream_start_time) * 1000
+
+            print(f"PERF: Upstream execution completed in {execution_time:.2f}ms")
+            print(f"PERF: Total upstream processing time: {total_time:.2f}ms")
+            print(f"PERF: Made {processor_call_count} processor calls")
+            print(f"PERF: Generated {len(outputs)} output dataframes")
+
+            # 性能警告检查
+            if processor_call_count > 100:
+                print(
+                    f"PERF WARNING: Made {processor_call_count} processor calls - consider optimization!"
+                )
+            if total_time > 5000:  # 5秒
+                print(
+                    f"PERF WARNING: Upstream processing took {total_time:.2f}ms - very slow!"
+                )
+
             return outputs
 
         except Exception as e:
+            total_time = (time.time() - upstream_start_time) * 1000
+            print(
+                f"PERF: Upstream processing failed after {total_time:.2f}ms - {str(e)}"
+            )
             return []
 
     # 保留原有的方法以保持兼容性
@@ -969,3 +1123,23 @@ class PipelineService:
             if node.id == node_id:
                 return node
         return None
+
+    def get_performance_report(self) -> Dict[str, Any]:
+        """获取性能报告"""
+        return self.performance_analyzer.get_stats()
+
+    def print_performance_report(self):
+        """打印性能报告"""
+        self.performance_analyzer.print_stats()
+
+    def clear_performance_statistics(self):
+        """清除性能统计"""
+        self.performance_analyzer.reset()
+
+    def enable_performance_monitoring(self):
+        """启用性能监控"""
+        self.performance_analyzer.enable()
+
+    def disable_performance_monitoring(self):
+        """禁用性能监控"""
+        self.performance_analyzer.disable()

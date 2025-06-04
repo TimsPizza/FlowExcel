@@ -92,6 +92,8 @@ async def execute_pipeline_endpoint(request: PipelineRequest):
         logger.error(error_msg, exc_info=True)
         traceback.print_exc()
         return APIResponse(success=False, error=error_msg)
+    finally:
+        pipeline_service.context_manager.cleanup_branch_contexts()
 
 
 @router.post("/preview-node", response_model=APIResponse)
@@ -153,6 +155,8 @@ async def preview_node_endpoint(request: TestNodeRequest):
         logger.error(error_msg, exc_info=True)
         traceback.print_exc()
         return APIResponse(success=False, error=error_msg)
+    finally:
+        pipeline_service.context_manager.cleanup_branch_contexts()
 
 
 @router.get("/health", response_model=APIResponse)
@@ -179,5 +183,58 @@ async def pipeline_health_check():
 
     except Exception as e:
         error_msg = f"Pipeline系统健康检查失败: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return APIResponse(success=False, error=error_msg)
+
+
+# ==================== DataFrame转换性能监控API ====================
+
+@router.get("/dataframe-conversion-stats", response_model=APIResponse)
+async def get_dataframe_conversion_stats():
+    """
+    获取DataFrame转换性能统计
+    
+    Returns:
+        APIResponse: DataFrame转换统计数据
+    """
+    try:
+        stats = pipeline_service.get_dataframe_conversion_stats()
+        return APIResponse(success=True, data=stats)
+    except Exception as e:
+        error_msg = f"获取DataFrame转换统计失败: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return APIResponse(success=False, error=error_msg)
+
+
+@router.post("/dataframe-conversion-stats/reset", response_model=APIResponse)
+async def reset_dataframe_conversion_stats():
+    """
+    重置DataFrame转换性能统计
+    
+    Returns:
+        APIResponse: 重置结果
+    """
+    try:
+        result = pipeline_service.reset_dataframe_conversion_stats()
+        return APIResponse(success=True, data=result)
+    except Exception as e:
+        error_msg = f"重置DataFrame转换统计失败: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return APIResponse(success=False, error=error_msg)
+
+
+@router.post("/dataframe-conversion-stats/print", response_model=APIResponse)
+async def print_dataframe_conversion_stats():
+    """
+    打印DataFrame转换性能统计到服务器控制台
+    
+    Returns:
+        APIResponse: 操作结果
+    """
+    try:
+        pipeline_service.print_dataframe_conversion_stats()
+        return APIResponse(success=True, data={"message": "DataFrame转换统计已打印到控制台"})
+    except Exception as e:
+        error_msg = f"打印DataFrame转换统计失败: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return APIResponse(success=False, error=error_msg)

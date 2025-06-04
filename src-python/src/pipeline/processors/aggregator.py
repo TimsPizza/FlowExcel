@@ -51,53 +51,65 @@ class AggregatorProcessor(AbstractNodeProcessor[AggregatorInput, AggregatorOutpu
         Returns:
             聚合结果输出
         """
-        data = node.data
-        target_column = data.get("statColumn")
-        operation = data.get("method")
-        output_column_name = data.get("outputAs") or operation + "_" + target_column
-
-        if not target_column:
-            raise ValueError("targetColumn is required for aggregator node")
-        if not operation:
-            raise ValueError("operation is required for aggregator node")
-        if not output_column_name:
-            raise ValueError("outputColumnName is required for aggregator node")
-
-        # 验证操作类型
         try:
-            agg_operation = AggregationOperation(operation)
-        except ValueError:
-            raise ValueError(f"Invalid aggregation operation: {operation}")
+            exec_id = self.analyzer.onStart(node.id, self.node_type.value)
+            data = node.data
+            target_column = data.get("statColumn")
+            operation = data.get("method")
+            output_column_name = data.get("outputAs") or operation + "_" + target_column
 
-        # 转换为pandas DataFrame进行处理
-        pandas_df = input_data.dataframe.to_pandas()
+            if not target_column:
+                raise ValueError("targetColumn is required for aggregator node")
+            if not operation:
+                raise ValueError("operation is required for aggregator node")
+            if not output_column_name:
+                raise ValueError("outputColumnName is required for aggregator node")
 
-        # 验证目标列存在
-        if target_column not in pandas_df.columns:
-            raise ValueError(f"Target column '{target_column}' not found in DataFrame")
+            # 验证操作类型
+            try:
+                agg_operation = AggregationOperation(operation)
+            except ValueError:
+                raise ValueError(f"Invalid aggregation operation: {operation}")
 
-        # 执行聚合操作
-        result_value = self._perform_aggregation(
-            pandas_df, target_column, agg_operation
-        )
+            # 获取pandas DataFrame（支持两种输入类型）
+            if hasattr(input_data.dataframe, "to_pandas"):
+                pandas_df = input_data.dataframe.to_pandas()
+            else:
+                pandas_df = input_data.dataframe  # 已经是pandas DataFrame
 
-        # 创建聚合结果
-        aggregation_result = AggregationResult(
-            index_value=input_data.index_value,
-            column_name=output_column_name,
-            operation=agg_operation,
-            result_value=result_value,
-        )
+            # 验证目标列存在
+            if target_column not in pandas_df.columns:
+                raise ValueError(
+                    f"Target column '{target_column}' not found in DataFrame"
+                )
 
-        # 将结果存储到分支上下文中（如果存在）
-        if branch_context is not None:
-            branch_context.add_aggregation_result(aggregation_result)
+            # 执行聚合操作
+            result_value = self._perform_aggregation(
+                pandas_df, target_column, agg_operation
+            )
 
-        # 注意：聚合节点不更新path_context.current_dataframe
-        # 因为聚合节点的输出是统计结果，不是DataFrame
-        # path_context.last_non_aggregator_dataframe保持不变
+            # 创建聚合结果
+            aggregation_result = AggregationResult(
+                index_value=input_data.index_value,
+                column_name=output_column_name,
+                operation=agg_operation,
+                result_value=result_value,
+            )
 
-        return AggregatorOutput(result=aggregation_result)
+            # 将结果存储到分支上下文中（如果存在）
+            if branch_context is not None:
+                branch_context.add_aggregation_result(aggregation_result)
+
+            # 注意：聚合节点不更新path_context.current_dataframe
+            # 因为聚合节点的输出是统计结果，不是DataFrame
+            # path_context.last_non_aggregator_dataframe保持不变
+
+            self.analyzer.onFinish(exec_id)
+
+            return AggregatorOutput(result=aggregation_result)
+        except Exception as e:
+            self.analyzer.onError(exec_id, str(e))
+            raise e
 
     def _perform_aggregation(
         self, df: pd.DataFrame, column: str, operation: AggregationOperation
@@ -116,8 +128,16 @@ class AggregatorProcessor(AbstractNodeProcessor[AggregatorInput, AggregatorOutpu
         column_data = df[column]
 
         # 处理空DataFrame
-        if len(df) == 0:
-            return None
+        try:
+            if hasattr(df, 'empty') and df.empty:
+                return None
+            elif hasattr(df, '__len__') and len(df) == 0:
+                return None
+        except ValueError:
+            # 如果检查为空时出现ValueError，说明是pandas的布尔判断问题
+            # 这种情况下我们假设DataFrame不为空，继续处理
+            print(f"SHOULD NOT HAPPEN: DataFrame is empty: {df}")
+            pass
 
         try:
             if operation == AggregationOperation.SUM:

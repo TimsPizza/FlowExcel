@@ -11,8 +11,7 @@ from app.models import (
     TryReadSheetNamesResponse,
 )
 from app.utils import serialize_value as serialize
-
-
+from pipeline.performance.analyzer import get_performance_analyzer
 
 
 # 自定义 Pydantic 模型 JSON 编码器，以便使用我们的 serialize 函数
@@ -40,7 +39,32 @@ def get_df_by_sheet_name(file_path: str, sheet_name: str) -> pd.DataFrame:
     """
     Get a DataFrame from an Excel file by sheet name.
     """
-    return pd.read_excel(file_path, sheet_name=sheet_name)
+    try:
+        analyzer = get_performance_analyzer()
+        read_id = analyzer.onExcelReadStart(file_path, sheet_name)
+    except ImportError:
+        analyzer = None
+        read_id = None
+
+    try:
+        df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+        if analyzer and read_id:
+            # 获取文件大小（可选）
+            try:
+                import os
+
+                file_size = os.path.getsize(file_path)
+            except:
+                file_size = None
+
+            analyzer.onExcelReadFinish(read_id, len(df), file_size)
+
+        return df
+    except Exception as e:
+        if analyzer and read_id:
+            analyzer.onExcelReadFinish(read_id, 0, None)
+        raise e
 
 
 def get_excel_preview(file_path: str) -> FilePreviewResponse:
@@ -79,7 +103,8 @@ def try_read_header_row(file_path: str, sheet_name: str, header_row: int) -> int
         return df.columns.tolist()
     except Exception as e:
         raise e
-    
+
+
 def try_read_sheet_names(file_path: str) -> List[str]:
     """
     Try to read the sheet names from an Excel file.

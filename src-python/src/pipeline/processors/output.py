@@ -56,37 +56,44 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         Returns:
             多Sheet输出结果（每个分支一个Sheet）
         """
-        data = node.data
-        output_file_path = data.get("outputFilePath")
-        include_index_column = data.get("includeIndexColumn", True)
-        index_column_name = data.get("indexColumnName", "索引")
+        try:
+            exec_id = self.analyzer.onStart(node.id, self.node_type.value)
+            data = node.data
+            output_file_path = data.get("outputFilePath")
+            include_index_column = data.get("includeIndexColumn", True)
+            index_column_name = data.get("indexColumnName", "索引")
 
-        # 创建Sheet数据列表
-        sheets = []
-        # 遍历各分支，为每个分支创建一个Sheet
-        for (
-            branch_id,
-            branch_aggregations,
-        ) in input_data.branch_aggregated_results.items():
-            sheet_data = self._create_sheet_for_branch(
+            # 创建Sheet数据列表
+            sheets = []
+            # 遍历各分支，为每个分支创建一个Sheet
+            for (
                 branch_id,
                 branch_aggregations,
-                include_index_column,
-                index_column_name,
-                global_context,
-                node_map,
-                context_manager,
-            )
-            sheets.append(sheet_data)
+            ) in input_data.branch_aggregated_results.items():
+                sheet_data = self._create_sheet_for_branch(
+                    branch_id,
+                    branch_aggregations,
+                    include_index_column,
+                    index_column_name,
+                    global_context,
+                    node_map,
+                    context_manager,
+                )
+                sheets.append(sheet_data)
 
-        # 如果是生产模式且指定了输出路径，则写入文件
-        if (
-            global_context.execution_mode == ExecutionMode.PRODUCTION
-            and output_file_path
-        ):
-            self._write_output_file(sheets, output_file_path)
+            # 如果是生产模式且指定了输出路径，则写入文件
+            if (
+                global_context.execution_mode == ExecutionMode.PRODUCTION
+                and output_file_path
+            ):
+                self._write_output_file(sheets, output_file_path)
 
-        return OutputResult(sheets=sheets, total_sheets=len(sheets))
+            self.analyzer.onFinish(exec_id)
+
+            return OutputResult(sheets=sheets, total_sheets=len(sheets))
+        except Exception as e:
+            self.analyzer.onError(exec_id, str(e))
+            raise e
 
     def _create_sheet_for_branch(
         self,
