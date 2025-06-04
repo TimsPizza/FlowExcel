@@ -121,6 +121,14 @@ export function isValidConnection(
     }
   }
 
+  // 检查是否会产生环路
+  if (wouldCreateCycle(connection, nodes, edges)) {
+    return {
+      isValid: false,
+      reason: "此连接会产生环路，不允许创建",
+    };
+  }
+
   return { isValid: true };
 }
 
@@ -151,6 +159,98 @@ export function getAvailableNextNodeTypes(
 
   return allowedTypes;
 }
+
+/**
+ * 检测图中是否存在环路
+ * 使用深度优先搜索算法检测有向图中的环路
+ */
+export function detectCycle(nodes: Node[], edges: Edge[]): boolean {
+  // 节点访问状态: 0-未访问, 1-正在访问, 2-已访问完成
+  const visitState = new Map<string, number>();
+  
+  // 构建邻接表
+  const adjacencyList = new Map<string, string[]>();
+  
+  // 初始化所有节点
+  nodes.forEach(node => {
+    visitState.set(node.id, 0);
+    adjacencyList.set(node.id, []);
+  });
+  
+  // 构建邻接表
+  edges.forEach(edge => {
+    const neighbors = adjacencyList.get(edge.source) || [];
+    neighbors.push(edge.target);
+    adjacencyList.set(edge.source, neighbors);
+  });
+  
+  // DFS检测环路
+  function dfs(nodeId: string): boolean {
+    const state = visitState.get(nodeId);
+    
+    // 如果正在访问，说明找到了环路
+    if (state === 1) {
+      return true;
+    }
+    
+    // 如果已访问完成，跳过
+    if (state === 2) {
+      return false;
+    }
+    
+    // 标记为正在访问
+    visitState.set(nodeId, 1);
+    
+    // 递归访问所有邻居节点
+    const neighbors = adjacencyList.get(nodeId) || [];
+    for (const neighbor of neighbors) {
+      if (dfs(neighbor)) {
+        return true;
+      }
+    }
+    
+    // 标记为已访问完成
+    visitState.set(nodeId, 2);
+    return false;
+  }
+  
+  // 对所有未访问的节点进行DFS
+  for (const node of nodes) {
+    if (visitState.get(node.id) === 0) {
+      if (dfs(node.id)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * 检测添加新连接后是否会产生环路
+ */
+export function wouldCreateCycle(
+  connection: Connection,
+  nodes: Node[],
+  edges: Edge[],
+): boolean {
+  if (!connection.source || !connection.target) {
+    return false;
+  }
+  
+  // 创建临时边集合，包含新连接
+  const tempEdges = [...edges, {
+    id: `temp-${connection.source}-${connection.target}`,
+    source: connection.source,
+    target: connection.target,
+    sourceHandle: connection.sourceHandle || null,
+    targetHandle: connection.targetHandle || null,
+  }];
+  
+  // 检测是否存在环路
+  return detectCycle(nodes, tempEdges);
+}
+
 
 /**
  * 检查流程的完整性
@@ -193,6 +293,11 @@ export function validateFlow(
       warnings.push(`节点 "${node.data.label}" 没有输出连接`);
     }
   });
+
+  // 检查是否存在环路
+  if (detectCycle(nodes, edges)) {
+    errors.push("流程中存在环路，请检查节点连接");
+  }
 
   // 检查连接的有效性
   edges.forEach((edge) => {

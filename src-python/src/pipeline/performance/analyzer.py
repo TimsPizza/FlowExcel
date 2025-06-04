@@ -620,6 +620,7 @@ class PerformanceAnalyzer:
             self._dataframe_conversion_stats = DataFrameConversionStats()
             self._excel_io_stats = ExcelIOStats()
             self._cache_stats = CacheStats()
+            self._batch_preload_stats = BatchPreloadStats()
 
         print("PERF: 性能统计已重置")
 
