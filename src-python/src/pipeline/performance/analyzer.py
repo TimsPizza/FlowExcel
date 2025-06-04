@@ -81,6 +81,34 @@ class CacheStats:
         return 1.0 - self.hit_rate
 
 
+@dataclass
+class BatchPreloadStats:
+    """批量预加载统计信息"""
+
+    session_count: int = 0  # 预加载会话数
+    total_files: int = 0  # 总文件数
+    total_sheets: int = 0  # 总Sheet数
+    total_time_ms: float = 0.0  # 总时间
+    total_rows: int = 0  # 总行数
+    successful_sheets: int = 0  # 成功加载的Sheet数
+    failed_sheets: int = 0  # 失败的Sheet数
+    total_io_reduction: int = 0  # 总IO减少量
+
+    @property
+    def avg_time_per_session_ms(self) -> float:
+        return self.total_time_ms / max(1, self.session_count)
+
+    @property
+    def avg_time_per_sheet_ms(self) -> float:
+        return self.total_time_ms / max(1, self.total_sheets)
+
+    @property
+    def success_rate(self) -> float:
+        if self.total_sheets == 0:
+            return 0.0
+        return self.successful_sheets / self.total_sheets
+
+
 class PerformanceAnalyzer:
     """
     集中管理的性能分析器
@@ -103,6 +131,7 @@ class PerformanceAnalyzer:
         self._dataframe_conversion_stats = DataFrameConversionStats()
         self._excel_io_stats = ExcelIOStats()
         self._cache_stats = CacheStats()
+        self._batch_preload_stats = BatchPreloadStats()
 
         # DataFrame转换操作的活跃执行追踪
         self._active_dataframe_conversions: Dict[str, float] = {}
@@ -381,6 +410,40 @@ class PerformanceAnalyzer:
         with self._lock:
             self._cache_stats.miss_count += 1
 
+    def onBatchPreloadComplete(
+        self,
+        total_files: int,
+        total_sheets: int,
+        successful_sheets: int,
+        failed_sheets: int,
+        total_time_ms: float,
+        total_rows: int,
+        total_io_reduction: int,
+    ):
+        """
+        记录批量预加载完成
+
+        Args:
+            total_files: 总文件数
+            total_sheets: 总Sheet数
+            successful_sheets: 成功加载的Sheet数
+            failed_sheets: 失败的Sheet数
+            total_time_ms: 总时间（毫秒）
+            total_rows: 总行数
+        """
+        if not self.enabled:
+            return
+
+        with self._lock:
+            self._batch_preload_stats.session_count += 1
+            self._batch_preload_stats.total_files += total_files
+            self._batch_preload_stats.total_sheets += total_sheets
+            self._batch_preload_stats.successful_sheets += successful_sheets
+            self._batch_preload_stats.failed_sheets += failed_sheets
+            self._batch_preload_stats.total_time_ms += total_time_ms
+            self._batch_preload_stats.total_rows += total_rows
+            self._batch_preload_stats.total_io_reduction += total_io_reduction
+
     def get_stats(self) -> Dict[str, Any]:
         """获取性能统计信息"""
         with self._lock:
@@ -433,6 +496,19 @@ class PerformanceAnalyzer:
                     "hit_rate": self._cache_stats.hit_rate,
                     "miss_rate": self._cache_stats.miss_rate,
                 },
+                "batch_preload_stats": {
+                    "session_count": self._batch_preload_stats.session_count,
+                    "total_files": self._batch_preload_stats.total_files,
+                    "total_sheets": self._batch_preload_stats.total_sheets,
+                    "successful_sheets": self._batch_preload_stats.successful_sheets,
+                    "failed_sheets": self._batch_preload_stats.failed_sheets,
+                    "total_time_ms": self._batch_preload_stats.total_time_ms,
+                    "total_rows": self._batch_preload_stats.total_rows,
+                    "avg_time_per_session_ms": self._batch_preload_stats.avg_time_per_session_ms,
+                    "avg_time_per_sheet_ms": self._batch_preload_stats.avg_time_per_sheet_ms,
+                    "success_rate": self._batch_preload_stats.success_rate,
+                    "total_io_reduction": self._batch_preload_stats.total_io_reduction,
+                },
             }
 
     def print_stats(self):
@@ -472,7 +548,7 @@ class PerformanceAnalyzer:
         # Excel IO统计
         excel_stats = stats["excel_io_stats"]
         if excel_stats["read_count"] > 0:
-            print("Excel文件IO统计:")
+            print("Excel文件IO统计(批量预加载之外):")
             print("-" * 30)
             print(f"📖 文件读取次数: {excel_stats['read_count']}")
             print(f"⏱️  读取总时间: {excel_stats['read_total_time_ms']:.2f}ms")
@@ -491,6 +567,23 @@ class PerformanceAnalyzer:
             print(f"📊 总请求数: {cache_stats['total_requests']}")
             print(f"📈 命中率: {cache_stats['hit_rate']:.2%}")
             print(f"📉 未命中率: {cache_stats['miss_rate']:.2%}")
+            print()
+
+        # 批量预加载统计
+        batch_stats = stats["batch_preload_stats"]
+        if batch_stats["session_count"] > 0:
+            print("批量预加载统计:")
+            print("-" * 30)
+            print(f"🚀 预加载会话: {batch_stats['session_count']}")
+            print(f"📁 总文件数: {batch_stats['total_files']}")
+            print(f"📄 总Sheet数: {batch_stats['total_sheets']}")
+            print(f"✅ 成功加载: {batch_stats['successful_sheets']}")
+            print(f"❌ 加载失败: {batch_stats['failed_sheets']}")
+            print(f"⏱️  预加载总时间: {batch_stats['total_time_ms']:.2f}ms")
+            print(f"📋 预加载总行数: {batch_stats['total_rows']}")
+            print(f"📊 平均会话时间: {batch_stats['avg_time_per_session_ms']:.2f}ms")
+            print(f"📈 成功率: {batch_stats['success_rate']:.2%}")
+            print(f"📊 总IO减少量: {batch_stats['total_io_reduction']}")
             print()
 
         if stats["node_stats"]:

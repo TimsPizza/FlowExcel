@@ -9,6 +9,8 @@ from typing import List, Dict
 
 from .path_analyzer import PathAnalyzer, ExecutionBranch, MultiInputNodeInfo
 from .context_manager import ContextManager
+from .file_analyzer import FileAnalyzer
+from .batch_preloader import BatchPreloader
 from ..models import (
     ExecutePipelineRequest,
     PipelineExecutionResult,
@@ -37,6 +39,8 @@ class PipelineExecutor:
     def __init__(self):
         self.path_analyzer = PathAnalyzer()
         self.context_manager = ContextManager()
+        self.file_analyzer = FileAnalyzer()
+        self.batch_preloader = BatchPreloader()
 
         # 用于特殊节点的处理器
         self.index_source_processor = IndexSourceProcessor()
@@ -89,6 +93,11 @@ class PipelineExecutor:
                 request.target_node_id,
             )
 
+            # 4. 批量预加载优化：分析并预加载所有需要的Excel文件
+            self._batch_preload_files(
+                execution_branches, request.workspace_config, global_context
+            )
+
             if not execution_branches:
                 return PipelineExecutionResult(
                     success=False,
@@ -101,7 +110,7 @@ class PipelineExecutor:
                     output_data=None,
                 )
 
-            # 4. 为每个分支独立执行（避免笛卡尔积）
+            # 5. 为每个分支独立执行（避免笛卡尔积）
             all_branch_results = []
             all_index_results = []
 
@@ -415,6 +424,59 @@ class PipelineExecutor:
         #     raise ValueError(f"Output node execution failed: {result.error}")
 
         return result
+
+    def _batch_preload_files(
+        self,
+        execution_branches: Dict[str, ExecutionBranch],
+        workspace_config,
+        global_context,
+    ):
+        """
+        批量预加载所有需要的Excel文件
+
+        Args:
+            execution_branches: 执行分支字典
+            workspace_config: 工作区配置
+            global_context: 全局上下文
+        """
+        try:
+            # 收集所有执行节点
+            all_execution_nodes = []
+            for branch in execution_branches.values():
+                all_execution_nodes.extend(branch.execution_nodes)
+
+            # 去重
+            unique_nodes = list(set(all_execution_nodes))
+
+            # 分析文件需求
+            batch_infos = self.file_analyzer.analyze_file_requirements(
+                workspace_config, unique_nodes
+            )
+
+            if not batch_infos:
+                print("PERF: No files to preload")
+                return
+
+            # 执行批量预加载
+            preload_summary = self.batch_preloader.preload_files(
+                batch_infos, global_context
+            )
+
+            # 记录预加载结果到性能分析器
+            from ..performance.analyzer import get_performance_analyzer
+
+            analyzer = get_performance_analyzer()
+
+            # 这里可以添加预加载相关的性能统计
+            print(
+                f"PERF: Batch preload completed - {preload_summary.successful_sheets}/{preload_summary.total_sheets} sheets loaded"
+            )
+
+        except Exception as e:
+            print(
+                f"PERF WARNING: Batch preload failed - {str(e)}, falling back to on-demand loading"
+            )
+            # 预加载失败不应该影响主流程，继续执行
 
     def _create_execution_summary(
         self,

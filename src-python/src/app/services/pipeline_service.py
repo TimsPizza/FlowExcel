@@ -49,6 +49,8 @@ from pipeline.processors import (
 )
 from config import APP_ROOT_DIR
 from pipeline.execution.path_analyzer import PathAnalyzer
+from pipeline.execution.file_analyzer import FileAnalyzer
+from pipeline.execution.batch_preloader import BatchPreloader
 from pipeline.performance.analyzer import get_performance_analyzer
 
 
@@ -180,6 +182,10 @@ class PipelineService:
 
         # 初始化上下文管理器
         self.context_manager = ContextManager()
+
+        # 初始化文件分析器和批量预加载器
+        self.file_analyzer = FileAnalyzer()
+        self.batch_preloader = BatchPreloader()
 
         # 获取全局性能分析器
         self.performance_analyzer = get_performance_analyzer()
@@ -460,7 +466,8 @@ class PipelineService:
                         # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
                         custom_df = DataFrame.from_pandas(output.dataframe)
 
-                    limited_df = custom_df.limit_rows(max_rows)
+                    # limited_df = custom_df.limit_rows(max_rows)
+                    limited_df = custom_df
 
                     api_sheet = APISheetData(
                         sheet_name=f"索引: {index_value}",
@@ -496,9 +503,14 @@ class PipelineService:
     ) -> DataFramePreviewResult:
         """预览行过滤节点 - 单入多出节点"""
         try:
-            # 获取上游节点的输出作为输入
+            # 创建全局上下文（先创建，以便共享缓存）
+            global_context = self.context_manager.create_global_context(
+                workspace_config, ExecutionMode.TEST
+            )
+
+            # 获取上游节点的输出作为输入（共享全局上下文）
             upstream_outputs = self._get_upstream_dataframe_outputs(
-                workspace_config, node, max_rows
+                workspace_config, node, max_rows, global_context
             )
             if not upstream_outputs:
                 return DataFramePreviewResult(
@@ -507,10 +519,6 @@ class PipelineService:
                     node_type=node.type.value,
                     error="无法获取上游节点的DataFrame输出",
                 )
-
-            global_context = self.context_manager.create_global_context(
-                workspace_config, ExecutionMode.TEST
-            )
 
             previews = []
             processor = self.processors[NodeType.ROW_FILTER]
@@ -578,9 +586,14 @@ class PipelineService:
     ) -> DataFramePreviewResult:
         """预览行查找节点 - 单入多出节点"""
         try:
-            # 获取上游节点的输出作为输入
+            # 创建全局上下文（先创建，以便共享缓存）
+            global_context = self.context_manager.create_global_context(
+                workspace_config, ExecutionMode.TEST
+            )
+
+            # 获取上游节点的输出作为输入（共享全局上下文）
             upstream_outputs = self._get_upstream_dataframe_outputs(
-                workspace_config, node, max_rows
+                workspace_config, node, max_rows, global_context
             )
             if not upstream_outputs:
                 return DataFramePreviewResult(
@@ -589,10 +602,6 @@ class PipelineService:
                     node_type=node.type.value,
                     error="无法获取上游节点的DataFrame输出",
                 )
-
-            global_context = self.context_manager.create_global_context(
-                workspace_config, ExecutionMode.TEST
-            )
 
             previews = []
             processor = self.processors[NodeType.ROW_LOOKUP]
@@ -660,9 +669,14 @@ class PipelineService:
     ) -> AggregationPreviewResult:
         """预览聚合节点 - 单入单出节点"""
         try:
-            # 获取上游节点的输出作为输入
+            # 创建全局上下文（先创建，以便共享缓存）
+            global_context = self.context_manager.create_global_context(
+                workspace_config, ExecutionMode.TEST
+            )
+
+            # 获取上游节点的输出作为输入（共享全局上下文）
             upstream_outputs = self._get_upstream_dataframe_outputs(
-                workspace_config, node, max_rows
+                workspace_config, node, max_rows, global_context
             )
             if not upstream_outputs:
                 return AggregationPreviewResult(
@@ -671,10 +685,6 @@ class PipelineService:
                     node_type=node.type.value,
                     error="无法获取上游节点的DataFrame输出",
                 )
-
-            global_context = self.context_manager.create_global_context(
-                workspace_config, ExecutionMode.TEST
-            )
 
             aggregation_results = []
             processor = self.processors[NodeType.AGGREGATOR]
@@ -781,7 +791,8 @@ class PipelineService:
                         # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
                         custom_df = DataFrame.from_pandas(sheet_data.dataframe)
 
-                    limited_df = custom_df.limit_rows(max_rows)
+                    # limited_df = custom_df.limit_rows(max_rows)
+                    limited_df = custom_df
 
                     api_sheet = APISheetData(
                         sheet_name=sheet_data.sheet_name,
@@ -848,7 +859,11 @@ class PipelineService:
             return []
 
     def _get_upstream_dataframe_outputs(
-        self, workspace_config: WorkspaceConfig, target_node: BaseNode, max_rows: int
+        self,
+        workspace_config: WorkspaceConfig,
+        target_node: BaseNode,
+        max_rows: int,
+        shared_global_context: GlobalContext = None,
     ) -> List[Dict[str, Any]]:
         """获取上游节点的DataFrame输出"""
         upstream_start_time = time.time()
@@ -889,10 +904,22 @@ class PipelineService:
             if not upstream_node or upstream_node.type == NodeType.INDEX_SOURCE:
                 return []  # 上游是索引源节点，无DataFrame输出
 
-            # 创建全局上下文
-            global_context = self.context_manager.create_global_context(
-                workspace_config, ExecutionMode.TEST
-            )
+            # 使用共享的全局上下文或创建新的
+            if shared_global_context is not None:
+                global_context = shared_global_context
+                print("PERF: Using shared global context with existing cache")
+            else:
+                global_context = self.context_manager.create_global_context(
+                    workspace_config, ExecutionMode.TEST
+                )
+                # 批量预加载优化：提前加载所有需要的文件
+                try:
+                    self._batch_preload_for_upstream(
+                        execution_nodes, workspace_config, global_context
+                    )
+                except Exception as e:
+                    print(f"PERF WARNING: Upstream batch preload failed - {str(e)}")
+                    # 预加载失败不影响主流程
 
             # 首先获取索引值（从索引源节点开始）
             index_fetch_start = time.time()
@@ -1011,11 +1038,13 @@ class PipelineService:
 
                         if hasattr(current_dataframe, "limit_rows"):
                             # 如果还是自定义DataFrame，直接使用
-                            limited_df = current_dataframe.limit_rows(max_rows)
+                            # limited_df = current_dataframe.limit_rows(max_rows)
+                            limited_df = current_dataframe
                         else:
                             # 如果是pandas DataFrame，转换后限制行数
                             custom_df = DataFrame.from_pandas(current_dataframe)
-                            limited_df = custom_df.limit_rows(max_rows)
+                            # limited_df = custom_df.limit_rows(max_rows)
+                            limited_df = custom_df
 
                         outputs.append(
                             {
@@ -1127,6 +1156,38 @@ class PipelineService:
     def get_performance_report(self) -> Dict[str, Any]:
         """获取性能报告"""
         return self.performance_analyzer.get_stats()
+
+    def _batch_preload_for_upstream(
+        self,
+        execution_nodes: List[str],
+        workspace_config: WorkspaceConfig,
+        global_context,
+    ):
+        """
+        为上游分析执行批量预加载
+
+        Args:
+            execution_nodes: 执行节点列表
+            workspace_config: 工作区配置
+            global_context: 全局上下文
+        """
+        # 分析文件需求
+        batch_infos = self.file_analyzer.analyze_file_requirements(
+            workspace_config, execution_nodes
+        )
+
+        if not batch_infos:
+            print("PERF: No files to preload for upstream analysis")
+            return
+
+        # 执行批量预加载
+        preload_summary = self.batch_preloader.preload_files(
+            batch_infos, global_context
+        )
+
+        print(
+            f"PERF: Upstream batch preload completed - {preload_summary.successful_sheets}/{preload_summary.total_sheets} sheets loaded"
+        )
 
     def print_performance_report(self):
         """打印性能报告"""
