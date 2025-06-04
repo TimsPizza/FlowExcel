@@ -202,7 +202,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         sanitizedNode.data = {
           ...outputData,
           label: outputData.label || "输出",
-          outputFormat: outputData.outputFormat || "table", // outputFormat is optional but good to default
+          outputFormat: outputData.outputFormat || "excel", // outputFormat is optional but good to default
+          outputPath: outputData.outputPath || "",
           testResult: undefined, // 过滤掉 testResult
         };
         break;

@@ -131,6 +131,7 @@ class FileAnalyzer:
             # auto_by_index模式：预加载该文件的所有sheet
             # 因为我们在预加载阶段还不知道具体的索引值，所以预加载所有可能的sheet
             print(f"PERF: auto_by_index mode detected for node {node.id}, will preload all sheets from file {target_file_id}")
+            print(f"PERF: this may cause performance issue, remain to be optimized by reading necessary sheets!!!")
             
             for sheet_meta in file_info.sheet_metas:
                 sheet_name = sheet_meta.get("sheet_name")

@@ -571,7 +571,7 @@ class PerformanceAnalyzer:
 
         # 批量预加载统计
         batch_stats = stats["batch_preload_stats"]
-        if batch_stats["session_count"] > 0:
+        if batch_stats is not None:
             print("批量预加载统计:")
             print("-" * 30)
             print(f"🚀 预加载会话: {batch_stats['session_count']}")

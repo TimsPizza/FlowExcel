@@ -59,7 +59,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         try:
             exec_id = self.analyzer.onStart(node.id, self.node_type.value)
             data = node.data
-            output_file_path = data.get("outputFilePath")
+            output_file_path = data.get("outputPath")
             include_index_column = data.get("includeIndexColumn", True)
             index_column_name = data.get("indexColumnName", "索引")
 

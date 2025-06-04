@@ -871,6 +871,13 @@ class PipelineService:
         # Performance monitoring handled by individual node executions
         try:
             # 使用PathAnalyzer分析完整执行路径
+            global_context = (
+                shared_global_context
+                if shared_global_context is not None
+                else self.context_manager.create_global_context(
+                    workspace_config, ExecutionMode.TEST
+                )
+            )
             path_analysis_start = time.time()
             analyzer = PathAnalyzer()
             execution_branches, _ = analyzer.analyze(
@@ -878,6 +885,7 @@ class PipelineService:
                 workspace_config.flow_edges,
                 target_node.id,
             )
+
             path_analysis_time = (time.time() - path_analysis_start) * 1000
             print(f"PERF: Path analysis for upstream took {path_analysis_time:.2f}ms")
 
@@ -886,6 +894,13 @@ class PipelineService:
 
             branch = list(execution_branches.values())[0]  # 只取第一个分支
             execution_nodes = branch.execution_nodes
+            try:
+                self._batch_preload_for_upstream(
+                    execution_nodes, workspace_config, global_context
+                )
+            except Exception as e:
+                print(f"PERF WARNING: Upstream batch preload failed - {str(e)}")
+                # 预加载失败不影响主流程
 
             # 找到目标节点在执行路径中的位置
             target_index = -1
@@ -913,13 +928,6 @@ class PipelineService:
                     workspace_config, ExecutionMode.TEST
                 )
                 # 批量预加载优化：提前加载所有需要的文件
-                try:
-                    self._batch_preload_for_upstream(
-                        execution_nodes, workspace_config, global_context
-                    )
-                except Exception as e:
-                    print(f"PERF WARNING: Upstream batch preload failed - {str(e)}")
-                    # 预加载失败不影响主流程
 
             # 首先获取索引值（从索引源节点开始）
             index_fetch_start = time.time()
