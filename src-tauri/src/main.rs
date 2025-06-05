@@ -112,7 +112,8 @@ fn main() {
         }
     };
     
-    rt.block_on(async {
+    // 在async块中初始化Python后端，但不运行Tauri
+    let watchdog = rt.block_on(async {
         log::info!("Starting Python backend watchdog...");
         
         // Initialize and start the Python watchdog
@@ -138,14 +139,6 @@ fn main() {
             }
         }
         
-        // Store the watchdog globally for cleanup
-        if let Err(e) = WATCHDOG.set(watchdog.clone()) {
-            let error_msg = format!("Failed to set global watchdog: {:?}", e);
-            log::error!("{}", error_msg);
-            eprintln!("{}", error_msg);
-            std::process::exit(1);
-        }
-        
         log::info!("Starting background monitoring task...");
         
         // Start monitoring in background
@@ -154,43 +147,53 @@ fn main() {
             PythonWatchdog::start_monitoring(monitoring_watchdog).await;
         });
         
-        log::info!("Building Tauri application...");
-        
-        // Run Tauri application
-        match tauri::Builder::default()
-            .plugin(tauri_plugin_fs::init())
-            .plugin(tauri_plugin_dialog::init())
-            .plugin(tauri_plugin_shell::init())
-            .plugin(tauri_plugin_log::Builder::default().build())
-            .invoke_handler(tauri::generate_handler![get_backend_info, get_backend_status])
-            .setup(|_app| {
-                log::info!("Tauri application setup completed");
-                Ok(())
-            })
-            .on_window_event(|_window, event| {
-                if let tauri::WindowEvent::Destroyed = event {
-                    log::info!("Window destroyed, shutting down watchdog...");
-                    // Shutdown watchdog when window is destroyed
-                    let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime for cleanup");
-                    rt.block_on(async {
-                        if let Some(watchdog) = WATCHDOG.get() {
-                            let _ = watchdog.lock().await.stop().await;
-                            log::info!("Python backend watchdog stopped");
-                        }
-                    });
-                }
-            })
-            .run(tauri::generate_context!())
-        {
-            Ok(()) => {
-                log::info!("Tauri application finished normally");
-            }
-            Err(e) => {
-                let error_msg = format!("Error while running Tauri application: {}", e);
-                log::error!("{}", error_msg);
-                eprintln!("{}", error_msg);
-                std::process::exit(1);
-            }
-        }
+        watchdog
     });
+    
+    // Store the watchdog globally for cleanup
+    if let Err(e) = rt.block_on(async { WATCHDOG.set(watchdog.clone()) }) {
+        let error_msg = format!("Failed to set global watchdog: {:?}", e);
+        log::error!("{}", error_msg);
+        eprintln!("{}", error_msg);
+        std::process::exit(1);
+    }
+    
+    log::info!("Building Tauri application...");
+    
+    // Run Tauri application in the main thread (not in async block)
+    match tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_log::Builder::default().build())
+        .invoke_handler(tauri::generate_handler![get_backend_info, get_backend_status])
+        .setup(|_app| {
+            log::info!("Tauri application setup completed");
+            Ok(())
+        })
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                log::info!("Window destroyed, shutting down watchdog...");
+                // Shutdown watchdog when window is destroyed
+                let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime for cleanup");
+                rt.block_on(async {
+                    if let Some(watchdog) = WATCHDOG.get() {
+                        let _ = watchdog.lock().await.stop().await;
+                        log::info!("Python backend watchdog stopped");
+                    }
+                });
+            }
+        })
+        .run(tauri::generate_context!())
+    {
+        Ok(()) => {
+            log::info!("Tauri application finished normally");
+        }
+        Err(e) => {
+            let error_msg = format!("Error while running Tauri application: {}", e);
+            log::error!("{}", error_msg);
+            eprintln!("{}", error_msg);
+            std::process::exit(1);
+        }
+    }
 }
