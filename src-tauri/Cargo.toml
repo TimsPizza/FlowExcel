@@ -15,6 +15,7 @@ tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
 log = "0.4"
+env_logger = "0.11"
 tauri = { version = "2.5.0", features = [] }
 tauri-plugin-log = "2.0.0-rc"
 tauri-plugin-fs = "2"
@@ -25,3 +26,6 @@ which = "6.0"
 libc = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["consoleapi", "wincon"] }

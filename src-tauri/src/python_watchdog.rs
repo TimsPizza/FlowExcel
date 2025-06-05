@@ -76,31 +76,63 @@ impl PythonWatchdog {
 
     /// 自动检测后端类型（二进制文件优先）
     fn detect_backend(&self) -> Result<BackendType, String> {
+        log::info!("Starting backend detection...");
+        
         // 确定操作系统特定的文件扩展名
         let exe_extension = if cfg!(windows) { ".exe" } else { "" };
+        log::info!("Target platform: {}, executable extension: '{}'", 
+                  if cfg!(windows) { "Windows" } else if cfg!(target_os = "macos") { "macOS" } else { "Unix" }, 
+                  exe_extension);
         
         // 构建可能的二进制路径，使用PathBuf确保跨平台兼容性
-        let base_paths = vec![
+        let mut base_paths = vec![
             // 开发环境路径
             PathBuf::from("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
             PathBuf::from("..").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
             PathBuf::from(".").join(format!("excel-backend{}", exe_extension)),
-            // 打包后的资源路径（根据平台调整）
-            self.get_bundled_resource_path("backend", "excel-backend", &format!("excel-backend{}", exe_extension)),
+            
             // 单文件形式的 PyInstaller 打包
             PathBuf::from("backend").join(format!("excel-backend{}", exe_extension)),
             PathBuf::from("..").join("backend").join(format!("excel-backend{}", exe_extension)),
             PathBuf::from(".").join(format!("excel-backend{}", exe_extension)),
         ];
 
-        for binary_path in base_paths {
-            if binary_path.exists() && binary_path.is_file() {
-                log::info!("Found Python backend binary: {:?}", binary_path);
-                return Ok(BackendType::Binary { 
-                    binary_path 
-                });
+        // 添加打包后的资源路径（根据实际Windows结构修正）
+        let bundled_paths = vec![
+            // Windows MSI安装路径: _up_\backend\excel-backend\excel-backend.exe
+            PathBuf::from("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from("..").join("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            
+            // macOS app bundle 路径
+            PathBuf::from("..").join("Resources").join("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from("Resources").join("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            
+            // 其他可能的打包路径
+            PathBuf::from("resources").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from("..").join("resources").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+        ];
+        
+        base_paths.extend(bundled_paths);
+
+        log::info!("Checking {} possible binary paths...", base_paths.len());
+        for (i, binary_path) in base_paths.iter().enumerate() {
+            log::debug!("  [{}] Checking: {:?}", i + 1, binary_path);
+            
+            if binary_path.exists() {
+                if binary_path.is_file() {
+                    log::info!("✓ Found Python backend binary: {:?}", binary_path);
+                    return Ok(BackendType::Binary { 
+                        binary_path: binary_path.clone()
+                    });
+                } else {
+                    log::warn!("  Path exists but is not a file: {:?}", binary_path);
+                }
+            } else {
+                log::debug!("  Path does not exist: {:?}", binary_path);
             }
         }
+
+        log::warn!("No binary backend found, attempting to find Python script...");
 
         // 如果没有二进制文件，尝试查找 Python 脚本
         let script_paths = vec![
@@ -108,23 +140,53 @@ impl PythonWatchdog {
             PathBuf::from("..").join("src-python").join("main.py"),
             PathBuf::from("python").join("main.py"),
             PathBuf::from("backend").join("main.py"),
-            self.get_bundled_resource_path("src-python", "src", "main.py"),
+            PathBuf::from("_up_").join("src-python").join("src").join("main.py"),
+            PathBuf::from("..").join("_up_").join("src-python").join("src").join("main.py"),
         ];
 
-        // 查找 Python 解释器
-        let python_executable = self.find_python_executable()?;
+        log::info!("Checking {} possible script paths...", script_paths.len());
 
-        for script_path in script_paths {
+        // 查找 Python 解释器
+        let python_executable = match self.find_python_executable() {
+            Ok(path) => {
+                log::info!("Found Python executable: {:?}", path);
+                path
+            }
+            Err(e) => {
+                log::error!("Failed to find Python executable: {}", e);
+                return Err(format!("No Python executable found: {}", e));
+            }
+        };
+
+        for (i, script_path) in script_paths.iter().enumerate() {
+            log::debug!("  [{}] Checking script: {:?}", i + 1, script_path);
+            
             if script_path.exists() && script_path.is_file() {
-                log::info!("Found Python backend script: {:?}", script_path);
+                log::info!("✓ Found Python backend script: {:?}", script_path);
                 return Ok(BackendType::PythonScript {
                     python_path: python_executable,
-                    script_path,
+                    script_path: script_path.clone(),
                 });
             }
         }
 
-        Err("No Python backend found (neither binary nor script)".to_string())
+        let error_msg = "No Python backend found (neither binary nor script)";
+        log::error!("{}", error_msg);
+        log::error!("Working directory: {:?}", std::env::current_dir().unwrap_or_else(|_| PathBuf::from("unknown")));
+        
+        // 列出当前目录内容用于调试
+        if let Ok(current_dir) = std::env::current_dir() {
+            log::error!("Current directory contents:");
+            if let Ok(entries) = std::fs::read_dir(&current_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    let file_type = if path.is_dir() { "DIR " } else { "FILE" };
+                    log::error!("  {} {:?}", file_type, path.file_name().unwrap_or_default());
+                }
+            }
+        }
+        
+        Err(error_msg.to_string())
     }
 
     /// 获取打包后资源的路径（跨平台）
@@ -143,6 +205,8 @@ impl PythonWatchdog {
 
     /// 查找 Python 可执行文件（增强Windows支持）
     fn find_python_executable(&self) -> Result<PathBuf, String> {
+        log::info!("Searching for Python executable...");
+        
         // 优先查找虚拟环境中的 Python，区分平台
         let venv_paths = if cfg!(windows) {
             vec![
@@ -160,10 +224,13 @@ impl PythonWatchdog {
             ]
         };
 
-        for venv_path in venv_paths {
+        log::info!("Checking {} virtual environment paths...", venv_paths.len());
+        for (i, venv_path) in venv_paths.iter().enumerate() {
+            log::debug!("  [{}] Checking venv: {:?}", i + 1, venv_path);
+            
             if venv_path.exists() && venv_path.is_file() {
-                log::info!("Found Python in virtual environment: {:?}", venv_path);
-                return Ok(venv_path);
+                log::info!("✓ Found Python in virtual environment: {:?}", venv_path);
+                return Ok(venv_path.clone());
             }
         }
 
@@ -174,14 +241,19 @@ impl PythonWatchdog {
             vec!["python3", "python"]
         };
         
+        log::info!("Checking system Python candidates: {:?}", python_candidates);
         for candidate in python_candidates {
             if let Ok(python_path) = which(candidate) {
-                log::info!("Found system Python: {:?}", python_path);
+                log::info!("✓ Found system Python: {:?}", python_path);
                 return Ok(python_path);
+            } else {
+                log::debug!("  System Python '{}' not found", candidate);
             }
         }
 
-        Err("No Python executable found".to_string())
+        let error_msg = "No Python executable found";
+        log::error!("{}", error_msg);
+        Err(error_msg.to_string())
     }
 
     /// 启动后端进程并等待握手
