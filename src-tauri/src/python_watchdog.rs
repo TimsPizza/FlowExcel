@@ -76,84 +76,50 @@ impl PythonWatchdog {
 
     /// 自动检测后端类型（二进制文件优先）
     fn detect_backend(&self) -> Result<BackendType, String> {
-        // 首先检查是否有 pyinstaller 打包的二进制文件（目录形式优先，然后单文件）
-        let possible_binary_paths = vec![
+        // 确定操作系统特定的文件扩展名
+        let exe_extension = if cfg!(windows) { ".exe" } else { "" };
+        
+        // 构建可能的二进制路径，使用PathBuf确保跨平台兼容性
+        let base_paths = vec![
             // 开发环境路径
-            "backend/excel-backend/excel-backend",
-            "backend/excel-backend/excel-backend.exe",
-            "../backend/excel-backend/excel-backend",
-            "../backend/excel-backend/excel-backend.exe",
-            "./excel-backend/excel-backend",
-            "./excel-backend/excel-backend.exe",
-            // 打包后的资源路径（Tauri会将resources放在这些位置）
-            "../Resources/_up_/backend/excel-backend/excel-backend",
-            "../Resources/_up_/backend/excel-backend/excel-backend.exe",
-            "Resources/_up_/backend/excel-backend/excel-backend",
-            "Resources/_up_/backend/excel-backend/excel-backend.exe",
-            "../Contents/Resources/_up_/backend/excel-backend/excel-backend",
-            "../Contents/Resources/_up_/backend/excel-backend/excel-backend.exe",
-            "Contents/Resources/_up_/backend/excel-backend/excel-backend",
-            "Contents/Resources/_up_/backend/excel-backend/excel-backend.exe",
-            // 其他可能的打包路径
-            "resources/backend/excel-backend/excel-backend",
-            "resources/backend/excel-backend/excel-backend.exe",
-            "../resources/backend/excel-backend/excel-backend", 
-            "../resources/backend/excel-backend/excel-backend.exe",
-            // 单文件形式的 PyInstaller 打包（兼容性）
-            "backend/excel-backend",
-            "backend/excel-backend.exe", 
-            "../backend/excel-backend",
-            "../backend/excel-backend.exe",
-            "./excel-backend",
-            "./excel-backend.exe",
-            "../Resources/_up_/backend/excel-backend",
-            "../Resources/_up_/backend/excel-backend.exe",
-            "Resources/_up_/backend/excel-backend",
-            "Resources/_up_/backend/excel-backend.exe",
-            "../Contents/Resources/_up_/backend/excel-backend",
-            "../Contents/Resources/_up_/backend/excel-backend.exe",
-            "Contents/Resources/_up_/backend/excel-backend",
-            "Contents/Resources/_up_/backend/excel-backend.exe",
-            "resources/backend/excel-backend",
-            "resources/backend/excel-backend.exe",
-            "../resources/backend/excel-backend",
-            "../resources/backend/excel-backend.exe",
+            PathBuf::from("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from("..").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from(".").join(format!("excel-backend{}", exe_extension)),
+            // 打包后的资源路径（根据平台调整）
+            self.get_bundled_resource_path("backend", "excel-backend", &format!("excel-backend{}", exe_extension)),
+            // 单文件形式的 PyInstaller 打包
+            PathBuf::from("backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from("..").join("backend").join(format!("excel-backend{}", exe_extension)),
+            PathBuf::from(".").join(format!("excel-backend{}", exe_extension)),
         ];
 
-        for binary_path in possible_binary_paths {
-            let path = Path::new(binary_path);
-            if path.exists() && path.is_file() {
-                log::info!("Found Python backend binary: {:?}", path);
+        for binary_path in base_paths {
+            if binary_path.exists() && binary_path.is_file() {
+                log::info!("Found Python backend binary: {:?}", binary_path);
                 return Ok(BackendType::Binary { 
-                    binary_path: path.to_path_buf() 
+                    binary_path 
                 });
             }
         }
 
         // 如果没有二进制文件，尝试查找 Python 脚本
-        let possible_script_paths = vec![
-            "../src-python/src/main.py",  // FastAPI 后端入口
-            "../src-python/main.py", 
-            "python/main.py",
-            "backend/main.py",
-            "../Resources/_up_/src-python/src/main.py",
-            "Resources/_up_/src-python/src/main.py",
-            "../Contents/Resources/_up_/src-python/src/main.py",
-            "Contents/Resources/_up_/src-python/src/main.py",
-            "resources/src-python/src/main.py",
-            "../resources/src-python/src/main.py",
+        let script_paths = vec![
+            PathBuf::from("..").join("src-python").join("src").join("main.py"),
+            PathBuf::from("..").join("src-python").join("main.py"),
+            PathBuf::from("python").join("main.py"),
+            PathBuf::from("backend").join("main.py"),
+            self.get_bundled_resource_path("src-python", "src", "main.py"),
         ];
 
         // 查找 Python 解释器
         let python_executable = self.find_python_executable()?;
 
-        for script_path in possible_script_paths {
-            let path = Path::new(script_path);
-            if path.exists() && path.is_file() {
-                log::info!("Found Python backend script: {:?}", path);
+        for script_path in script_paths {
+            if script_path.exists() && script_path.is_file() {
+                log::info!("Found Python backend script: {:?}", script_path);
                 return Ok(BackendType::PythonScript {
                     python_path: python_executable,
-                    script_path: path.to_path_buf(),
+                    script_path,
                 });
             }
         }
@@ -161,26 +127,53 @@ impl PythonWatchdog {
         Err("No Python backend found (neither binary nor script)".to_string())
     }
 
-    /// 查找 Python 可执行文件
+    /// 获取打包后资源的路径（跨平台）
+    fn get_bundled_resource_path(&self, folder1: &str, folder2: &str, filename: &str) -> PathBuf {
+        if cfg!(target_os = "macos") {
+            // macOS app bundle 路径
+            PathBuf::from("..").join("Resources").join("_up_").join(folder1).join(folder2).join(filename)
+        } else if cfg!(windows) {
+            // Windows 资源路径
+            PathBuf::from("resources").join(folder1).join(folder2).join(filename)
+        } else {
+            // Linux 和其他 Unix 系统
+            PathBuf::from("resources").join(folder1).join(folder2).join(filename)
+        }
+    }
+
+    /// 查找 Python 可执行文件（增强Windows支持）
     fn find_python_executable(&self) -> Result<PathBuf, String> {
-        // 优先查找虚拟环境中的 Python
-        let venv_paths = vec![
-            "../src-python/.venv/bin/python",
-            "../src-python/.venv/Scripts/python.exe", 
-            ".venv/bin/python",
-            ".venv/Scripts/python.exe", 
-        ];
+        // 优先查找虚拟环境中的 Python，区分平台
+        let venv_paths = if cfg!(windows) {
+            vec![
+                PathBuf::from("..").join("src-python").join(".venv").join("Scripts").join("python.exe"),
+                PathBuf::from(".venv").join("Scripts").join("python.exe"),
+                PathBuf::from("..").join("src-python").join(".venv").join("Scripts").join("python3.exe"),
+                PathBuf::from(".venv").join("Scripts").join("python3.exe"),
+            ]
+        } else {
+            vec![
+                PathBuf::from("..").join("src-python").join(".venv").join("bin").join("python"),
+                PathBuf::from(".venv").join("bin").join("python"),
+                PathBuf::from("..").join("src-python").join(".venv").join("bin").join("python3"),
+                PathBuf::from(".venv").join("bin").join("python3"),
+            ]
+        };
 
         for venv_path in venv_paths {
-            let path = Path::new(venv_path);
-            if path.exists() && path.is_file() {
-                log::info!("Found Python in virtual environment: {:?}", path);
-                return Ok(path.to_path_buf());
+            if venv_path.exists() && venv_path.is_file() {
+                log::info!("Found Python in virtual environment: {:?}", venv_path);
+                return Ok(venv_path);
             }
         }
 
-        // 备选：查找系统 Python
-        let python_candidates = vec!["python3", "python"];
+        // 备选：查找系统 Python，Windows优先查找python.exe
+        let python_candidates = if cfg!(windows) {
+            vec!["python.exe", "python3.exe", "python"]
+        } else {
+            vec!["python3", "python"]
+        };
+        
         for candidate in python_candidates {
             if let Ok(python_path) = which(candidate) {
                 log::info!("Found system Python: {:?}", python_path);

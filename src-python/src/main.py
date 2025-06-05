@@ -11,7 +11,7 @@ import socket
 import asyncio
 import threading
 import time
-import select
+import platform
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -83,8 +83,17 @@ def start_heartbeat_monitor():
             try:
                 # Check if parent process is still alive
                 try:
-                    os.kill(parent_pid, 0)  # Signal 0 just checks if process exists
-                except OSError:
+                    if platform.system() == "Windows":
+                        # On Windows, try to kill with signal 0 (it should work on newer Python versions)
+                        # If it fails, we assume parent is dead
+                        try:
+                            os.kill(parent_pid, 0)
+                        except OSError:
+                            print("Parent process no longer exists, exiting...", flush=True)
+                            os._exit(1)
+                    else:
+                        os.kill(parent_pid, 0)  # Signal 0 just checks if process exists
+                except (OSError, ImportError):
                     print("Parent process no longer exists, exiting...", flush=True)
                     os._exit(1)
                 
@@ -92,23 +101,49 @@ def start_heartbeat_monitor():
                 print("HEARTBEAT", flush=True)
                 heartbeat_sent_time = time.time()
                 
-                # Wait for ACK from Tauri via stdin
+                # Wait for ACK from Tauri via stdin (cross-platform approach)
                 ack_received = False
                 timeout_time = heartbeat_sent_time + heartbeat_timeout
                 
+                # Use threading approach for stdin reading to avoid platform-specific select issues
+                import queue
+                stdin_queue = queue.Queue()
+                
+                def stdin_reader():
+                    try:
+                        while True:
+                            line = sys.stdin.readline()
+                            if line:
+                                stdin_queue.put(line.strip())
+                            else:
+                                # EOF reached, parent process closed stdin
+                                stdin_queue.put(None)
+                                break
+                    except Exception as e:
+                        stdin_queue.put(None)
+                
+                # Start stdin reader thread
+                reader_thread = threading.Thread(target=stdin_reader, daemon=True)
+                reader_thread.start()
+                
+                # Check for ACK with timeout
                 while time.time() < timeout_time:
-                    if select.select([sys.stdin], [], [], 1):  # 1 second timeout for select
-                        line = sys.stdin.readline().strip()
+                    try:
+                        # Try to get a line from stdin with timeout
+                        line = stdin_queue.get(timeout=1.0)
                         
-                        if line == "HEARTBEAT_ACK":
+                        if line is None:
+                            # EOF reached, parent process closed stdin
+                            print("Stdin closed by parent process, exiting...", flush=True)
+                            os._exit(1)
+                        elif line == "HEARTBEAT_ACK":
                             print(f"Received HEARTBEAT_ACK from Tauri", flush=True)
                             ack_received = True
                             failure_count = 0  # Reset failure count on success
                             break
-                        elif line == "":
-                            # EOF reached, parent process closed stdin
-                            print("Stdin closed by parent process, exiting...", flush=True)
-                            os._exit(1)
+                    except queue.Empty:
+                        # Timeout occurred, continue checking
+                        continue
                 
                 if not ack_received:
                     failure_count += 1

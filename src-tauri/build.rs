@@ -1,5 +1,5 @@
 use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn main() {
@@ -10,13 +10,19 @@ fn main() {
     // 检查是否在构建发布版本
     let profile = env::var("PROFILE").unwrap_or_default();
     if profile == "release" {
+        // 确定操作系统特定的可执行文件扩展名
+        let exe_extension = if cfg!(windows) { ".exe" } else { "" };
+        
         // 检查backend目录是否存在
-        let backend_path = Path::new("../backend/excel-backend/excel-backend");
+        let backend_path = PathBuf::from("..").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension));
         if !backend_path.exists() {
             println!("cargo:warning=Python backend not found, building...");
             
+            // 确定Python可执行文件名
+            let python_cmd = if cfg!(windows) { "python.exe" } else { "python" };
+            
             // 构建Python后端
-            let output = Command::new("python")
+            let output = Command::new(python_cmd)
                 .args(&["build_binary.py"])
                 .current_dir("../src-python")
                 .output();

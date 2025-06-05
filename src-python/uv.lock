@@ -148,6 +148,7 @@ dependencies = [
     { name = "numpy" },
     { name = "openpyxl" },
     { name = "pandas" },
+    { name = "psutils" },
     { name = "pydantic" },
     { name = "pyinstaller" },
     { name = "requests" },
@@ -163,6 +164,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.5" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "psutils", specifier = ">=3.3.10" },
     { name = "pydantic", specifier = "<2.0" },
     { name = "pyinstaller", specifier = ">=6.13.0" },
     { name = "requests", specifier = ">=2.31.0" },
@@ -343,6 +345,28 @@ wheels = [
 ]
 
 [[package]]
+name = "psutils"
+version = "3.3.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "puremagic" },
+    { name = "pypdf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/00/718c0fba71ed7d035013bab4083195c43ec0dfcd894492a8cfb1efd693a7/psutils-3.3.10.tar.gz", hash = "sha256:698a18f291183d48d63cd43b6a2e43d133e89ab438d5aef5baa24374660729f7", size = 1245517, upload_time = "2025-05-13T00:31:25.705Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/92/5c412acdfa124c06c5574a3e7599bc9158ccbf5ea44bfe5bac45ab19229e/psutils-3.3.10-py3-none-any.whl", hash = "sha256:cc05f25294a8c03f326e5c7713b04cdb3d78872bce55bf705696b788bc5fadc5", size = 57033, upload_time = "2025-05-13T00:30:44.155Z" },
+]
+
+[[package]]
+name = "puremagic"
+version = "1.29"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/de/c9dbb741a2e0e657147c6125699e4a2a3b9003840fed62528e17c87c0989/puremagic-1.29.tar.gz", hash = "sha256:67c115db3f63d43b13433860917b11e2b767e5eaec696a491be2fb544f224f7a", size = 314734, upload_time = "2025-05-02T03:16:17.891Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/e3/6d0ad0dc83cf0871198a68d527c61e443c10509a93db1e1666be9d1bf9c6/puremagic-1.29-py3-none-any.whl", hash = "sha256:2c3cfcde77f0b1560f1898f627bd388421d2bd64ec94d8d25f400f7742a4f109", size = 43279, upload_time = "2025-05-02T03:16:16.407Z" },
+]
+
+[[package]]
 name = "pydantic"
 version = "1.10.22"
 source = { registry = "https://pypi.org/simple" }
@@ -414,6 +438,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e3/94/dfc5c7903306211798f990e6794c2eb7b8685ac487b26979e9255790419c/pyinstaller_hooks_contrib-2025.4.tar.gz", hash = "sha256:5ce1afd1997b03e70f546207031cfdf2782030aabacc102190677059e2856446", size = 162628, upload_time = "2025-05-03T20:15:55.983Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d3/e1/ed48c7074145898e5c5b0072e87be975c5bd6a1d0f08c27a1daa7064fca0/pyinstaller_hooks_contrib-2025.4-py3-none-any.whl", hash = "sha256:6c2d73269b4c484eb40051fc1acee0beb113c2cfb3b37437b8394faae6f0d072", size = 434451, upload_time = "2025-05-03T20:15:54.579Z" },
+]
+
+[[package]]
+name = "pypdf"
+version = "5.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/46/67de1d7a65412aa1c896e6b280829b70b57d203fadae6859b690006b8e0a/pypdf-5.6.0.tar.gz", hash = "sha256:a4b6538b77fc796622000db7127e4e58039ec5e6afd292f8e9bf42e2e985a749", size = 5023749, upload_time = "2025-06-01T12:19:40.101Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/8b/dc3a72d98c22be7a4cbd664ad14c5a3e6295c2dbdf572865ed61e24b5e38/pypdf-5.6.0-py3-none-any.whl", hash = "sha256:ca6bf446bfb0a2d8d71d6d6bb860798d864c36a29b3d9ae8d7fc7958c59f88e7", size = 304208, upload_time = "2025-06-01T12:19:38.003Z" },
 ]
 
 [[package]]
