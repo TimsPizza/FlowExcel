@@ -78,13 +78,27 @@ impl PythonWatchdog {
     fn detect_backend(&self) -> Result<BackendType, String> {
         // 首先检查是否有 pyinstaller 打包的二进制文件（目录形式优先，然后单文件）
         let possible_binary_paths = vec![
-            // 目录形式的 PyInstaller 打包（更快启动）
+            // 开发环境路径
             "backend/excel-backend/excel-backend",
             "backend/excel-backend/excel-backend.exe",
             "../backend/excel-backend/excel-backend",
             "../backend/excel-backend/excel-backend.exe",
             "./excel-backend/excel-backend",
             "./excel-backend/excel-backend.exe",
+            // 打包后的资源路径（Tauri会将resources放在这些位置）
+            "../Resources/_up_/backend/excel-backend/excel-backend",
+            "../Resources/_up_/backend/excel-backend/excel-backend.exe",
+            "Resources/_up_/backend/excel-backend/excel-backend",
+            "Resources/_up_/backend/excel-backend/excel-backend.exe",
+            "../Contents/Resources/_up_/backend/excel-backend/excel-backend",
+            "../Contents/Resources/_up_/backend/excel-backend/excel-backend.exe",
+            "Contents/Resources/_up_/backend/excel-backend/excel-backend",
+            "Contents/Resources/_up_/backend/excel-backend/excel-backend.exe",
+            // 其他可能的打包路径
+            "resources/backend/excel-backend/excel-backend",
+            "resources/backend/excel-backend/excel-backend.exe",
+            "../resources/backend/excel-backend/excel-backend", 
+            "../resources/backend/excel-backend/excel-backend.exe",
             // 单文件形式的 PyInstaller 打包（兼容性）
             "backend/excel-backend",
             "backend/excel-backend.exe", 
@@ -92,6 +106,18 @@ impl PythonWatchdog {
             "../backend/excel-backend.exe",
             "./excel-backend",
             "./excel-backend.exe",
+            "../Resources/_up_/backend/excel-backend",
+            "../Resources/_up_/backend/excel-backend.exe",
+            "Resources/_up_/backend/excel-backend",
+            "Resources/_up_/backend/excel-backend.exe",
+            "../Contents/Resources/_up_/backend/excel-backend",
+            "../Contents/Resources/_up_/backend/excel-backend.exe",
+            "Contents/Resources/_up_/backend/excel-backend",
+            "Contents/Resources/_up_/backend/excel-backend.exe",
+            "resources/backend/excel-backend",
+            "resources/backend/excel-backend.exe",
+            "../resources/backend/excel-backend",
+            "../resources/backend/excel-backend.exe",
         ];
 
         for binary_path in possible_binary_paths {
@@ -110,6 +136,12 @@ impl PythonWatchdog {
             "../src-python/main.py", 
             "python/main.py",
             "backend/main.py",
+            "../Resources/_up_/src-python/src/main.py",
+            "Resources/_up_/src-python/src/main.py",
+            "../Contents/Resources/_up_/src-python/src/main.py",
+            "Contents/Resources/_up_/src-python/src/main.py",
+            "resources/src-python/src/main.py",
+            "../resources/src-python/src/main.py",
         ];
 
         // 查找 Python 解释器
