@@ -194,11 +194,9 @@ class PipelineService:
 
     def execute_pipeline_from_request(
         self,
-        workspace_id: str,
-        target_node_id: str,
+        workspace_id: Optional[str] = None,
+        workspace_config_json: Optional[str] = None,
         execution_mode: str = "production",
-        test_mode_max_rows: int = 100,
-        output_file_path: str = None,
     ) -> PipelineExecutionResponse:
         """
         Execute a complete data processing pipeline.
@@ -214,40 +212,29 @@ class PipelineService:
             Pipeline执行响应
         """
         try:
-            # 加载工作区配置
-            workspace_data = WorkspaceService.load_workspace(workspace_id)
-            workspace_config = convert_workspace_config_from_json(workspace_data)
+            # 加载工作区配置，先尝试json，因为是最新的
+            if workspace_config_json:
+                workspace_config = json.loads(workspace_config_json)
+            elif workspace_id:
+                workspace_config = self.workspace_service.load_workspace(workspace_id)
+            else:
+                raise ValueError("必须提供workspace_config_json或workspace_id参数")
 
+            workspace_config = convert_workspace_config_from_json(workspace_config)
             # 验证目标节点是否为输出节点
             target_node = None
             for node in workspace_config.flow_nodes:
-                if node.id == target_node_id:
+                if node.type == NodeType.OUTPUT:
                     target_node = node
                     break
-
             if not target_node:
-                raise ValueError(f"目标节点 {target_node_id} 不存在")
-
-            if target_node.type != NodeType.OUTPUT:
-                raise ValueError(
-                    f"完整pipeline执行的目标节点必须是OUTPUT类型，当前为 {target_node.type}"
-                )
+                raise ValueError("工作区配置中没有找到OUTPUT节点")
 
             # 创建执行请求
-            if not output_file_path:
-                output_file_path = (
-                    self.default_output_file_folder
-                    + "/"
-                    + workspace_id
-                    + "_output.xlsx"
-                )
-
             request = create_execute_pipeline_request(
                 workspace_config=workspace_config,
-                target_node_id=target_node_id,
+                target_node_id=target_node.id,
                 execution_mode=execution_mode,
-                test_mode_max_rows=test_mode_max_rows,
-                output_file_path=output_file_path,
             )
 
             # 执行pipeline
@@ -262,7 +249,6 @@ class PipelineService:
                 "execution_summary": result.execution_summary.dict(),
                 "error": result.error,
                 "warnings": result.warnings,
-                "output_file_path": result.output_file_path,
             }
 
             return PipelineExecutionResponse(
@@ -279,7 +265,7 @@ class PipelineService:
     def preview_node(
         self,
         node_id: str,
-        test_mode_max_rows: int = 100,
+        test_mode_max_rows: int = 50,
         workspace_id: str = None,
         workspace_config_json: str = None,
     ) -> Dict[str, Any]:
@@ -298,9 +284,7 @@ class PipelineService:
                 workspace_config = json.loads(workspace_config_json)
                 workspace_config = convert_workspace_config_from_json(workspace_config)
             elif workspace_id:
-                workspace_config = self.workspace_service.get_workspace_config(
-                    workspace_id
-                )
+                workspace_config = self.workspace_service.load_workspace(workspace_id)
             else:
                 return {
                     "success": False,
@@ -466,8 +450,8 @@ class PipelineService:
                         # 如果是pandas DataFrame，转换为自定义DataFrame（仅在API边界）
                         custom_df = DataFrame.from_pandas(output.dataframe)
 
-                    # limited_df = custom_df.limit_rows(max_rows)
-                    limited_df = custom_df
+                    limited_df = custom_df.limit_rows(max_rows)
+                    # limited_df = custom_df
 
                     api_sheet = APISheetData(
                         sheet_name=f"索引: {index_value}",

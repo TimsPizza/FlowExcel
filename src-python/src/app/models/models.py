@@ -78,7 +78,7 @@ class SheetInfo(BaseModel):
     """Sheet信息"""
     sheet_name: str = Field(..., description="Sheet名称")
     columns: List[str] = Field(..., description="列名列表")
-    preview_data: List[List[Any]] = Field(..., description="预览数据行")
+    data: List[List[Any]] = Field(..., description="预览数据行")
 
 
 class FilePreviewResponse(BaseModel):
@@ -123,12 +123,10 @@ class FileDetailsResponse(BaseModel):
 # ============================================================================
 
 class PipelineRequest(BaseModel):
-    """Pipeline执行请求模型"""
-    workspace_id: str = Field(..., description="工作区ID")
-    target_node_id: str = Field(..., description="目标节点ID") 
+    """Pipeline生产执行请求模型"""
+    workspace_id: Optional[str] = Field(None, description="工作区ID（执行保存好的工作区）")
+    workspace_config_json: Optional[str] = Field(None, description="工作区配置JSON（编辑流程时传递json而不是id）")
     execution_mode: str = Field(default="production", description="执行模式: test 或 production")
-    test_mode_max_rows: int = Field(default=100, description="测试模式最大行数限制")
-    output_file_path: Optional[str] = Field(None, description="输出文件路径（生产模式）")
 
 
 class TestNodeRequest(BaseModel):
@@ -213,3 +211,17 @@ class FileMeta(BaseModel):
     columns: List[str] = Field(
         [], description="列名列表（由后端读取后填充）"
     )
+
+class FileInfoRequest(BaseModel):
+    """文件信息请求模型"""
+    file_path: str = Field(..., description="Excel文件路径")
+    
+class FileInfo(BaseModel):
+    """文件信息，不同于FileMeta，这个是文件的os级别信息"""
+    last_modified: str = Field(..., description="文件最后修改时间")
+    file_size: int = Field(..., description="文件大小")
+    file_hash: str = Field(..., description="文件哈希值")
+
+class FileInfoResponse(BaseModel):
+    """文件信息响应模型"""
+    file_info: FileInfo = Field(..., description="文件信息")

@@ -38,6 +38,7 @@ export interface FileMeta {
   name: string;
   path: string;
   sheet_metas: SheetMeta[];
+  file_info: FileInfo;
 }
 
 // Workspace配置类型
@@ -88,6 +89,7 @@ export interface ErrorResponse {
 export interface WorkspaceState {
   currentWorkspace: WorkspaceConfig | null;
   isDirty: boolean; // 新增：跟踪工作区是否有未保存的更改
+  outdatedFileIds: string[]; // 新增：跟踪工作区文件是否发生过变化，如有，则需要重新加载文件以保证流程执行正确性
 
   // Actions
 
@@ -95,6 +97,8 @@ export interface WorkspaceState {
   createWorkspace: (id: string, name?: string) => void; // Takes id and optional name
   loadWorkspace: (workspace: WorkspaceConfig) => void;
   setCurrentWorkspaceName: (name: string) => void;
+  markFileAsOutdated: (fileId: string) => void;
+  upToDateFileInfo: (fileId: string, newFileInfo: FileInfo) => void;
   // For addFileToWorkspace, expect columns to be provided externally after backend call
   addFileToWorkspace: (
     fileMetaWithFileIdAndColumns: FileMeta,
@@ -148,9 +152,20 @@ export interface PipelineNodeResult {
 export interface PipelineExecutionResult {
   result: {
     success: boolean;
+    warnings?: string[];
     error?: string;
-    results: Record<string, PipelineNodeResult[]>;
     execution_time?: number;
+    output_data?: {
+      sheets: Array<{
+        sheet_name: string;
+        dataframe: SimpleDataframe & {
+          total_rows: number;
+        };
+        branch_id: string;
+        source_name: string;
+      }>;
+      total_sheets: number;
+    };
   };
   execution_time?: number;
 }
@@ -169,13 +184,6 @@ export interface NodeTestResult {
   };
   error?: string;
   message?: string;
-}
-
-// Legacy interface for compatibility
-export interface PipelineResult {
-  success: boolean;
-  error: string | null;
-  results: Record<string, PipelineNodeResult[]>;
 }
 
 // New: Node preview result types for the enhanced preview API
@@ -238,3 +246,13 @@ export type PreviewNodeResult =
   | DataFramePreviewResult
   | AggregationPreviewResult
   | NodePreviewResult;
+
+export interface FileInfoResponse {
+  file_info: FileInfo;
+}
+
+export interface FileInfo {
+  last_modified: string;
+  file_size: number;
+  file_hash: string;
+}

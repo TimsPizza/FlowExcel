@@ -105,7 +105,6 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const previewNode = async () => {
     if (!currentWorkspace) {
-      console.error("未找到当前工作区");
       return;
     }
 
@@ -122,15 +121,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
       },
       {
         onSuccess: (result) => {
-          console.log("IndexSource Preview result:", result);
-
           if (result.success) {
             if (isIndexSourcePreview(result)) {
-              console.log("Index values:", result.index_values);
-              console.log("Source column:", result.source_column);
-
               const sheets = convertPreviewToSheets(result);
-              console.log("sheets", sheets);
 
               updateIndexSourceNodeData(nodeId, {
                 testResult: sheets,
@@ -145,7 +138,6 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
           }
         },
         onError: (error: Error) => {
-          console.error("Preview failed:", error);
           updateIndexSourceNodeData(nodeId, {
             error: `预览失败: ${error.message}`,
             testResult: undefined,

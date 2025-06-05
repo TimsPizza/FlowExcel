@@ -58,32 +58,6 @@ def execute_pipeline(request: ExecutePipelineRequest) -> PipelineExecutionResult
     return executor.execute_pipeline(request)
 
 
-# 便捷API函数
-def execute_pipeline_simple(
-    workspace_config: WorkspaceConfig,
-    target_node_id: str,
-    execution_mode: ExecutionMode = ExecutionMode.PRODUCTION,
-    output_file_path: str = None
-) -> PipelineExecutionResult:
-    """
-    简化的Pipeline执行API
-    
-    Args:
-        workspace_config: 工作区配置
-        target_node_id: 目标节点ID
-        execution_mode: 执行模式（默认生产模式）
-        output_file_path: 输出文件路径（可选）
-        
-    Returns:
-        Pipeline执行结果
-    """
-    request = ExecutePipelineRequest(
-        workspace_config=workspace_config,
-        target_node_id=target_node_id,
-        execution_mode=execution_mode,
-        output_file_path=output_file_path
-    )
-    return execute_pipeline(request)
 
 
 # 版本信息
@@ -95,7 +69,6 @@ __description__ = "强类型、分层上下文的现代化Pipeline执行系统"
 __all__ = [
     # 主要API函数
     "execute_pipeline",
-    "execute_pipeline_simple",
     
     # 执行器类
     "PipelineExecutor",

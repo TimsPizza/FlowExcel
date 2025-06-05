@@ -3,8 +3,13 @@
  * Replaces Tauri invoke calls with HTTP requests
  */
 
+import {
+  ApiResponse,
+  FileInfoResponse,
+  PipelineExecutionResult,
+  TryReadHeaderRowResponse,
+} from "@/types";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { SheetInfo } from "@/types";
 
 // API Response types matching the Python server
 interface APIResponse<T = any> {
@@ -38,13 +43,10 @@ interface SheetNamesRequest {
 
 // Updated Pipeline request interfaces to match backend models
 interface PipelineRequest {
-  workspace_id: string;
-  target_node_id: string;
+  workspace_id?: string;
+  workspace_config_json?: string;
   execution_mode?: string;
-  test_mode_max_rows?: number;
-  output_file_path?: string;
 }
-
 
 // New: Preview Node request interface
 interface PreviewNodeRequest {
@@ -209,16 +211,14 @@ class ApiClient {
     filePath: string,
     sheetName: string,
     headerRow: number,
-  ): Promise<any> {
+  ): Promise<TryReadHeaderRowResponse | undefined> {
     const request: HeaderRowRequest = {
       file_path: filePath,
       sheet_name: sheetName,
       header_row: headerRow,
     };
-    const response: AxiosResponse<APIResponse> = await this.client.post(
-      "/excel/header-row",
-      request,
-    );
+    const response: AxiosResponse<ApiResponse<TryReadHeaderRowResponse>> =
+      await this.client.post("/excel/header-row", request);
 
     if (!response.data.success) {
       throw new Error(response.data.error || "读取表头失败");
@@ -244,16 +244,17 @@ class ApiClient {
 
   // Execute pipeline - updated to use target_node_id
   async executePipeline(
-    workspaceId: string,
-    targetNodeId: string,
+    workspaceId?: string,
+    workspaceConfigJson?: string,
     executionMode: string = "production",
-    outputFilePath?: string,
-  ): Promise<any> {
+  ): Promise<APIResponse<PipelineExecutionResult>> {
+    if (!workspaceId && !workspaceConfigJson) {
+      throw new Error("必须提供workspaceId或workspaceConfigJson参数");
+    }
     const request: PipelineRequest = {
       workspace_id: workspaceId,
-      target_node_id: targetNodeId,
+      workspace_config_json: workspaceConfigJson,
       execution_mode: executionMode,
-      output_file_path: outputFilePath,
     };
     const response: AxiosResponse<APIResponse> = await this.client.post(
       "/pipeline/execute",
@@ -264,7 +265,7 @@ class ApiClient {
       throw new Error(response.data.error || "执行流程失败");
     }
 
-    return response.data.data;
+    return response.data;
   }
 
   // New: Preview pipeline node - uses the new /preview-node endpoint
@@ -360,6 +361,19 @@ class ApiClient {
     } catch (error) {
       // Ignore errors during shutdown as the server will close the connection
     }
+  }
+
+  async getFileInfo(filePath: string): Promise<FileInfoResponse | null> {
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      `/workspace/file-info`,
+      {
+        file_path: filePath,
+      },
+    );
+    if (!response.data.success) {
+      return null; // 文件不存在
+    }
+    return response.data.data;
   }
 }
 

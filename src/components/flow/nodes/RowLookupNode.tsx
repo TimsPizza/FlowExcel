@@ -7,12 +7,7 @@ import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, RowLookupNodeDataContext } from "@/types/nodes";
-import {
-  Flex,
-  ScrollArea,
-  Select,
-  Text
-} from "@radix-ui/themes";
+import { Flex, ScrollArea, Select, Text } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useNodeId } from "reactflow";
@@ -61,7 +56,6 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   // 新的预览函数，使用新API
   const previewNode = async () => {
-    console.log("test run row lookup node");
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
       return;
@@ -75,12 +69,8 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
       },
       {
         onSuccess: (result) => {
-          console.log("Preview result:", result);
-
           if (result.success) {
             const sheets = convertPreviewToSheets(result);
-
-            console.log("Preview sheets:", sheets);
 
             updateLocalNodeData({
               testResult: sheets,
@@ -94,7 +84,6 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
           }
         },
         onError: (error: Error) => {
-          console.error("Preview failed:", error);
           updateLocalNodeData({
             error: `预览失败: ${error.message}`,
             testResult: undefined,

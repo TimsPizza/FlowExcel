@@ -76,14 +76,8 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
         },
         {
           onSuccess: (result) => {
-            console.log("previewNode result", result);
-
             if (result.success) {
               const sheets = convertPreviewToSheets(result);
-              const metadata = getPreviewMetadata(result);
-
-              console.log("Preview sheets:", sheets);
-              console.log("Preview metadata:", metadata);
 
               updateSheetSelectorNodeData(nodeId, {
                 testResult: sheets,
@@ -96,7 +90,6 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
             }
           },
           onError: (error) => {
-            console.error("预览失败:", error);
             updateSheetSelectorNodeData(nodeId, {
               error: `预览失败: ${error.message}`,
             });
@@ -104,7 +97,6 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
         },
       );
     } catch (error) {
-      console.error("预览运行失败:", error);
       updateSheetSelectorNodeData(nodeId, { error: "预览运行失败" });
     }
   };

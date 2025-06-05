@@ -14,12 +14,10 @@ export default function ExcelPreview({
   // hide,
   loading,
 }: ExcelPreviewProps) {
-  console.log("sheets", sheets);
   const [selectedSheetName, setSelectedSheetName] = useState<string | null>(
     null,
   );
   const tranformedPreviewData = useMemo(() => {
-    console.log("selectedSheetName", selectedSheetName);
     if (sheets?.length === 0) return [];
     if (!selectedSheetName) return sheets[0];
     const sheet = sheets?.find(
@@ -43,11 +41,16 @@ export default function ExcelPreview({
           onValueChange={setSelectedSheetName}
         >
           <Tabs.List>
-            {sheets && sheets?.map((sheet) => (
-              <Tabs.Trigger key={sheet.sheet_name} value={sheet.sheet_name} className="text-ellipsis whitespace-nowrap !p-0">
-                {sheet?.sheet_name}
-              </Tabs.Trigger>
-            ))}
+            {sheets &&
+              sheets?.map((sheet) => (
+                <Tabs.Trigger
+                  key={sheet.sheet_name}
+                  value={sheet.sheet_name}
+                  className="text-ellipsis whitespace-nowrap !p-0"
+                >
+                  {sheet?.sheet_name}
+                </Tabs.Trigger>
+              ))}
           </Tabs.List>
         </Tabs.Root>
         {tranformedPreviewData && selectedSheetName && (

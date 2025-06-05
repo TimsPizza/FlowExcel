@@ -2,12 +2,12 @@ import useToast from "@/hooks/useToast";
 import { apiClient } from "@/lib/apiClient";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import {
+  FileMeta,
   FilePreviewResponse,
   IndexValues,
-  SheetInfo,
-  TryReadSheetNamesResponse,
-  WorkspaceConfig,
+  PipelineExecutionResult,
   PreviewNodeResult,
+  WorkspaceConfig,
 } from "@/types";
 import {
   AggregatorNodeDataContext,
@@ -19,7 +19,7 @@ import {
   RowLookupNodeDataContext,
   SheetSelectorNodeDataContext,
 } from "@/types/nodes";
-import { useMutation, useQuery, UseQueryResult } from "react-query";
+import { useMutation, useQueries, useQuery, UseQueryResult } from "react-query";
 import { Node as ReactFlowNode } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 
@@ -74,8 +74,8 @@ export const useWorkspaceQuery = ({ workspaceID }: { workspaceID: string }) => {
   } = useQuery({
     queryKey: ["workspace", workspaceID],
     queryFn: () => getWorkspaceByID(workspaceID),
-    onError: () => {
-      toast.error("Failed to load workspace");
+    onError: (error: Error) => {
+      toast.error(`加载失败: ${error.message}`);
     },
   });
   return {
@@ -156,7 +156,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           label: indexData.label || "索引源",
           testResult: undefined, // 过滤掉 testResult
           // sourceFileID, sheetName, columnNames are optional per definition
-          displayName: indexData.displayName || "数据源-" + uuidv4().slice(0, 4),
+          displayName:
+            indexData.displayName || "数据源-" + uuidv4().slice(0, 4),
         };
         break;
       case NodeType.SHEET_SELECTOR:
@@ -229,7 +230,6 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
     }
     return edge;
   });
-  console.log("sanitized workspace", sanitized);
 
   return sanitized;
 }
@@ -258,17 +258,15 @@ export const useSaveWorkspaceMutation = () => {
       id: string;
       workspace: WorkspaceConfig;
     }) => {
-      console.log("saveWorkspace", id, workspace);
       const result = await saveWorkspace(id, workspace);
-      console.log("saveWorkspace result:", result);
       return result;
     },
     onSuccess: () => {
-      toast.success("Workspace saved");
+      toast.success("已保存");
       resetDirty();
     },
-    onError: () => {
-      toast.error("Failed to save workspace");
+    onError: (error: Error) => {
+      toast.error(`保存失败: ${error.message}`);
     },
   });
   return {
@@ -284,18 +282,14 @@ export const getExcelPreview = async (filePath?: string) => {
   if (!filePath) {
     return null;
   }
-  console.log("filePath", filePath);
   const result = await apiClient.previewExcelData(filePath);
-  console.log("result-raw", result);
 
   // The API client already handles the response parsing and error checking
   const unemptySheets =
     result?.sheets?.filter((sheet: any) => sheet?.columns?.length > 0) ?? [];
-  console.log("unemptySheets", unemptySheets);
   const sanitizedResult = {
     sheets: unemptySheets,
   } as FilePreviewResponse;
-  console.log("sanitizedResult", sanitizedResult);
 
   return sanitizedResult;
 };
@@ -329,14 +323,12 @@ const getIndexValues = async (
   headerRow: number,
   columnName: string,
 ) => {
-  console.log("getIndexValues", filePath, sheetName, columnName);
   const result = await apiClient.getIndexValues(
     filePath,
     sheetName,
     headerRow,
     columnName,
   );
-  console.log("getIndexValues result", result);
   return result;
 };
 
@@ -372,12 +364,12 @@ const tryReadHeaderRow = async (
   sheetName: string,
   headerRow: number,
 ) => {
+  console.log("tryReadHeaderRow", filePath, sheetName, headerRow);
   const result = await apiClient.tryReadHeaderRow(
     filePath,
     sheetName,
     headerRow,
   );
-  console.log("tryReadHeaderRow result", result);
   return result;
 };
 
@@ -401,76 +393,40 @@ export const useTryReadHeaderRow = (
   };
 };
 
-const tryReadSheetNames = async (filePath: string) => {
-  const result = await apiClient.tryReadSheetNames(filePath);
-  console.log("tryReadSheetNames raw result:", result);
-  return result as TryReadSheetNamesResponse;
-};
-
-export const useTryReadSheetNames = (
-  filePath: string,
-  bySheetName: boolean,
-) => {
-  const query = useQuery<TryReadSheetNamesResponse, Error>({
-    queryKey: ["tryReadSheetNames", filePath],
-    queryFn: () => tryReadSheetNames(filePath),
-    enabled: !!filePath && bySheetName,
-    onError: (error) => {
-      console.error("Error reading sheet names:", error);
-    },
-  });
-
-  return {
-    sheetNamesArr: query.data,
-    isSheetNamesLoading: query.isLoading,
-    sheetNamesError: query.error,
-  };
-};
-
 /* Pipeline execution */
-
-interface PipelineExecutionResult {
-  success: boolean;
-  error?: string;
-  results: Record<string, any[]>;
-}
 
 // Updated to match new backend API signature
 const executePipeline = async (params: {
-  workspaceId: string;
-  targetNodeId: string;
+  workspaceId?: string;
+  workspaceConfig?: WorkspaceConfig;
   executionMode?: string;
-  outputFilePath?: string;
-}): Promise<PipelineExecutionResult> => {
+}) => {
+  // 优先尝试json，因为是最新的
+  let sanitizedWorkspaceConfigJson: string | undefined;
+  if (params.workspaceConfig) {
+    sanitizedWorkspaceConfigJson = JSON.stringify(
+      sanitizeWorkspaceData(params.workspaceConfig),
+    );
+  }
   const result = await apiClient.executePipeline(
     params.workspaceId,
-    params.targetNodeId,
-    params.executionMode || "production",
-    params.outputFilePath,
+    sanitizedWorkspaceConfigJson,
+    "production",
   );
-  return result as PipelineExecutionResult;
+  return result.data;
 };
 
 export const useExecutePipelineMutation = () => {
-  const toast = useToast();
   return useMutation<
-    PipelineExecutionResult,
+    PipelineExecutionResult | undefined,
     Error,
     {
-      workspaceId: string;
-      targetNodeId: string;
+      workspaceId?: string;
+      workspaceConfig?: WorkspaceConfig;
       executionMode?: string;
-      outputFilePath?: string;
     }
   >({
     mutationFn: executePipeline,
-    onSuccess: () => {
-      toast.success("Pipeline执行完成");
-    },
-    onError: (error) => {
-      console.error("Pipeline执行失败:", error);
-      toast.error(`Pipeline执行失败: ${error.message}`);
-    },
   });
 };
 
@@ -485,20 +441,19 @@ const previewNode = async (params: {
   if (!params.workspaceConfig) {
     throw new Error("workspaceConfig is required");
   }
-  console.log("previewNode params", params);
-  const sanitizedWorkspaceConfig = sanitizeWorkspaceData(params.workspaceConfig);
+  const sanitizedWorkspaceConfig = sanitizeWorkspaceData(
+    params.workspaceConfig,
+  );
   const result = await apiClient.previewNode(
     params.nodeId,
     params.testModeMaxRows || 100,
     params.workspaceId,
     JSON.stringify(sanitizedWorkspaceConfig),
   );
-  console.log("previewNode result", result);
   return result;
 };
 
 export const usePreviewNodeMutation = () => {
-  const toast = useToast();
   return useMutation<
     PreviewNodeResult,
     Error,
@@ -510,16 +465,67 @@ export const usePreviewNodeMutation = () => {
     }
   >({
     mutationFn: previewNode,
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success("节点预览完成");
-      } else {
-        toast.error(`节点预览失败: ${data.error}`);
-      }
-    },
-    onError: (error) => {
-      console.error("节点预览失败:", error);
-      toast.error(`节点预览失败: ${error.message}`);
-    },
   });
+};
+
+export const getFileInfo = async (filePath: string) => {
+  const result = await apiClient.getFileInfo(filePath);
+  return result;
+};
+
+export const useGetFileInfo = (filePath: string) => {
+  const {
+    data: fileInfo,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["fileInfo", filePath],
+    queryFn: async () => await getFileInfo(filePath),
+    enabled: !!filePath,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    retry: false,
+  });
+  return {
+    fileInfo,
+    isFileInfoLoading: isLoading,
+    fileInfoError: error as Error,
+  };
+};
+
+export const useGetAllFileInfo = (workspaceConfig?: WorkspaceConfig) => {
+  const fileIds = workspaceConfig?.files.map((f) => f.id).sort(); // 排序确保查询键稳定
+  const {
+    data: fileInfos,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["fileInfosAll", workspaceConfig?.id ?? "", fileIds],
+    queryFn: async () => {
+      if (!workspaceConfig) {
+        return {};
+      }
+      const resultsArray = await Promise.all(
+        workspaceConfig.files.map((file) => getFileInfo(file.path)),
+      );
+
+      const resultsMap = Object.fromEntries(
+        workspaceConfig?.files.map((file, idx) => [
+          file.id,
+          resultsArray[idx],
+        ]) ?? [],
+      );
+      return resultsMap;
+    },
+    enabled: !!workspaceConfig && !!workspaceConfig.id,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    retry: false,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+  return {
+    fileInfos,
+    isFileInfoLoading: isLoading,
+    fileInfoError: error as Error,
+  };
 };

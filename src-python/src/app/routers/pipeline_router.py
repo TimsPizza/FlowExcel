@@ -37,23 +37,18 @@ async def execute_pipeline_endpoint(request: PipelineRequest):
         APIResponse: 包含执行结果、执行时间、错误信息等
     """
     try:
-        logger.info(
-            f"开始执行pipeline: workspace_id={request.workspace_id}, target_node_id={request.target_node_id}, mode={request.execution_mode}"
-        )
 
         # 参数验证
-        if not request.workspace_id or not request.target_node_id:
+        if not request.workspace_id and not request.workspace_config_json:
             return APIResponse(
-                success=False, error="workspace_id和target_node_id不能为空"
+                success=False, error="workspace_id或workspace_config_json至少一个不能为空"
             )
 
         # 执行pipeline
         response_data = pipeline_service.execute_pipeline_from_request(
-            workspace_id=request.workspace_id,
-            target_node_id=request.target_node_id,
-            execution_mode=request.execution_mode,
-            test_mode_max_rows=request.test_mode_max_rows,
-            output_file_path=request.output_file_path,
+            workspace_id=request.workspace_id or None,
+            workspace_config_json=request.workspace_config_json or None,
+            execution_mode="production", # api端点对应的是生产模式
         )
 
         # 转换为字典格式

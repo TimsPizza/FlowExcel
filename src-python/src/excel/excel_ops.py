@@ -83,15 +83,9 @@ def get_excel_preview(file_path: str) -> FilePreviewResponse:
             # .values.tolist()
         )
         sheet_infos.append(
-            SheetInfo(sheet_name=sheet, columns=columns, preview_data=preview_data)
+            SheetInfo(sheet_name=sheet, columns=columns, data=preview_data)
         )
-    resp = PreviewResponse(sheets=sheet_infos)
-
-    return PythonResponse(
-        status="success",
-        data=resp,
-        message="",
-    )
+    return FilePreviewResponse(sheets=sheet_infos)
 
 
 def try_read_header_row(file_path: str, sheet_name: str, header_row: int) -> int:

@@ -1,7 +1,5 @@
-import { FileMeta, WorkspaceConfig, WorkspaceState } from "@/types";
-import {
-  FlowNodeData
-} from "@/types/nodes";
+import { FileInfo, FileMeta, WorkspaceConfig, WorkspaceState } from "@/types";
+import { FlowNodeData } from "@/types/nodes";
 import {
   addEdge,
   applyEdgeChanges,
@@ -9,7 +7,7 @@ import {
   Connection,
   EdgeChange,
   Node,
-  NodeChange
+  NodeChange,
 } from "reactflow";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
@@ -18,6 +16,7 @@ import { shallow } from "zustand/shallow";
 export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
   currentWorkspace: null,
   isDirty: false,
+  outdatedFileIds: [],
   // Will set the current workspace to a new workspace with the given id and name
   createWorkspace: (id, name) => {
     // Accept id and optional name
@@ -31,6 +30,18 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
     console.log("zustand create workspace");
     set({ currentWorkspace: newWorkspace, isDirty: true });
     return get().currentWorkspace;
+  },
+
+  markFileAsOutdated: (fileId: string) => {
+    set((state) => {
+      // 避免重复添加
+      if (state.outdatedFileIds.includes(fileId)) {
+        return state;
+      }
+      return {
+        outdatedFileIds: [...state.outdatedFileIds, fileId],
+      };
+    });
   },
 
   loadWorkspace: (workspace) => {
@@ -120,6 +131,25 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
     });
   },
 
+  // 更新文件信息为最新, 同时从过时文件列表中移除该文件
+  upToDateFileInfo: (fileId: string, newFileInfo: FileInfo) => {
+    console.log("zustand up to date file info", fileId, newFileInfo);
+    set((state) => {
+      if (state.currentWorkspace) {
+        return {
+          currentWorkspace: {
+            ...state.currentWorkspace,
+            files: state.currentWorkspace.files.map((f) =>
+              f.id === fileId ? { ...f, file_info: newFileInfo } : f,
+            ),
+          },
+          outdatedFileIds: state.outdatedFileIds.filter((id) => id !== fileId),
+        };
+      }
+      return {};
+    });
+  },
+
   removeFileFromWorkspace: (fileId) => {
     console.log("zustand remove file from workspace", fileId);
     set((state) => {
@@ -133,6 +163,7 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
             files: state.currentWorkspace.files.filter((f) => f.id !== fileId),
           },
           isDirty: true,
+          outdatedFileIds: state.outdatedFileIds.filter((id) => id !== fileId),
         };
       }
       return {};
@@ -338,4 +369,7 @@ export const fileSelector = (state: WorkspaceState) => ({
   addFileToWorkspace: state.addFileToWorkspace,
   updateFileMeta: state.updateFileMeta,
   removeFileFromWorkspace: state.removeFileFromWorkspace,
+  upToDateFileInfo: state.upToDateFileInfo,
+  markFileAsOutdated: state.markFileAsOutdated,
+  outdatedFileIds: state.outdatedFileIds,
 });

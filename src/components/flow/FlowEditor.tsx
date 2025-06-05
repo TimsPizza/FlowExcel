@@ -1,13 +1,17 @@
 import useToast from "@/hooks/useToast";
 import { useExecutePipelineMutation } from "@/hooks/workspaceQueries";
 import { getAutoLayoutedElements } from "@/lib/flowLayout";
-import { getInitialNodeData, isValidConnection, validateFlow } from "@/lib/flowValidation";
+import {
+  getInitialNodeData,
+  isValidConnection,
+  validateFlow,
+} from "@/lib/flowValidation";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { SheetInfo } from "@/types";
 import {
   FlowNodeData,
   IndexSourceNodeDataContext,
-  NodeType
+  NodeType,
 } from "@/types/nodes";
 import {
   FilePlusIcon,
@@ -15,7 +19,7 @@ import {
   PlusIcon,
   SizeIcon,
 } from "@radix-ui/react-icons";
-import { Button, Dialog, Flex, Select, Text } from "@radix-ui/themes";
+import { Button, Dialog, Flex, Select, Text, Popover } from "@radix-ui/themes";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
@@ -88,7 +92,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 };
 
 // 内部FlowEditor组件，在ReactFlowProvider内部
-const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
+export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const toast = useToast();
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
   const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
@@ -118,10 +122,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
 
   // 初始化或同步节点和边
   useEffect(() => {
-    console.log(
-      "FlowEditor sync zustand store to reactflow nodes",
-      wsFlowNodes,
-    );
     if (wsFlowNodes) {
       const correctlyTypedNodes = wsFlowNodes.map((node) => ({
         ...node,
@@ -134,10 +134,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   }, [wsFlowNodes, setNodes]);
 
   useEffect(() => {
-    console.log(
-      "FlowEditor sync zustand store to reactflow edges",
-      wsFlowEdges,
-    );
     setEdges(wsFlowEdges || []);
   }, [wsFlowEdges, setEdges]);
 
@@ -158,7 +154,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       data: nodeData,
     };
 
-    console.log("Adding new node:", newNode);
     addFlowNode(newNode);
   }, [selectedNodeType, addFlowNode]);
 
@@ -191,7 +186,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           `已使用${direction === "TB" ? "垂直" : "水平"}布局重新排版`,
         );
       } catch (error) {
-        console.error("自动排版失败:", error);
         toast.error("自动排版失败，请检查节点连接是否正确");
       }
     },
@@ -201,7 +195,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   // 处理节点变更并同步到zustand store
   const handleOnNodesChange: OnNodesChange = useCallback(
     (changes) => {
-      // console.log("FlowEditor handleOnNodesChanges", changes);
       rfOnNodesChange(changes);
 
       changes.forEach((change) => {
@@ -241,8 +234,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   // Update handleOnEdgesChange to better handle edge changes
   const handleOnEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
-      console.log("FlowEditor handleOnEdgesChange", changes);
-
       // Apply changes to local ReactFlow state
       rfOnEdgesChange(changes);
 
@@ -261,8 +252,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   // just call zustand store onConnect as changes are handled by useEffect
   const handleOnConnect: OnConnect = useCallback(
     (connection: Connection) => {
-      console.log("FlowEditor handleOnConnect", connection);
-
       // 验证连接是否有效
       const validation = isValidConnection(connection, nodes, edges);
       if (!validation.isValid) {
@@ -275,30 +264,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     [onConnect, nodes, edges, toast],
   );
 
-  // 保存为模板
-  const saveAsTemplate = useCallback(async () => {
-    if (!templateName.trim()) {
-      toast.error("请输入模板名称");
-      return;
-    }
-
-    try {
-      await invoke("save_flow_template", {
-        name: templateName,
-        nodes,
-        edges,
-        workspaceId,
-      });
-
-      toast.success("模板保存成功");
-      setIsTemplateDialogOpen(false);
-      setTemplateName("");
-    } catch (error) {
-      console.error("保存模板失败:", error);
-      toast.error("保存模板失败");
-    }
-  }, [templateName, nodes, edges, workspaceId, toast]);
-
   // 执行流程前验证
   const runFlow = useCallback(() => {
     // 先验证流程
@@ -309,32 +274,15 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       return;
     }
 
-    // 显示警告（如果有）
-    if (flowValidation.warnings.length > 0) {
-      toast.warning(`流程警告: ${flowValidation.warnings.join(", ")}`);
-    }
-
-    const outputNodes = nodes.filter(
-      (node) => node.data.nodeType === NodeType.OUTPUT,
-    );
-
-    if (outputNodes.length === 0) {
-      toast.error("流程中必须包含至少一个输出节点");
-      return;
-    }
-
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
       return;
     }
 
-    // 使用第一个输出节点作为目标节点
-    const targetNodeId = outputNodes[0].id;
-
     executePipelineMutation.mutate(
       {
         workspaceId: currentWorkspace.id,
-        targetNodeId: targetNodeId,
+        workspaceConfig: currentWorkspace,
         executionMode: "production",
       },
       {
@@ -342,182 +290,16 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           // Handle the result based on the new response structure
           const pipelineResult = result;
 
-          if (!pipelineResult.success) {
-            toast.error(`流程执行失败: ${pipelineResult.error || "未知错误"}`);
+          if (!pipelineResult || !pipelineResult.result.success) {
+            toast.error(
+              `流程执行失败: ${pipelineResult?.result?.error || "未知错误"}`,
+            );
             return;
           }
 
-          // 更新节点的结果数据
-          const updatedNodes = nodes.map((node) => {
-            const nodeResults = pipelineResult.results[node.id];
-            if (nodeResults && nodeResults.length > 0) {
-              // 根据节点类型处理结果数据
-              switch (node.data.nodeType) {
-                case NodeType.INDEX_SOURCE: {
-                  // 索引源节点的结果是索引值列表，使用SheetInfo[]格式
-                  const nodeResult = nodeResults[0];
-                  if (nodeResult.result_data) {
-                    const { columns, data } = nodeResult.result_data;
-
-                    // 将数据转换为SheetInfo[]格式
-                    const sheetInfos: SheetInfo[] = [];
-                    if (data && data.length > 0) {
-                      // 如果是按列索引，提取唯一值
-                      if (
-                        (node.data as IndexSourceNodeDataContext).byColumn &&
-                        columns.length > 0
-                      ) {
-                        const columnName = columns[0];
-                        const uniqueValues = [
-                          ...new Set(
-                            data.map(
-                              (row: any[]) => row[0], // 取第一列数据
-                            ),
-                          ),
-                        ];
-                        sheetInfos.push({
-                          sheet_name: "索引值",
-                          columns: [columnName],
-                          data: uniqueValues.map((val) => [
-                            val as string | number | null,
-                          ]),
-                        });
-                      }
-                      // 如果是按工作表名索引
-                      else if (
-                        (node.data as IndexSourceNodeDataContext).bySheetName
-                      ) {
-                        sheetInfos.push({
-                          sheet_name: "工作表名称",
-                          columns: ["sheet_name"],
-                          data: data.map((row: any[]) => [
-                            row[0] as string | number | null,
-                          ]),
-                        });
-                      }
-                    }
-
-                    return {
-                      ...node,
-                      data: {
-                        ...node.data,
-                        testResult: sheetInfos,
-                        error: undefined,
-                      },
-                    };
-                  }
-                  break;
-                }
-                case NodeType.AGGREGATOR: {
-                  // 聚合节点的结果是多个索引值的聚合结果，使用SimpleDataframe格式
-                  const formattedData: (string | number | null)[][] = [];
-                  let columns: string[] = ["索引值", "聚合结果"];
-
-                  nodeResults.forEach((nodeResult: any) => {
-                    if (nodeResult.result_data && nodeResult.result_data.data) {
-                      const resultData = nodeResult.result_data.data;
-                      if (resultData.length > 0) {
-                        resultData.forEach((row: any[]) => {
-                          // 对于聚合节点，通常结果是索引值和聚合结果
-                          formattedData.push(
-                            row.map((cell) => cell as string | number | null),
-                          );
-                        });
-                      }
-                    }
-                  });
-
-                  // 使用实际的列名
-                  if (
-                    nodeResults.length > 0 &&
-                    nodeResults[0].result_data?.columns
-                  ) {
-                    columns = nodeResults[0].result_data.columns;
-                  }
-
-                  // 创建一个包含SimpleDataframe的SheetInfo数组
-                  const sheetInfos: SheetInfo[] = [
-                    {
-                      sheet_name: "聚合结果",
-                      columns,
-                      data: formattedData,
-                    },
-                  ];
-
-                  return {
-                    ...node,
-                    data: {
-                      ...node.data,
-                      testResult: sheetInfos,
-                      error: undefined,
-                    },
-                  };
-                }
-                default: {
-                  // 其他节点类型的通用处理
-                  // 合并所有索引值的结果用于预览
-                  const combinedData: (string | number | null)[][] = [];
-                  let columns: string[] = [];
-
-                  nodeResults.forEach((nodeResult: any) => {
-                    if (nodeResult.result_data && nodeResult.result_data.data) {
-                      // 获取列名（只需要第一次）
-                      if (
-                        columns.length === 0 &&
-                        nodeResult.result_data.columns
-                      ) {
-                        columns = nodeResult.result_data.columns;
-                      }
-
-                      // 添加数据行
-                      nodeResult.result_data.data.forEach((row: any[]) => {
-                        combinedData.push(
-                          row.map((cell) => cell as string | number | null),
-                        );
-                      });
-                    }
-                  });
-
-                  // 创建一个包含合并数据的SheetInfo数组
-                  const sheetInfos: SheetInfo[] = [
-                    {
-                      sheet_name: "结果数据",
-                      columns,
-                      data: combinedData,
-                    },
-                  ];
-
-                  return {
-                    ...node,
-                    data: {
-                      ...node.data,
-                      testResult: sheetInfos,
-                      error: undefined,
-                    },
-                  };
-                }
-              }
-            }
-
-            // 如果没有结果或处理失败，返回错误状态
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                testResult: undefined,
-                error: "无结果数据",
-              },
-            };
-          });
-
-          setNodes(updatedNodes);
-
-          // 同步更新到工作区store
-          updatedNodes.forEach((node) => {
-            updateNodeData(node.id, node.data);
-          });
-
-          toast.success("流程执行完成");
+          toast.success(
+            `流程执行完成，耗时${pipelineResult.execution_time?.toFixed(2)}秒`,
+          );
         },
         onError: (error) => {
           toast.error(`流程执行失败: ${error.message}`);
@@ -554,68 +336,86 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         }}
       >
         <Panel position="top-left">
-          <Flex gap="2" align="center" wrap="wrap">
-            <Text weight="bold">添加节点:</Text>
-            <Select.Root
-              value={selectedNodeType}
-              onValueChange={(value) => setSelectedNodeType(value as NodeType)}
-            >
-              <Select.Trigger />
-              <Select.Content>
-                <Select.Group>
-                  {NODE_TYPES.map((nodeType) => (
-                    <Select.Item key={nodeType.value} value={nodeType.value}>
-                      {nodeType.label}
-                    </Select.Item>
-                  ))}
-                </Select.Group>
-              </Select.Content>
-            </Select.Root>
-            <Button onClick={handleAddNode}>
-              <PlusIcon /> 添加
-            </Button>
+          <Flex gap="2" align="center">
+            <Popover.Root>
+              <Popover.Trigger>
+                <Button variant="soft" size="2">
+                  <PlusIcon /> 工具面板
+                </Button>
+              </Popover.Trigger>
+              <Popover.Content size="3" style={{ width: "320px" }}>
+                <Flex direction="column" gap="3">
+                  {/* 添加节点控件 */}
+                  <Flex direction="column" gap="2">
+                    <Text weight="bold" size="2">添加节点</Text>
+                    <Flex gap="2" align="center">
+                      <Select.Root
+                        value={selectedNodeType}
+                        onValueChange={(value) => setSelectedNodeType(value as NodeType)}
+                      >
+                        <Select.Trigger style={{ flex: 1 }} />
+                        <Select.Content>
+                          <Select.Group>
+                            {NODE_TYPES.map((nodeType) => (
+                              <Select.Item key={nodeType.value} value={nodeType.value}>
+                                {nodeType.label}
+                              </Select.Item>
+                            ))}
+                          </Select.Group>
+                        </Select.Content>
+                      </Select.Root>
+                      <Popover.Close>
+                        <Button onClick={handleAddNode}>
+                          <PlusIcon /> 添加
+                        </Button>
+                      </Popover.Close>
+                    </Flex>
+                  </Flex>
 
-            {/* 自动排版控件 */}
-            <Flex gap="1" align="center">
-              <Text size="2" weight="medium">
-                排版:
-              </Text>
-              <Select.Root
-                value={layoutDirection}
-                onValueChange={(value) =>
-                  setLayoutDirection(value as "TB" | "LR")
-                }
-              >
-                <Select.Trigger style={{ minWidth: "80px" }} />
-                <Select.Content>
-                  <Select.Item value="LR">水平</Select.Item>
-                  <Select.Item value="TB">垂直</Select.Item>
-                </Select.Content>
-              </Select.Root>
-              <Button
-                variant="soft"
-                color="blue"
-                onClick={() => handleAutoLayout()}
-                disabled={nodes.length === 0}
-                title="根据节点连接关系自动排版"
-              >
-                <SizeIcon /> 自动排版
-              </Button>
-            </Flex>
+                  {/* 分隔线 */}
+                  <div style={{ height: "1px", background: "var(--gray-6)" }} />
 
+                  {/* 自动排版控件 */}
+                  <Flex direction="column" gap="2">
+                    <Text weight="bold" size="2">自动排版</Text>
+                    <Flex gap="2" align="center">
+                      <Select.Root
+                        value={layoutDirection}
+                        onValueChange={(value) =>
+                          setLayoutDirection(value as "TB" | "LR")
+                        }
+                      >
+                        <Select.Trigger style={{ flex: 1 }} />
+                        <Select.Content>
+                          <Select.Item value="LR">水平布局</Select.Item>
+                          <Select.Item value="TB">垂直布局</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+                      <Popover.Close>
+                        <Button
+                          variant="soft"
+                          color="blue"
+                          onClick={() => handleAutoLayout()}
+                          disabled={nodes.length === 0}
+                          title="根据节点连接关系自动排版"
+                        >
+                          <SizeIcon /> 排版
+                        </Button>
+                      </Popover.Close>
+                    </Flex>
+                  </Flex>
+                </Flex>
+              </Popover.Content>
+            </Popover.Root>
+            
             <Button
               color="green"
               disabled={executePipelineMutation.isLoading}
               onClick={runFlow}
+              size="2"
             >
-              <PlayIcon />{" "}
+              <PlayIcon />
               {executePipelineMutation.isLoading ? "执行中..." : "执行流程"}
-            </Button>
-            <Button
-              variant="soft"
-              onClick={() => setIsTemplateDialogOpen(true)}
-            >
-              <FilePlusIcon /> 保存为模板
             </Button>
           </Flex>
         </Panel>
@@ -626,55 +426,6 @@ const FlowEditorInner: React.FC<FlowEditorProps> = ({ workspaceId }) => {
 
         <Background />
       </ReactFlow>
-
-      <Dialog.Root
-        open={isTemplateDialogOpen}
-        onOpenChange={setIsTemplateDialogOpen}
-      >
-        <Dialog.Content style={{ maxWidth: 400 }}>
-          <Dialog.Title>保存为模板</Dialog.Title>
-          <Dialog.Description size="2" mb="4">
-            将当前流程保存为可复用的模板
-          </Dialog.Description>
-
-          <Flex direction="column" gap="3">
-            <label>
-              <Text as="div" size="2" mb="1" weight="bold">
-                模板名称
-              </Text>
-              <input
-                type="text"
-                value={templateName}
-                onChange={(e) => setTemplateName(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid var(--gray-6)",
-                }}
-              />
-            </label>
-          </Flex>
-
-          <Flex gap="3" mt="4" justify="end">
-            <Dialog.Close>
-              <Button variant="soft" color="gray">
-                取消
-              </Button>
-            </Dialog.Close>
-            <Button onClick={saveAsTemplate}>保存</Button>
-          </Flex>
-        </Dialog.Content>
-      </Dialog.Root>
     </div>
-  );
-};
-
-// 外部导出的组件，用ReactFlowProvider包装
-export const FlowEditor: React.FC<FlowEditorProps> = (props) => {
-  return (
-    <ReactFlowProvider>
-      <FlowEditorInner {...props} />
-    </ReactFlowProvider>
   );
 };

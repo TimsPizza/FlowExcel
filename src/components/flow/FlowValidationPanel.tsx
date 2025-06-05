@@ -26,7 +26,6 @@ export const FlowValidationPanel: React.FC = () => {
   useEffect(() => {
     const result = validateFlow(nodes, edges);
     setValidation(result);
-    // console.log("validation", result);
   }, [nodes, edges]);
 
   if (validation.isValid && validation.warnings.length === 0) {

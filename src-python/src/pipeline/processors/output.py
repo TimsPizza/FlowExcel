@@ -65,14 +65,20 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
 
             # 创建Sheet数据列表
             sheets = []
-            # 遍历各分支，为每个分支创建一个Sheet
-            for (
-                branch_id,
-                branch_aggregations,
-            ) in input_data.branch_aggregated_results.items():
+            
+            # 收集所有分支ID（来自聚合结果和dataframe结果）
+            all_branch_ids = set(input_data.branch_aggregated_results.keys())
+            all_branch_ids.update(input_data.branch_dataframes.keys())
+            
+            # 遍历所有分支，为每个分支创建一个Sheet
+            for branch_id in all_branch_ids:
+                branch_aggregations = input_data.branch_aggregated_results.get(branch_id, {})
+                branch_dataframe = input_data.branch_dataframes.get(branch_id)
+                
                 sheet_data = self._create_sheet_for_branch(
                     branch_id,
                     branch_aggregations,
+                    branch_dataframe,
                     include_index_column,
                     index_column_name,
                     global_context,
@@ -99,6 +105,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         self,
         branch_id: str,
         branch_aggregations: Dict[IndexValue, Dict[str, float | int | str | None]],
+        branch_dataframe: DataFrame | None,
         include_index_column: bool,
         index_column_name: str,
         global_context: GlobalContext,
@@ -111,6 +118,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         Args:
             branch_id: 分支ID
             branch_aggregations: 该分支的聚合结果 {索引值: {列名: 值}}
+            branch_dataframe: 该分支的非聚合dataframe
             include_index_column: 是否包含索引列
             index_column_name: 索引列名
             global_context: 全局上下文
@@ -120,20 +128,50 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         Returns:
             Sheet数据
         """
-        if not branch_aggregations:
-            # 空分支，创建空Sheet
+        # 优先级逻辑：
+        # 1. 如果有聚合结果，使用聚合结果
+        # 2. 如果没有聚合结果但有非聚合dataframe，使用dataframe
+        # 3. 否则创建空Sheet
+        
+        source_name = self._get_source_name_for_branch(
+            branch_id, global_context, node_map, context_manager
+        )
+        sheet_name = source_name or f"分支_{branch_id}"
+        
+        if branch_aggregations:
+            # 情况1：有聚合结果，使用原有逻辑
+            return self._create_aggregated_sheet(
+                branch_id, branch_aggregations, include_index_column, 
+                index_column_name, sheet_name, source_name
+            )
+        elif branch_dataframe is not None:
+            # 情况2：没有聚合结果但有dataframe，直接使用dataframe
+            return self._create_dataframe_sheet(
+                branch_id, branch_dataframe, sheet_name, source_name
+            )
+        else:
+            # 情况3：既没有聚合结果也没有dataframe，创建空Sheet
             columns = [index_column_name] if include_index_column else []
             df = DataFrame(columns=columns, data=[], total_rows=0)
-            source_name = self._get_source_name_for_branch(
-                branch_id, global_context, node_map, context_manager
-            )
             return SheetData(
-                sheet_name=source_name or f"Branch_{branch_id}",
+                sheet_name=sheet_name,
                 dataframe=df,
                 branch_id=branch_id,
                 source_name=source_name,
             )
-
+            
+    def _create_aggregated_sheet(
+        self,
+        branch_id: str,
+        branch_aggregations: Dict[IndexValue, Dict[str, float | int | str | None]],
+        include_index_column: bool,
+        index_column_name: str,
+        sheet_name: str,
+        source_name: str,
+    ) -> SheetData:
+        """
+        根据聚合结果创建Sheet
+        """
         # 收集所有列名（来自不同索引值的聚合结果）
         all_columns = set()
         for aggregations in branch_aggregations.values():
@@ -165,17 +203,26 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         # 创建DataFrame
         df = DataFrame(columns=columns, data=data_rows, total_rows=len(data_rows))
 
-        # 获取易读的源名称（通过分支上下文中的索引源节点ID）
-        source_name = self._get_source_name_for_branch(
-            branch_id, global_context, node_map, context_manager
-        )
-
-        # 使用源名称作为Sheet名
-        sheet_name = source_name or f"分支_{branch_id}"
-
         return SheetData(
             sheet_name=sheet_name,
             dataframe=df,
+            branch_id=branch_id,
+            source_name=source_name,
+        )
+        
+    def _create_dataframe_sheet(
+        self,
+        branch_id: str,
+        branch_dataframe: DataFrame,
+        sheet_name: str,
+        source_name: str,
+    ) -> SheetData:
+        """
+        根据非聚合dataframe创建Sheet
+        """
+        return SheetData(
+            sheet_name=sheet_name,
+            dataframe=branch_dataframe,
             branch_id=branch_id,
             source_name=source_name,
         )

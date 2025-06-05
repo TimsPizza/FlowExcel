@@ -1,14 +1,18 @@
 import WorkspaceToolbar from "@/components/workspace/WorkspaceToolbar";
 import {
+  useGetAllFileInfo,
   useSaveWorkspaceMutation,
   useWorkspaceQuery,
 } from "@/hooks/workspaceQueries";
 import {
+  fileSelector,
   useWorkspaceStore,
   workspaceSelector,
 } from "@/stores/useWorkspaceStore";
+import { FileInfo } from "@/types";
 import { Flex } from "@radix-ui/themes";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import _ from "lodash";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
 import {
   ErrorResponse,
@@ -34,7 +38,7 @@ export default function WorkspaceEditorPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const hasLoadedRef = useRef(true);
-  
+
   useEffect(() => {
     if (hasLoadedRef.current) {
       hasLoadedRef.current = false;
@@ -56,9 +60,18 @@ export default function WorkspaceEditorPage() {
     setCurrentWorkspaceName,
     clearCurrentWorkspace,
   } = useWorkspaceStore(useShallow(workspaceSelector));
+  const { isSaving, saveWorkspace } = useSaveWorkspaceMutation();
+  const {
+    fileInfos: newestFileInfo,
+    isFileInfoLoading,
+    fileInfoError,
+  } = useGetAllFileInfo(currentWorkspace!);
 
-  const { saveError, isSaving, saveWorkspace } = useSaveWorkspaceMutation();
   const queryClient = useQueryClient();
+
+  const { outdatedFileIds } = useWorkspaceStore(
+    useShallow(fileSelector),
+  );
 
   // 当从后端加载数据成功时，更新zustand状态
   useEffect(() => {
@@ -89,6 +102,48 @@ export default function WorkspaceEditorPage() {
       clearCurrentWorkspace();
     };
   }, [clearCurrentWorkspace]);
+
+  const revalidateWorkspaceFiles = useCallback(() => {
+    if (!currentWorkspace || isFileInfoLoading) {
+      return;
+    }
+    if (fileInfoError) {
+      toast.warning("文件过期检测失败，这可能会导致数据错误！");
+    }
+    const currentFileInfo: { id: string; file_info: FileInfo }[] =
+      currentWorkspace.files.map((file) => {
+        return {
+          id: file.id,
+          file_info: file.file_info,
+        };
+      });
+    if (newestFileInfo) {
+      // 只检查当前工作区中存在的文件，避免已删除文件被重新标记为过期
+      const outdatedFileIds = currentFileInfo.filter((currentFile) => {
+        const newestInfo = newestFileInfo[currentFile.id];
+        return newestInfo && !_.isEqual(
+          newestInfo.file_info,
+          currentFile.file_info,
+        );
+      }).map(file => file.id);
+      
+      console.log("outdatedFileIds", outdatedFileIds);
+      
+      // 重置过期文件列表，然后添加当前过期的文件
+      useWorkspaceStore.setState((state) => ({
+        outdatedFileIds: outdatedFileIds
+      }));
+    }
+  }, [
+    currentWorkspace,
+    newestFileInfo,
+    isFileInfoLoading,
+    fileInfoError,
+  ]);
+
+  useEffect(() => {
+    revalidateWorkspaceFiles();
+  }, [isWsLoading, revalidateWorkspaceFiles]);
 
   const handleNameChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,6 +191,7 @@ export default function WorkspaceEditorPage() {
         onSave={handleSaveWorkspace}
         isSaving={isSaving}
         isDirty={isDirty}
+        isOutdated={outdatedFileIds.length > 0}
       />
       <Flex className="flex-grow overflow-hidden">
         <Outlet />

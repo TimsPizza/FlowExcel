@@ -84,7 +84,6 @@ def create_execute_pipeline_request(
     target_node_id: str,
     execution_mode: str = "production",
     test_mode_max_rows: int = 100,
-    output_file_path: Optional[str] = None
 ) -> ExecutePipelineRequest:
     """
     创建pipeline执行请求
@@ -94,7 +93,6 @@ def create_execute_pipeline_request(
         target_node_id: 目标节点ID
         execution_mode: 执行模式字符串
         test_mode_max_rows: 测试模式最大行数
-        output_file_path: 输出文件路径
         
     Returns:
         ExecutePipelineRequest对象
@@ -107,7 +105,6 @@ def create_execute_pipeline_request(
         target_node_id=target_node_id,
         execution_mode=exec_mode,
         test_mode_max_rows=test_mode_max_rows,
-        output_file_path=output_file_path
     ) 
     
 

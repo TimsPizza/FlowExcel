@@ -14,6 +14,7 @@ from app.models import (
     SheetNamesRequest,
 )
 from app.services.excel_service import ExcelService
+from app.utils import recursively_serialize_dict
 
 router = APIRouter(prefix="/excel", tags=["excel"])
 
@@ -23,7 +24,8 @@ async def preview_excel_data(request: PreviewRequest):
     """Preview Excel data from a file."""
     try:
         result = ExcelService.get_preview(file_path=request.file_path)
-        return APIResponse(success=True, data=result)
+        normalized_result = recursively_serialize_dict(result.dict())
+        return APIResponse(success=True, data=normalized_result)
     except Exception as e:
         error_msg = f"Error previewing Excel data: {str(e)}"
         traceback.print_exc()

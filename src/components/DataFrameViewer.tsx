@@ -26,7 +26,6 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
   pagination = false,
 }) => {
   const [page, setPage] = React.useState(1);
-  console.log("df viewer data", data);
 
   // 计算总页数
   const totalPages = Math.ceil(data.length / pageSize);
@@ -40,10 +39,6 @@ export const DataFrameViewer: React.FC<DataFrameViewerProps> = ({
     const end = start + pageSize;
     return data.slice(start, end);
   }, [data, page, pageSize]);
-
-  useEffect(() => {
-    console.log("currentPageData", currentPageData);
-  }, [currentPageData]);
 
   return (
     <div className={`w-full p-2 ${className}`}>

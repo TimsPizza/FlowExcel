@@ -1,5 +1,6 @@
 import ExcelPreview from "@/components/ExcelPreview";
 import { useGetExcelPreview } from "@/hooks/workspaceQueries";
+import { apiClient } from "@/lib/apiClient";
 import {
   fileSelector,
   useWorkspaceStore,
@@ -11,10 +12,12 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useState } from "react";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
-import { useShallow } from "zustand/shallow";
+import { useShallow } from "zustand/react/shallow";
+
 const AddFileModal = () => {
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [fileName, setFilename] = useState<string>("");
+  const [isAddingFile, setIsAddingFile] = useState(false);
   const { previewData, isPreviewLoading, previewError } = useGetExcelPreview(
     selectedFilePath ?? "",
   );
@@ -23,7 +26,7 @@ const AddFileModal = () => {
   );
   const { currentWorkspace } = useWorkspaceStore(useShallow(workspaceSelector));
 
-  const handleAddFileToWorkspace = useCallback(() => {
+  const handleAddFileToWorkspace = useCallback(async () => {
     if (!selectedFilePath || !fileName || !previewData) {
       toast.error("无法添加文件: 缺少路径、别名或有效的预览数据。");
       return;
@@ -33,31 +36,50 @@ const AddFileModal = () => {
       return;
     }
 
-    const newFile: FileMeta = {
-      id: uuidv4(), // Generate unique ID
-      name: fileName,
-      path: selectedFilePath,
-      sheet_metas: previewData.sheets.map((sheet) => ({
-        sheet_name: sheet.sheet_name,
-        header_row: 0,
-        columns: sheet.columns,
-      })),
-    };
-
     // Check if a file with the same path or alias already exists
-    if (files?.some((f) => f.path === newFile.path)) {
-      toast.warning(`文件 '${newFile.name}' 已存在于工作区中。`);
+    if (files?.some((f) => f.path === selectedFilePath)) {
+      toast.warning(`文件 '${fileName}' 已存在于工作区中。`);
       return;
     }
 
+    setIsAddingFile(true);
     try {
+      // 获取文件信息
+      const fileInfoResponse = await apiClient.getFileInfo(selectedFilePath);
+      if (!fileInfoResponse?.file_info) {
+        toast.error("无法获取文件信息，请检查文件是否存在");
+        return;
+      }
+
+      const newFile: FileMeta = {
+        id: uuidv4(), // Generate unique ID
+        name: fileName,
+        path: selectedFilePath,
+        sheet_metas: previewData.sheets.map((sheet) => ({
+          sheet_name: sheet.sheet_name,
+          header_row: 0,
+        })),
+        file_info: fileInfoResponse.file_info, // 添加文件信息
+      };
+
       addFileToWorkspace(newFile);
+      toast.success(`文件 '${fileName}' 已成功添加到工作区`);
     } catch (error) {
       console.error("Error adding file to workspace:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       toast.error(`添加文件失败: ${errorMsg}`);
+    } finally {
+      setIsAddingFile(false);
     }
-  }, [selectedFilePath, fileName, previewData, previewError, currentWorkspace]);
+  }, [
+    selectedFilePath,
+    fileName,
+    previewData,
+    previewError,
+    currentWorkspace,
+    files,
+    addFileToWorkspace,
+  ]);
 
   const handleFileSelect = useCallback(async () => {
     setSelectedFilePath(null); // Reset path on new selection attempt
@@ -161,7 +183,9 @@ const AddFileModal = () => {
                 />
               </Box>
               <Dialog.Close onClick={handleAddFileToWorkspace}>
-                <Button variant="soft">添加文件</Button>
+                <Button variant="soft" disabled={isAddingFile}>
+                  {isAddingFile ? "添加中..." : "添加文件"}
+                </Button>
               </Dialog.Close>
             </Flex>
           )}

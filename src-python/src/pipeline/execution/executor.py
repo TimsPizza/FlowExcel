@@ -12,6 +12,7 @@ from .context_manager import ContextManager
 from .file_analyzer import FileAnalyzer
 from .batch_preloader import BatchPreloader
 from ..models import (
+    DataFrame,
     ExecutePipelineRequest,
     PipelineExecutionResult,
     PipelineExecutionSummary,
@@ -142,7 +143,8 @@ class PipelineExecutor:
             output_data = self._execute_output_node(
                 request.target_node_id,
                 node_map,
-                list(execution_branches.keys()),
+                execution_branches,
+                all_branch_results,
                 global_context,
             )
 
@@ -166,8 +168,6 @@ class PipelineExecutor:
                 branch_results=all_branch_results,
                 error=None,
                 warnings=[],
-                output_file_path=request.output_file_path,
-                output_file_size_bytes=None,  # TODO: 实际文件大小
             )
 
         except Exception as e:
@@ -295,6 +295,10 @@ class PipelineExecutor:
                     self._update_path_context_from_output(
                         path_context, node.type, output
                     )
+                    
+                    # 如果是非聚合节点，更新分支上下文的最后非聚合dataframe
+                    if node.type not in [NodeType.AGGREGATOR, NodeType.OUTPUT, NodeType.INDEX_SOURCE] and hasattr(output, "dataframe"):
+                        branch_context.last_non_aggregated_dataframe = output.dataframe
 
                 except Exception as e:
                     error_result = NodeExecutionResult(
@@ -369,7 +373,8 @@ class PipelineExecutor:
         self,
         target_node_id: str,
         node_map: Dict[str, BaseNode],
-        branch_ids: List[str],
+        execution_branches: Dict[str, ExecutionBranch],
+        branch_results: List[BranchExecutionResult],
         global_context,
     ) -> OutputResult:
         """
@@ -378,7 +383,8 @@ class PipelineExecutor:
         Args:
             target_node_id: 目标节点ID
             node_map: 节点映射
-            branch_ids: 分支ID列表
+            execution_branches: 执行分支字典
+            branch_results: 分支执行结果列表
             global_context: 全局上下文
 
         Returns:
@@ -392,17 +398,28 @@ class PipelineExecutor:
         if target_node.type != NodeType.OUTPUT:
             raise ValueError(f"Target node {target_node_id} is not an output node")
 
-        # 收集各分支的聚合结果，不进行二次合并
+        # 收集各分支的聚合结果和非聚合dataframe结果
         branch_aggregated_results = {}
-        for branch_id in branch_ids:
+        branch_dataframes = {}
+        
+        for branch_id, branch in execution_branches.items():
             branch_context = self.context_manager.get_branch_context(branch_id)
             if branch_context:
-                # 每个分支的聚合结果已经在分支上下文中合并好了
+                # 获取分支的聚合结果
                 branch_final_results = branch_context.get_final_results()
                 branch_aggregated_results[branch_id] = branch_final_results
+                
+                # 如果没有聚合结果，尝试获取最后一个非聚合节点的dataframe输出
+                if not branch_final_results:
+                    dataframe = self._get_last_dataframe_for_branch(branch_id, branch, branch_results, node_map)
+                    if dataframe is not None:
+                        branch_dataframes[branch_id] = dataframe if isinstance(dataframe, DataFrame) else DataFrame.from_pandas(dataframe)
 
         # 创建输出节点输入 - 传递按分支组织的数据
-        output_input = OutputInput(branch_aggregated_results=branch_aggregated_results)
+        output_input = OutputInput(
+            branch_aggregated_results=branch_aggregated_results,
+            branch_dataframes=branch_dataframes
+        )
 
         # 创建临时路径上下文（输出节点不需要特定的路径上下文）
         temp_path_context = self.context_manager.create_path_context(
@@ -415,7 +432,7 @@ class PipelineExecutor:
             output_input,
             global_context,
             temp_path_context,
-            None,
+            branch_results,
             node_map,
             self.context_manager,
         )
@@ -668,3 +685,42 @@ class PipelineExecutor:
                 f"Failed to serialize output for {node_type} node. "
                 f"Output type: {type(output)}, error: {str(e)}"
             ) from e
+
+    def _get_last_dataframe_for_branch(self, branch_id: str, branch: ExecutionBranch, branch_results: List[BranchExecutionResult], node_map: Dict[str, BaseNode]):
+        """
+        获取分支的最后一个非聚合节点的dataframe输出
+
+        Args:
+            branch_id: 分支ID  
+            branch: 执行分支
+            branch_results: 分支执行结果列表
+            node_map: 节点映射
+
+        Returns:
+            最后一个非聚合节点的dataframe，如果找不到则返回None
+        """
+        try:
+            # 直接从分支上下文获取最后的非聚合dataframe
+            branch_context = self.context_manager.get_branch_context(branch_id)
+            if branch_context and branch_context.last_non_aggregated_dataframe is not None:
+                return branch_context.last_non_aggregated_dataframe
+                
+            return None
+            
+        except Exception as e:
+            print(f"Warning: Failed to get last dataframe for branch {branch_id}: {e}")
+            return None
+            
+    def _get_node_latest_dataframe_from_path_context(self, node_id: str, branch_id: str):
+        """
+        从路径上下文中获取节点的最新dataframe输出
+        
+        Args:
+            node_id: 节点ID
+            branch_id: 分支ID
+            
+        Returns:
+            节点的dataframe输出，如果找不到则返回None
+        """
+        # 这个方法现在已经不需要了，被上面的方法替代
+        return None

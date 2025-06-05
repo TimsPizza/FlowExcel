@@ -20,43 +20,56 @@ interface FileMetaEditorModalProps {
 const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
   const { updateFileMeta } = useWorkspaceStore(useShallow(fileSelector));
   const [open, setOpen] = useState(false);
-  const [headerRowIndex, setHeaderRowIndex] = useState<string>("0");
-  const [selectedSheet, setSelectedSheet] = useState<string | null>(
+  const [selectedSheetSt, setSelectedSheetSt] = useState<string | null>(
     file.sheet_metas.length > 0 ? file.sheet_metas[0].sheet_name : null,
   );
-  const {
-    headerRow: detectedHeaderRow,
-    isHeaderRowLoading,
-    headerRowError,
-  } = useTryReadHeaderRow(
-    file.path,
-    selectedSheet && selectedSheet !== "all-sheets" ? selectedSheet : "",
-    parseInt(headerRowIndex), // if not a number, will not run
+  const [headerRowIndexSt, setHeaderRowIndexSt] = useState<string>(
+    file.sheet_metas
+      .find((sheet) => sheet.sheet_name === selectedSheetSt)
+      ?.header_row?.toString() || "0",
   );
 
-  const handleHeaderRowChange = (value: string) => {
-    setHeaderRowIndex(value);
+  const { headerRow: detectedHeaderRow, isHeaderRowLoading } =
+    useTryReadHeaderRow(
+      file.path,
+      selectedSheetSt && selectedSheetSt !== "all-sheets" ? selectedSheetSt : "",
+      parseInt(
+        file.sheet_metas
+          .find((sheet) => sheet.sheet_name === selectedSheetSt)
+          ?.header_row?.toString() || "0",
+      ), // if not a number, will not run
+    );
+
+  const handleHeaderRowChange = (selectedSheet: string, value: string) => {
+    // setHeaderRowIndex(value);
+    updateFileMeta(file.id, {
+      sheet_metas: file.sheet_metas.map((sheet) =>
+        sheet.sheet_name === selectedSheet
+          ? { ...sheet, header_row: parseInt(value) }
+          : sheet,
+      ),
+    });
+    setHeaderRowIndexSt(value);
   };
 
   const handleSave = () => {
     let updatedSheetMetas = file.sheet_metas;
 
-    if (selectedSheet && selectedSheet !== "all-sheets") {
+    if (selectedSheetSt && selectedSheetSt !== "all-sheets") {
       // 找到目标 sheet
       const targetSheet = updatedSheetMetas.find(
-        (sheet) => sheet.sheet_name === selectedSheet,
+        (sheet) => sheet.sheet_name === selectedSheetSt,
       );
       if (targetSheet) {
-        targetSheet.header_row = parseInt(headerRowIndex);
+        targetSheet.header_row = parseInt(headerRowIndexSt);
       }
-      // 这里不用 map，直接改原对象即可
     } else {
-      // “all-sheets”模式，批量 map 更新
       updatedSheetMetas = file.sheet_metas.map((sheet) => ({
         ...sheet,
-        header_row: parseInt(headerRowIndex),
+        header_row: parseInt(headerRowIndexSt),
       }));
     }
+    console.log("new sheet metas", updatedSheetMetas);
 
     // 更新 metadata
     updateFileMeta(file.id, { sheet_metas: updatedSheetMetas });
@@ -89,8 +102,8 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                   工作表:
                 </Text>
                 <Select.Root
-                  value={selectedSheet || ""}
-                  onValueChange={setSelectedSheet}
+                  value={selectedSheetSt || ""}
+                  onValueChange={setSelectedSheetSt}
                 >
                   <Select.Trigger />
                   <Select.Content>
@@ -109,7 +122,7 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                 </Select.Root>
               </Flex>
 
-              {selectedSheet && (
+              {selectedSheetSt && (
                 <Flex direction="column" gap="3">
                   <Flex align="center" gap="2">
                     <Text size="2" weight="bold">
@@ -118,8 +131,14 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                     <TextField.Root
                       size="2"
                       type="number"
-                      value={headerRowIndex}
-                      onChange={(e) => handleHeaderRowChange(e.target.value)}
+                      value={
+                        file.sheet_metas
+                          .find((sheet) => sheet.sheet_name === selectedSheetSt)
+                          ?.header_row?.toString() || "0"
+                      }
+                      onChange={(e) =>
+                        handleHeaderRowChange(selectedSheetSt, e.target.value)
+                      }
                     />
                   </Flex>
 

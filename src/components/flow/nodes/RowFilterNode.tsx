@@ -1,8 +1,9 @@
-import { EnhancedBaseNode } from "@/components/flow/nodes/EnhancedBaseNode";
-import { useNodeColumns } from "@/hooks/useNodeColumns";
 import {
-  usePreviewNodeMutation
-} from "@/hooks/workspaceQueries";
+  BadgeConfig,
+  EnhancedBaseNode,
+} from "@/components/flow/nodes/EnhancedBaseNode";
+import { useNodeColumns } from "@/hooks/useNodeColumns";
+import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, RowFilterNodeDataContext } from "@/types/nodes";
@@ -18,6 +19,7 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
+import { useMemo } from "react";
 import { toast } from "react-toastify";
 import { useNodeId } from "reactflow";
 
@@ -84,7 +86,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   const previewNode = async () => {
-    console.log("test run row filter node");
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
       return;
@@ -106,13 +107,8 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       },
       {
         onSuccess: (result) => {
-          console.log("Preview result:", result);
-
           if (result.success) {
             const sheets = convertPreviewToSheets(result);
-
-            console.log("Preview sheets:", sheets);
-
             updateRowFilterNodeDataInStore(nodeId, {
               testResult: sheets,
               error: undefined,
@@ -125,7 +121,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
           }
         },
         onError: (error: Error) => {
-          console.error("Preview failed:", error);
           updateRowFilterNodeDataInStore(nodeId, {
             error: `预览失败: ${error.message}`,
             testResult: undefined,
@@ -135,6 +130,16 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
     );
   };
 
+  const badges: BadgeConfig[] = useMemo(() => {
+    return (
+      nodeData.conditions?.map((condition) => ({
+        label: `${condition.column} ${condition.operator} ${condition.value}`,
+        color: `${condition.logic}` === "AND" ? "blue" : "green",
+        variant: "soft",
+      })) ?? []
+    );
+  }, [nodeData.conditions]);
+
   return (
     <EnhancedBaseNode
       data={nodeData}
@@ -142,6 +147,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       isSource={true}
       isTarget={true}
       testable={true}
+      badges={badges}
     >
       <ScrollArea className="react-flow__node-scrollable max-h-60">
         <Flex direction="column" gap="2">
@@ -250,20 +256,6 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
               </Grid>
             </Flex>
           ))}
-
-          {/* 状态指示 */}
-          {nodeData.conditions && nodeData.conditions.length > 0 && (
-            <Flex gap="1" wrap="wrap">
-              <Badge color="blue" size="1">
-                {nodeData.conditions.length} 个条件
-              </Badge>
-              {availableColumns.length > 0 && (
-                <Badge color="green" size="1">
-                  {availableColumns.length} 个可用列
-                </Badge>
-              )}
-            </Flex>
-          )}
         </Flex>
       </ScrollArea>
     </EnhancedBaseNode>

@@ -103,7 +103,6 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   // 新的预览函数，使用新API
   const previewNode = async () => {
-    console.log("test run aggregator node");
     if (!currentWorkspace) {
       toast.error("未找到当前工作区");
       return;
@@ -130,15 +129,10 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
       },
       {
         onSuccess: (result) => {
-          console.log("Preview result:", result);
-
           if (result.success) {
             if (isAggregationPreview(result)) {
               // 新API返回的聚合结果，直接使用预览数据
               const sheets = convertPreviewToSheets(result);
-
-              console.log("Aggregation results:", result.aggregation_results);
-              console.log("Preview sheets:", sheets);
 
               updateLocalNodeData({
                 testResult: sheets,
@@ -160,7 +154,6 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
           }
         },
         onError: (error: Error) => {
-          console.error("Preview failed:", error);
           updateLocalNodeData({
             error: `预览失败: ${error.message}`,
             testResult: undefined,

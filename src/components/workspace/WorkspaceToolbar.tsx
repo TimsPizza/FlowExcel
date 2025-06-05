@@ -1,8 +1,9 @@
-import React from "react";
-import { Flex, TextField, Button, Text, Separator } from "@radix-ui/themes";
-import { UpdateIcon, CheckIcon, PlusIcon } from "@radix-ui/react-icons";
-import { useNavigate } from "react-router-dom";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { CheckIcon, PlusIcon, UpdateIcon } from "@radix-ui/react-icons";
+import { Button, Flex, Text, TextField } from "@radix-ui/themes";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
 
 interface WorkspaceToolbarProps {
   workspaceName: string;
@@ -10,6 +11,7 @@ interface WorkspaceToolbarProps {
   onSave: () => void;
   isSaving: boolean;
   isDirty?: boolean;
+  isOutdated?: boolean;
 }
 
 const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
@@ -18,6 +20,7 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
   onSave,
   isSaving,
   isDirty,
+  isOutdated,
 }) => {
   const navigate = useNavigate();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -30,6 +33,17 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     >
       {/* Left side: Workspace Name */}
       <Flex align="center" gap="3">
+        <Button
+          size="2"
+          variant="outline"
+          color="gray"
+          onClick={() => navigate(`/workspace`)}
+        >
+          <ArrowLeftIcon />
+          <Text size="2" weight="bold" className="text-gray-600">
+            返回
+          </Text>
+        </Button>
         <Text size="2" weight="bold" className="text-gray-600">
           工作区:
         </Text>
@@ -67,6 +81,16 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           <Text size="1" color="orange" className="ml-2">
             * 未保存的更改
           </Text>
+        )}
+        {isOutdated && (
+          <Flex align="start" gap="1" direction="column">
+            <Text size="1" color="red" className="ml-2">
+              * 侦测到工作区文件发生变动, 执行可能出现异常
+            </Text>
+            <Text size="1" color="red" className="ml-2">
+              * 需前往文件管理进行操作
+            </Text>
+          </Flex>
         )}
       </Flex>
 

@@ -278,6 +278,8 @@ export function validateFlow(
   const outputNodes = nodes.filter((n) => n.data.nodeType === NodeType.OUTPUT);
   if (outputNodes.length === 0) {
     errors.push("流程必须包含至少一个输出节点");
+  }else if (outputNodes.length > 1) {
+    errors.push("流程只能包含一个输出节点");
   }
 
   // 检查孤立节点

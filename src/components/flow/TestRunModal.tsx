@@ -1,23 +1,24 @@
 import ExcelPreview from "@/components/ExcelPreview";
 import { Button } from "@/components/ui/button";
 import { SheetInfo } from "@/types";
-import { Box, Dialog, Skeleton } from "@radix-ui/themes";
-import { useEffect, useMemo } from "react";
+import { Box, Dialog, Skeleton, Text } from "@radix-ui/themes";
+import { useMemo } from "react";
 
 interface TestRunModalProps {
   runResult?: SheetInfo[];
   onTestRun?: () => void;
   onClose?: () => void; // clear the run result
+  error?: string;
 }
 
-const TestRunModal = ({ runResult, onTestRun, onClose }: TestRunModalProps) => {
-  useEffect(() => {
-    console.log("TestRunModal runResult", runResult);
-  }, [runResult]);
-
+const TestRunModal = ({
+  runResult,
+  onTestRun,
+  onClose,
+  error,
+}: TestRunModalProps) => {
   // ensure data integrity to prevent render error
   const sanitizedResult = useMemo(() => {
-    console.log("usememo update run result ", runResult);
     if (!runResult) return [];
     // 现在可以保证传进来的是sheetinfo[]
     if (Array.isArray(runResult)) {
@@ -27,7 +28,6 @@ const TestRunModal = ({ runResult, onTestRun, onClose }: TestRunModalProps) => {
   }, [runResult]);
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      console.log("testrunmodal onclose");
       onClose?.();
     }
   };
@@ -46,6 +46,11 @@ const TestRunModal = ({ runResult, onTestRun, onClose }: TestRunModalProps) => {
       </Dialog.Trigger>
       <Dialog.Content className="">
         <Dialog.Title>测试运行结果</Dialog.Title>
+        {error && (
+          <Box className="text-red-500">
+            <Text size="2">{error}</Text>
+          </Box>
+        )}
         {runResult ? (
           <Box className="max-h-72 overflow-auto">
             <ExcelPreview

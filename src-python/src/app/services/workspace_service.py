@@ -9,6 +9,7 @@ from excel.workspace_manager import workspace_manager
 from app.models import (
     WorkspaceInfo,
     WorkspaceListResponse,
+    FileInfo,
 )
 
 
@@ -37,3 +38,8 @@ class WorkspaceService:
     def delete_workspace(workspace_id: str) -> bool:
         """Delete a workspace configuration."""
         return workspace_manager.delete_workspace(workspace_id) 
+    
+    @staticmethod
+    def get_file_info(file_path: str) -> FileInfo:
+        """Get the hash of a file."""
+        return workspace_manager.get_file_info(file_path)

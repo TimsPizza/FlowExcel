@@ -174,6 +174,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                 onClose={() => {
                   updateNodeData(data.id, { testResult: undefined });
                 }}
+                error={data.error}
               />
             )}
             <TextModal

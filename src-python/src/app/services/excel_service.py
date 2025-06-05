@@ -22,7 +22,7 @@ class ExcelService:
     """Service class for Excel operations."""
     
     @staticmethod
-    def get_preview(file_path: str) -> Any:
+    def get_preview(file_path: str):
         """Get Excel file preview."""
         return get_excel_preview(file_path=file_path)
     

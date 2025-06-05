@@ -252,6 +252,10 @@ class OutputInput(NodeInput):
     ] = Field(
         ..., description="按分支组织的聚合结果，格式为 {分支ID: {索引值: {列名: 值}}}"
     )
+    
+    branch_dataframes: Dict[str, DataFrame] = Field(
+        default_factory=dict, description="按分支组织的非聚合 dataframe 结果，格式为 {分支ID: DataFrame}"
+    )
 
 
 class SheetData(BaseModel):
@@ -324,6 +328,12 @@ class BranchContext(BaseModel):
     branch_metadata: Dict[str, Any] = Field(
         default_factory=dict, description="分支元数据"
     )
+    last_non_aggregated_dataframe: Optional[Union[DataFrame, pd.DataFrame]] = Field(
+        None, description="最后一个非聚合节点的DataFrame输出"
+    )
+    
+    class Config:
+        arbitrary_types_allowed = True  # 允许pandas DataFrame
 
     def add_aggregation_result(self, result: AggregationResult):
         """添加聚合结果"""
@@ -431,9 +441,6 @@ class PipelineExecutionResult(BaseModel):
     error: Optional[str] = Field(None, description="全局错误信息")
     warnings: List[str] = Field(default_factory=list, description="警告信息列表")
 
-    # 文件输出信息（仅生产模式）
-    output_file_path: Optional[str] = Field(None, description="输出文件路径")
-    output_file_size_bytes: Optional[int] = Field(None, description="输出文件大小")
 
 
 # ==================== 工作区配置类型 ====================
@@ -461,9 +468,6 @@ class ExecutePipelineRequest(BaseModel):
         default=ExecutionMode.PRODUCTION, description="执行模式"
     )
     test_mode_max_rows: int = Field(default=100, description="测试模式最大行数限制")
-    output_file_path: Optional[str] = Field(
-        None, description="输出文件路径（生产模式）"
-    )
 
 
 # ==================== 类型验证工具 ====================
