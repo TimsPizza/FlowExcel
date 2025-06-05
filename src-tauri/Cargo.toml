@@ -20,6 +20,8 @@ tauri-plugin-log = "2.0.0-rc"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
-tokio = { version = "1.0", features = ["sync", "time", "rt"] }
+tokio = { version = "1.0", features = ["sync", "time", "rt", "io-util", "net"] }
 which = "6.0"
 libc = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

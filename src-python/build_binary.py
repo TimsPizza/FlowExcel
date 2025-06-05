@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Build script for creating PyInstaller binary from Python backend.
-This script will package the Excel backend into a standalone executable.
+This script will package the Excel FastAPI backend into a standalone executable.
 """
 
 import os
@@ -24,7 +24,7 @@ def check_requirements():
 def build_binary():
     """Build the binary using PyInstaller"""
     script_dir = Path(__file__).parent
-    main_script = script_dir / "src" / "app" / "main.py"
+    main_script = script_dir / "src" / "main.py"  # 正确的入口文件
     build_dir = script_dir / "build"
     dist_dir = script_dir / "dist"
     
@@ -37,16 +37,28 @@ def build_binary():
     
     print(f"Building binary from: {main_script}")
     
-    # PyInstaller command
+    # PyInstaller command for FastAPI application (directory mode for faster startup)
     cmd = [
         sys.executable, "-m", "PyInstaller",
-        "--onefile",  # Create a single executable file
-        "--name", "excel-backend",  # Output binary name
+        "--onedir",  # Create a directory with executable and dependencies (faster startup)
+        "--name", "excel-backend",  # Output directory name
         "--distpath", str(output_dir),  # Output directory
         "--workpath", str(build_dir),  # Build directory
         "--specpath", str(script_dir),  # Spec file location
         "--clean",  # Clean build cache
-        "--console",  # Console application (can be changed to --windowed for GUI)
+        "--console",  # Console application for FastAPI server
+        "--noconfirm",  # Don't ask for confirmation
+        # Add hidden imports for FastAPI and dependencies
+        "--hidden-import", "uvicorn",
+        "--hidden-import", "fastapi",
+        "--hidden-import", "pydantic",
+        "--hidden-import", "numpy",
+        "--hidden-import", "pandas",
+        "--hidden-import", "openpyxl",
+        "--hidden-import", "xlrd",
+        "--hidden-import", "networkx",
+        # Include the entire src directory to preserve structure
+        "--add-data", f"{script_dir / 'src'}:src",
         str(main_script)
     ]
     
@@ -56,16 +68,29 @@ def build_binary():
         result = subprocess.run(cmd, check=True, cwd=script_dir)
         print(f"\nBinary built successfully!")
         
-        binary_path = output_dir / "excel-backend"
-        if binary_path.exists():
-            print(f"Binary location: {binary_path}")
-            print(f"Binary size: {binary_path.stat().st_size / 1024 / 1024:.2f} MB")
+        # Check for directory-based distribution
+        binary_dir = output_dir / "excel-backend"
+        binary_executable = binary_dir / "excel-backend"
+        
+        if binary_dir.exists() and binary_dir.is_dir():
+            print(f"Binary directory: {binary_dir}")
+            if binary_executable.exists():
+                print(f"Main executable: {binary_executable}")
+                print(f"Executable size: {binary_executable.stat().st_size / 1024 / 1024:.2f} MB")
+            else:
+                # Try with .exe extension on Windows
+                binary_executable = binary_dir / "excel-backend.exe"
+                if binary_executable.exists():
+                    print(f"Main executable: {binary_executable}")
+                    print(f"Executable size: {binary_executable.stat().st_size / 1024 / 1024:.2f} MB")
+            
+            # Calculate total directory size
+            total_size = sum(f.stat().st_size for f in binary_dir.rglob('*') if f.is_file())
+            print(f"Total directory size: {total_size / 1024 / 1024:.2f} MB")
+            file_count = len(list(binary_dir.rglob('*')))
+            print(f"Total files: {file_count}")
         else:
-            # Try with .exe extension on Windows
-            binary_path = output_dir / "excel-backend.exe"
-            if binary_path.exists():
-                print(f"Binary location: {binary_path}")
-                print(f"Binary size: {binary_path.stat().st_size / 1024 / 1024:.2f} MB")
+            print("Warning: Expected directory not found!")
         
         # Clean up build artifacts
         if build_dir.exists():
@@ -85,7 +110,7 @@ def build_binary():
 
 def main():
     """Main build function"""
-    print("Excel Backend Binary Builder")
+    print("Excel FastAPI Backend Binary Builder")
     print("=" * 40)
     
     if not check_requirements():
@@ -95,9 +120,11 @@ def main():
     try:
         build_binary()
         print("\nBuild completed successfully!")
-        print("\nTo use the binary:")
+        print("\nTo use the binary directory:")
         print("1. The Tauri watchdog will automatically detect and use the binary")
-        print("2. Or run manually: ../backend/excel-backend")
+        print("2. Or run manually: ../backend/excel-backend/excel-backend")
+        print("3. Backend will automatically find available port and send handshake info")
+        print("4. Directory mode provides faster startup compared to single-file packaging")
         
     except Exception as e:
         print(f"Build failed: {e}")

@@ -6,12 +6,36 @@
 
 mod python_watchdog;
 
-use python_watchdog::PythonWatchdog;
+use python_watchdog::{PythonWatchdog, BackendInfo};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 // Global watchdog instance
 static WATCHDOG: tokio::sync::OnceCell<Arc<Mutex<PythonWatchdog>>> = tokio::sync::OnceCell::const_new();
+
+// Tauri command to get backend information
+#[tauri::command]
+async fn get_backend_info() -> Result<Option<BackendInfo>, String> {
+    if let Some(watchdog) = WATCHDOG.get() {
+        let guard = watchdog.lock().await;
+        Ok(guard.get_backend_info().cloned())
+    } else {
+        Err("Watchdog not initialized".to_string())
+    }
+}
+
+// Tauri command to get backend status
+#[tauri::command]
+async fn get_backend_status() -> Result<String, String> {
+    if let Some(watchdog) = WATCHDOG.get() {
+        let guard = watchdog.lock().await;
+        Ok(guard.get_status())
+    } else {
+        Err("Watchdog not initialized".to_string())
+    }
+}
+
+
 
 fn main() {
     // Initialize Tokio runtime for async operations
@@ -41,6 +65,7 @@ fn main() {
             .plugin(tauri_plugin_dialog::init())
             .plugin(tauri_plugin_shell::init())
             .plugin(tauri_plugin_log::Builder::default().build())
+            .invoke_handler(tauri::generate_handler![get_backend_info, get_backend_status])
             .setup(|_app| {
                 // Additional setup if needed
                 log::info!("Tauri application started with Python backend watchdog");

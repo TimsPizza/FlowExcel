@@ -5,13 +5,45 @@ use tokio::time::interval;
 use which::which;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::io::{BufRead, BufReader, Write};
+use std::thread;
+use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackendInfo {
+    pub host: String,
+    pub port: u16,
+    pub api_base: String,
+    pub endpoints: BackendEndpoints,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackendEndpoints {
+    pub health: String,
+    pub shutdown: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HandshakeData {
+    #[serde(rename = "type")]
+    pub message_type: String,
+    pub status: String,
+    pub host: Option<String>,
+    pub port: Option<u16>,
+    pub api_base: Option<String>,
+    pub endpoints: Option<BackendEndpoints>,
+    pub error: Option<String>,
+}
 
 #[derive(Debug)]
 pub struct PythonWatchdog {
     process: Option<Child>,
+    backend_info: Option<BackendInfo>,
     is_running: bool,
     restart_attempts: u32,
     max_restart_attempts: u32,
+    heartbeat_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -24,16 +56,36 @@ impl PythonWatchdog {
     pub fn new() -> Self {
         Self {
             process: None,
+            backend_info: None,
             is_running: false,
             restart_attempts: 0,
             max_restart_attempts: 5,
+            heartbeat_enabled: true,
         }
+    }
+
+    /// 获取后端信息
+    pub fn get_backend_info(&self) -> Option<&BackendInfo> {
+        self.backend_info.as_ref()
+    }
+
+    /// 启用或禁用心跳
+    pub fn set_heartbeat_enabled(&mut self, enabled: bool) {
+        self.heartbeat_enabled = enabled;
     }
 
     /// 自动检测后端类型（二进制文件优先）
     fn detect_backend(&self) -> Result<BackendType, String> {
-        // 首先检查是否有 pyinstaller 打包的二进制文件
+        // 首先检查是否有 pyinstaller 打包的二进制文件（目录形式优先，然后单文件）
         let possible_binary_paths = vec![
+            // 目录形式的 PyInstaller 打包（更快启动）
+            "backend/excel-backend/excel-backend",
+            "backend/excel-backend/excel-backend.exe",
+            "../backend/excel-backend/excel-backend",
+            "../backend/excel-backend/excel-backend.exe",
+            "./excel-backend/excel-backend",
+            "./excel-backend/excel-backend.exe",
+            // 单文件形式的 PyInstaller 打包（兼容性）
             "backend/excel-backend",
             "backend/excel-backend.exe", 
             "../backend/excel-backend",
@@ -54,7 +106,7 @@ impl PythonWatchdog {
 
         // 如果没有二进制文件，尝试查找 Python 脚本
         let possible_script_paths = vec![
-            "../src-python/src/app/main.py",
+            "../src-python/src/main.py",  // FastAPI 后端入口
             "../src-python/main.py", 
             "python/main.py",
             "backend/main.py",
@@ -84,7 +136,7 @@ impl PythonWatchdog {
             "../src-python/.venv/bin/python",
             "../src-python/.venv/Scripts/python.exe", 
             ".venv/bin/python",
-            ".venv/Scripts/python.exe",
+            ".venv/Scripts/python.exe", 
         ];
 
         for venv_path in venv_paths {
@@ -95,56 +147,154 @@ impl PythonWatchdog {
             }
         }
 
-        // 如果没有虚拟环境，查找系统 Python
-        if let Ok(python_path) = which("python3") {
-            log::info!("Found system Python3: {:?}", python_path);
-            return Ok(python_path);
-        }
-
-        if let Ok(python_path) = which("python") {
-            log::info!("Found system Python: {:?}", python_path);
-            return Ok(python_path);
+        // 备选：查找系统 Python
+        let python_candidates = vec!["python3", "python"];
+        for candidate in python_candidates {
+            if let Ok(python_path) = which(candidate) {
+                log::info!("Found system Python: {:?}", python_path);
+                return Ok(python_path);
+            }
         }
 
         Err("No Python executable found".to_string())
     }
 
-    /// 启动后端进程
-    fn start_backend_process(&mut self) -> Result<(), String> {
+    /// 启动后端进程并等待握手
+    async fn start_backend_process(&mut self) -> Result<mpsc::UnboundedReceiver<Result<String, String>>, String> {
         let backend_type = self.detect_backend()?;
-
-        let mut cmd = match backend_type {
+        
+        let mut command = match backend_type {
             BackendType::Binary { binary_path } => {
-                log::info!("Starting Python backend binary: {:?}", binary_path);
+                log::info!("Starting binary backend: {:?}", binary_path);
                 Command::new(binary_path)
             }
             BackendType::PythonScript { python_path, script_path } => {
-                log::info!("Starting Python backend script: {:?} with {:?}", 
-                          script_path, python_path);
+                log::info!("Starting Python script backend: {:?} {:?}", python_path, script_path);
                 let mut cmd = Command::new(python_path);
                 cmd.arg(script_path);
                 cmd
             }
         };
 
-        // 配置进程
-        cmd.stdin(Stdio::null())
-           .stdout(Stdio::piped())
-           .stderr(Stdio::piped());
+        // 配置进程的标准输入输出
+        command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         // 启动进程
-        match cmd.spawn() {
-            Ok(child) => {
-                log::info!("Python backend started with PID: {}", child.id());
-                self.process = Some(child);
-                self.is_running = true;
-                self.restart_attempts = 0;
-                Ok(())
+        let mut process = command.spawn()
+            .map_err(|e| format!("Failed to start backend process: {}", e))?;
+
+        log::info!("Python backend process started with PID: {}", process.id());
+
+        // 获取 stdout 用于握手和后续心跳监听
+        let stdout = process.stdout.take()
+            .ok_or("Failed to get process stdout")?;
+
+        // 保存进程引用
+        self.process = Some(process);
+        self.is_running = true;
+
+        // 等待握手完成并获取stdout接收器
+        let stdout_receiver = self.wait_for_handshake(stdout).await?;
+
+        Ok(stdout_receiver)
+    }
+
+    async fn wait_for_handshake(&mut self, stdout: std::process::ChildStdout) -> Result<mpsc::UnboundedReceiver<Result<String, String>>, String> {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        
+        // 在单独的线程中读取 stdout，这个线程将持续运行处理所有输出
+        let tx_clone = tx.clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines() {
+                match line {
+                    Ok(line_content) => {
+                        if tx_clone.send(Ok(line_content)).is_err() {
+                            break; // 接收者已经关闭
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tx_clone.send(Err(format!("Failed to read line: {}", e)));
+                        break;
+                    }
+                }
             }
-            Err(e) => {
-                Err(format!("Failed to start Python backend: {}", e))
+        });
+
+        // 设置超时时间
+        let timeout_duration = Duration::from_secs(30);
+        let start_time = std::time::Instant::now();
+
+        while start_time.elapsed() < timeout_duration {
+            // 使用 timeout 来避免无限等待
+            match tokio::time::timeout(Duration::from_millis(100), rx.recv()).await {
+                Ok(Some(line_result)) => {
+                    match line_result {
+                        Ok(line) => {
+                            log::debug!("Backend stdout: {}", line);
+
+                            // 检查是否是握手信息
+                            if line.starts_with("HANDSHAKE:") {
+                                let json_part = &line[10..]; // 移除 "HANDSHAKE:" 前缀
+                                match serde_json::from_str::<HandshakeData>(json_part) {
+                                    Ok(handshake) => {
+                                        if handshake.message_type == "handshake" && handshake.status == "ready" {
+                                            if let (Some(host), Some(port), Some(api_base), Some(endpoints)) = 
+                                                (handshake.host, handshake.port, handshake.api_base, handshake.endpoints) {
+                                                
+                                                self.backend_info = Some(BackendInfo {
+                                                    host,
+                                                    port,
+                                                    api_base,
+                                                    endpoints,
+                                                });
+
+                                                log::info!("Backend handshake successful! Server running at http://{}:{}", 
+                                                         self.backend_info.as_ref().unwrap().host, 
+                                                         self.backend_info.as_ref().unwrap().port);
+                                                
+                                                // 返回receiver以便后续心跳监听使用
+                                                return Ok(rx);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        log::warn!("Failed to parse handshake JSON: {}", e);
+                                    }
+                                }
+                            } else if line.starts_with("ERROR:") {
+                                let json_part = &line[6..]; // 移除 "ERROR:" 前缀
+                                match serde_json::from_str::<HandshakeData>(json_part) {
+                                    Ok(error_data) => {
+                                        return Err(format!("Backend startup error: {}", 
+                                                         error_data.error.unwrap_or_else(|| "Unknown error".to_string())));
+                                    }
+                                    Err(_) => {
+                                        return Err(format!("Backend reported error: {}", line));
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            return Err(e);
+                        }
+                    }
+                }
+                Ok(None) => {
+                    // 通道已关闭
+                    break;
+                }
+                Err(_) => {
+                    // 超时，继续循环
+                    continue;
+                }
             }
         }
+
+        Err("Handshake timeout: Backend did not respond within 30 seconds".to_string())
     }
 
     /// 检查进程是否存活
@@ -155,6 +305,7 @@ impl PythonWatchdog {
                     // 进程已退出
                     log::warn!("Python backend process has exited");
                     self.is_running = false;
+                    self.backend_info = None; // 清除后端信息
                     false
                 }
                 Ok(None) => {
@@ -165,6 +316,7 @@ impl PythonWatchdog {
                     // 检查进程状态时出错
                     log::error!("Error checking process status: {}", e);
                     self.is_running = false;
+                    self.backend_info = None; // 清除后端信息
                     false
                 }
             }
@@ -210,9 +362,128 @@ impl PythonWatchdog {
 
             let _ = process.wait();
             self.process = None;
+            self.backend_info = None; // 清除后端信息
             self.is_running = false;
         }
         Ok(())
+    }
+
+    /// 启动心跳监听任务
+    fn start_heartbeat_listener(&self, stdout_receiver: mpsc::UnboundedReceiver<Result<String, String>>, process_id: u32, stdin_writer: Arc<Mutex<Option<std::process::ChildStdin>>>) {
+        tokio::spawn(async move {
+            let mut stdout_receiver = stdout_receiver;
+            while let Some(line_result) = stdout_receiver.recv().await {
+                match line_result {
+                    Ok(line) => {
+                        if line == "HEARTBEAT" {
+                            log::debug!("Received HEARTBEAT from Python backend");
+                            
+                            // 发送ACK响应
+                            if let Some(stdin) = stdin_writer.lock().await.as_mut() {
+                                if let Err(e) = writeln!(stdin, "HEARTBEAT_ACK") {
+                                    log::warn!("Failed to send HEARTBEAT_ACK: {}", e);
+                                } else if let Err(e) = stdin.flush() {
+                                    log::warn!("Failed to flush stdin: {}", e);
+                                } else {
+                                    log::debug!("HEARTBEAT_ACK sent to Python backend");
+                                }
+                            }
+                        } else {
+                            log::debug!("Python backend output: {}", line);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Error reading from Python backend: {}", e);
+                        break;
+                    }
+                }
+            }
+            log::warn!("Python backend stdout monitoring ended for PID {}", process_id);
+        });
+    }
+
+    /// 启动看门狗
+    pub async fn start(&mut self) -> Result<(), String> {
+        log::info!("Starting Python backend watchdog");
+
+        // 启动后端进程、等待握手并获取stdout接收器
+        let stdout_receiver = self.start_backend_process().await?;
+        
+        // 启动心跳监听任务
+        if let Some(ref mut process) = self.process {
+            let process_id = process.id();
+            let stdin_writer = Arc::new(Mutex::new(process.stdin.take()));
+            self.start_heartbeat_listener(stdout_receiver, process_id, stdin_writer);
+        }
+
+        Ok(())
+    }
+
+    /// 启动看门狗监控循环（需要在独立的任务中运行）
+    pub async fn start_monitoring(watchdog: Arc<Mutex<PythonWatchdog>>) {
+        let mut interval = interval(Duration::from_secs(5)); // 每 5 秒检查一次
+        
+        loop {
+            interval.tick().await;
+            
+            let mut watchdog_guard = watchdog.lock().await;
+            
+            // 检查进程是否存活
+            if !watchdog_guard.is_process_alive() {
+                log::error!("Python backend process is not alive, attempting restart");
+                
+                if let Err(e) = watchdog_guard.restart_process().await {
+                    log::error!("Failed to restart Python backend: {}", e);
+                    break;
+                }
+            }
+            // 注意：不再需要主动发送心跳，现在是被动接收
+        }
+    }
+
+    /// 停止看门狗
+    pub async fn stop(&mut self) -> Result<(), String> {
+        log::info!("Stopping Python backend watchdog");
+        
+        self.kill_process()?;
+        self.is_running = false;
+        
+        Ok(())
+    }
+
+    pub fn get_status(&self) -> String {
+        if self.is_running {
+            if let Some(ref info) = self.backend_info {
+                format!("Running at {}:{}", info.host, info.port)
+            } else {
+                "Starting...".to_string()
+            }
+        } else {
+            "Stopped".to_string()
+        }
+    }
+
+    /// 发送心跳响应到Python进程
+    fn send_heartbeat_ack(&mut self) -> Result<(), String> {
+        if let Some(ref mut process) = self.process {
+            if let Some(ref mut stdin) = process.stdin.as_mut() {
+                match writeln!(stdin, "HEARTBEAT_ACK") {
+                    Ok(_) => {
+                        stdin.flush().map_err(|e| format!("Failed to flush stdin: {}", e))?;
+                        log::debug!("HEARTBEAT_ACK sent to Python backend");
+                        Ok(())
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to send heartbeat ACK: {}", e);
+                        Err(format!("Failed to send heartbeat ACK: {}", e))
+                    }
+                }
+            } else {
+                Err("Process stdin not available".to_string())
+            }
+        } else {
+            Err("No process running".to_string())
+        }
     }
 
     /// 重启进程
@@ -233,62 +504,16 @@ impl PythonWatchdog {
         // 增加重启尝试次数
         self.restart_attempts += 1;
 
-        // 重新启动
-        self.start_backend_process()
-    }
-
-    /// 启动看门狗
-    pub async fn start(&mut self) -> Result<(), String> {
-        log::info!("Starting Python backend watchdog");
-
-        // 启动后端进程
-        self.start_backend_process()?;
-
-        Ok(())
-    }
-
-    /// 启动看门狗监控循环（需要在独立的任务中运行）
-    pub async fn start_monitoring(watchdog: Arc<Mutex<PythonWatchdog>>) {
-        let mut interval = interval(Duration::from_secs(5)); // 每 5 秒检查一次
+        // 重新启动后端进程
+        let stdout_receiver = self.start_backend_process().await?;
         
-        loop {
-            interval.tick().await;
-            
-            let mut guard = watchdog.lock().await;
-            
-            if guard.is_running && !guard.is_process_alive() {
-                log::warn!("Python backend died, attempting restart...");
-                if let Err(e) = guard.restart_process().await {
-                    log::error!("Failed to restart Python backend: {}", e);
-                    break;
-                }
-            }
-            
-            if !guard.is_running {
-                log::info!("Watchdog monitoring stopped");
-                break;
-            }
+        // 重新启动心跳监听任务
+        if let Some(ref mut process) = self.process {
+            let process_id = process.id();
+            let stdin_writer = Arc::new(Mutex::new(process.stdin.take()));
+            self.start_heartbeat_listener(stdout_receiver, process_id, stdin_writer);
         }
-    }
-
-    /// 停止看门狗和后端进程
-    pub async fn stop(&mut self) -> Result<(), String> {
-        log::info!("Stopping Python backend watchdog");
-        self.is_running = false;
-        self.kill_process()
-    }
-
-    /// 获取进程状态（未来可能会用于 UI 显示）
-    #[allow(dead_code)]
-    pub fn get_status(&self) -> String {
-        if self.is_running {
-            if let Some(ref process) = self.process {
-                format!("Running (PID: {})", process.id())
-            } else {
-                "Starting...".to_string()
-            }
-        } else {
-            "Stopped".to_string()
-        }
+        
+        Ok(())
     }
 } 
