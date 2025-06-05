@@ -10,6 +10,7 @@ import {
   TryReadHeaderRowResponse,
 } from "@/types";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
+import { BackendConfigManager } from "../utils/backendConfig";
 
 // API Response types matching the Python server
 interface APIResponse<T = any> {
@@ -123,22 +124,30 @@ interface SaveWorkspaceRequest {
   config_json: string;
 }
 
-const API_BASE_URL =
+const FALLBACK_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:11017";
 
 class ApiClient {
   private client: AxiosInstance;
-  private baseURL: string;
 
   constructor() {
-    this.baseURL = API_BASE_URL;
     this.client = axios.create({
-      baseURL: this.baseURL,
       timeout: 60000, // 60 seconds timeout, as some operations may take a long time
       headers: {
         "Content-Type": "application/json",
       },
     });
+
+    // Add request interceptor to set dynamic base URL
+    this.client.interceptors.request.use(
+      (config) => {
+        const baseURL = this.getBaseUrl();
+        console.log("Using API base URL:", baseURL);
+        config.baseURL = baseURL;
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
     // Add response interceptor for error handling
     this.client.interceptors.response.use(
@@ -154,6 +163,24 @@ class ApiClient {
         throw error;
       },
     );
+  }
+
+  private getBaseUrl(): string {
+    const configManager = BackendConfigManager.getInstance();
+    const dynamicBaseUrl = configManager.getApiBaseUrl();
+    
+    if (dynamicBaseUrl) {
+      return dynamicBaseUrl;
+    }
+    
+    // 如果后端还没有准备好，使用回退 URL
+    return FALLBACK_API_BASE_URL;
+  }
+
+  // 检查后端是否已经准备好
+  isBackendReady(): boolean {
+    const configManager = BackendConfigManager.getInstance();
+    return configManager.getBackendInfo() !== null;
   }
 
   // Health check

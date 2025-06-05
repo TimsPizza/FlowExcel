@@ -48,14 +48,21 @@ export const useWorkspaceListQuery = () => {
     data: workspaces,
     isLoading,
     error,
+    refetch, // 添加refetch以便手动刷新
   }: UseQueryResult<WorkspaceListItem[], Error> = useQuery<
     WorkspaceListItem[],
     Error
-  >("workspaces", fetchWorkspaces);
+  >("workspaces-list", {
+    queryFn: fetchWorkspaces,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    retry: true,
+  });
   return {
     workspaces,
     isLoading,
     error,
+    refetch, // 返回refetch方法
   };
 };
 

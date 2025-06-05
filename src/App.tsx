@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import { RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { ReactFlowProvider } from "reactflow";
+import { BackendStatus } from "./components/BackendStatus";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,12 +20,14 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <Theme appearance="inherit">
-      <ReactFlowProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <ToastContainer />
-        </QueryClientProvider>
-      </ReactFlowProvider>
+      <QueryClientProvider client={queryClient}>
+        <BackendStatus>
+          <ReactFlowProvider>
+            <RouterProvider router={router} />
+            <ToastContainer />
+          </ReactFlowProvider>
+        </BackendStatus>
+      </QueryClientProvider>
     </Theme>
   );
 }

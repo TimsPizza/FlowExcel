@@ -7,20 +7,16 @@ import {
   validateFlow,
 } from "@/lib/flowValidation";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { SheetInfo } from "@/types";
 import {
   FlowNodeData,
-  IndexSourceNodeDataContext,
-  NodeType,
+  NodeType
 } from "@/types/nodes";
 import {
-  FilePlusIcon,
   PlayIcon,
   PlusIcon,
-  SizeIcon,
+  SizeIcon
 } from "@radix-ui/react-icons";
-import { Button, Dialog, Flex, Select, Text, Popover } from "@radix-ui/themes";
-import { invoke } from "@tauri-apps/api/core";
+import { Button, Flex, Popover, Select, Text } from "@radix-ui/themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
@@ -38,10 +34,9 @@ import ReactFlow, {
   OnEdgesChange,
   OnNodesChange,
   Panel,
-  ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  useReactFlow,
+  useReactFlow
 } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import { FlowValidationPanel } from "./FlowValidationPanel";
@@ -114,8 +109,6 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType>(
     NodeType.INDEX_SOURCE,
   );
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [templateName, setTemplateName] = useState("");
   const [layoutDirection, setLayoutDirection] = useState<"TB" | "LR">("LR");
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const activelyDraggedNodeId = useRef<string | null>(null);
@@ -186,7 +179,8 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
           `已使用${direction === "TB" ? "垂直" : "水平"}布局重新排版`,
         );
       } catch (error) {
-        toast.error("自动排版失败，请检查节点连接是否正确");
+        toast.error("自动排版失败: " + (error as Error).message);
+        console.error("自动排版失败:", error);
       }
     },
     [nodes, edges, layoutDirection, setNodes, addFlowNode, fitView, toast],

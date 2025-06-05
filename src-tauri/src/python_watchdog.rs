@@ -1,14 +1,14 @@
 use std::process::{Child, Command, Stdio};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::interval;
 use which::which;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::thread;
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
+use std::sync::Arc;
+use tauri::{AppHandle, Emitter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackendInfo {
@@ -43,7 +43,7 @@ pub struct PythonWatchdog {
     is_running: bool,
     restart_attempts: u32,
     max_restart_attempts: u32,
-    heartbeat_enabled: bool,
+    app_handle: Option<AppHandle>,
 }
 
 #[derive(Debug)]
@@ -60,18 +60,18 @@ impl PythonWatchdog {
             is_running: false,
             restart_attempts: 0,
             max_restart_attempts: 5,
-            heartbeat_enabled: true,
+            app_handle: None,
         }
+    }
+
+    /// 设置应用句柄用于发送事件
+    pub fn set_app_handle(&mut self, app_handle: AppHandle) {
+        self.app_handle = Some(app_handle);
     }
 
     /// 获取后端信息
     pub fn get_backend_info(&self) -> Option<&BackendInfo> {
         self.backend_info.as_ref()
-    }
-
-    /// 启用或禁用心跳
-    pub fn set_heartbeat_enabled(&mut self, enabled: bool) {
-        self.heartbeat_enabled = enabled;
     }
 
     /// 自动检测后端类型（二进制文件优先）
@@ -257,7 +257,7 @@ impl PythonWatchdog {
     }
 
     /// 启动后端进程并等待握手
-    async fn start_backend_process(&mut self) -> Result<mpsc::UnboundedReceiver<Result<String, String>>, String> {
+    async fn start_backend_process(&mut self) -> Result<(), String> {
         let backend_type = self.detect_backend()?;
         
         let mut command = match backend_type {
@@ -285,7 +285,7 @@ impl PythonWatchdog {
 
         log::info!("Python backend process started with PID: {}", process.id());
 
-        // 获取 stdout 用于握手和后续心跳监听
+        // 获取 stdout 用于握手
         let stdout = process.stdout.take()
             .ok_or("Failed to get process stdout")?;
 
@@ -293,13 +293,13 @@ impl PythonWatchdog {
         self.process = Some(process);
         self.is_running = true;
 
-        // 等待握手完成并获取stdout接收器
-        let stdout_receiver = self.wait_for_handshake(stdout).await?;
+        // 等待握手完成
+        self.wait_for_handshake(stdout).await?;
 
-        Ok(stdout_receiver)
+        Ok(())
     }
 
-    async fn wait_for_handshake(&mut self, stdout: std::process::ChildStdout) -> Result<mpsc::UnboundedReceiver<Result<String, String>>, String> {
+    async fn wait_for_handshake(&mut self, stdout: std::process::ChildStdout) -> Result<(), String> {
         let (tx, mut rx) = mpsc::unbounded_channel();
         
         // 在单独的线程中读取 stdout，这个线程将持续运行处理所有输出
@@ -353,8 +353,11 @@ impl PythonWatchdog {
                                                          self.backend_info.as_ref().unwrap().host, 
                                                          self.backend_info.as_ref().unwrap().port);
                                                 
-                                                // 返回receiver以便后续心跳监听使用
-                                                return Ok(rx);
+                                                // 发送事件通知前端
+                                                self.emit_backend_ready_event();
+                                                
+                                                // 握手成功，直接返回
+                                                return Ok(());
                                             }
                                         }
                                     }
@@ -465,76 +468,50 @@ impl PythonWatchdog {
         Ok(())
     }
 
-    /// 启动心跳监听任务
-    fn start_heartbeat_listener(&self, stdout_receiver: mpsc::UnboundedReceiver<Result<String, String>>, process_id: u32, stdin_writer: Arc<Mutex<Option<std::process::ChildStdin>>>) {
-        tokio::spawn(async move {
-            let mut stdout_receiver = stdout_receiver;
-            while let Some(line_result) = stdout_receiver.recv().await {
-                match line_result {
-                    Ok(line) => {
-                        if line == "HEARTBEAT" {
-                            log::debug!("Received HEARTBEAT from Python backend");
-                            
-                            // 发送ACK响应
-                            if let Some(stdin) = stdin_writer.lock().await.as_mut() {
-                                if let Err(e) = writeln!(stdin, "HEARTBEAT_ACK") {
-                                    log::warn!("Failed to send HEARTBEAT_ACK: {}", e);
-                                } else if let Err(e) = stdin.flush() {
-                                    log::warn!("Failed to flush stdin: {}", e);
-                                } else {
-                                    log::debug!("HEARTBEAT_ACK sent to Python backend");
-                                }
-                            }
-                        } else {
-                            log::debug!("Python backend output: {}", line);
-                        }
-                    }
-                    Err(e) => {
-                        log::error!("Error reading from Python backend: {}", e);
-                        break;
-                    }
-                }
-            }
-            log::warn!("Python backend stdout monitoring ended for PID {}", process_id);
-        });
-    }
 
     /// 启动看门狗
     pub async fn start(&mut self) -> Result<(), String> {
         log::info!("Starting Python backend watchdog");
 
-        // 启动后端进程、等待握手并获取stdout接收器
-        let stdout_receiver = self.start_backend_process().await?;
-        
-        // 启动心跳监听任务
-        if let Some(ref mut process) = self.process {
-            let process_id = process.id();
-            let stdin_writer = Arc::new(Mutex::new(process.stdin.take()));
-            self.start_heartbeat_listener(stdout_receiver, process_id, stdin_writer);
-        }
+        // 启动后端进程并等待握手
+        self.start_backend_process().await?;
 
         Ok(())
     }
 
     /// 启动看门狗监控循环（需要在独立的任务中运行）
     pub async fn start_monitoring(watchdog: Arc<Mutex<PythonWatchdog>>) {
-        let mut interval = interval(Duration::from_secs(5)); // 每 5 秒检查一次
+        let mut process_check_interval = interval(Duration::from_secs(5)); // 每 5 秒检查进程
+        let mut status_broadcast_interval = interval(Duration::from_secs(10)); // 每 10 秒广播状态
         
         loop {
-            interval.tick().await;
-            
-            let mut watchdog_guard = watchdog.lock().await;
-            
-            // 检查进程是否存活
-            if !watchdog_guard.is_process_alive() {
-                log::error!("Python backend process is not alive, attempting restart");
+            tokio::select! {
+                // 进程监控检查
+                _ = process_check_interval.tick() => {
+                    let mut watchdog_guard = watchdog.lock().await;
+                    
+                    // 检查进程是否存活
+                    if !watchdog_guard.is_process_alive() {
+                        log::error!("Python backend process is not alive, attempting restart");
+                        
+                        if let Err(e) = watchdog_guard.restart_process().await {
+                            log::error!("Failed to restart Python backend: {}", e);
+                            break;
+                        }
+                    }
+                },
                 
-                if let Err(e) = watchdog_guard.restart_process().await {
-                    log::error!("Failed to restart Python backend: {}", e);
-                    break;
+                // 定期广播后端状态
+                _ = status_broadcast_interval.tick() => {
+                    let watchdog_guard = watchdog.lock().await;
+                    
+                    // 如果后端正在运行且有配置信息，定期广播状态
+                    if watchdog_guard.is_running && watchdog_guard.backend_info.is_some() {
+                        watchdog_guard.emit_backend_ready_event();
+                        log::debug!("Broadcasted backend status to frontend");
+                    }
                 }
             }
-            // 注意：不再需要主动发送心跳，现在是被动接收
         }
     }
 
@@ -560,28 +537,6 @@ impl PythonWatchdog {
         }
     }
 
-    /// 发送心跳响应到Python进程
-    fn send_heartbeat_ack(&mut self) -> Result<(), String> {
-        if let Some(ref mut process) = self.process {
-            if let Some(ref mut stdin) = process.stdin.as_mut() {
-                match writeln!(stdin, "HEARTBEAT_ACK") {
-                    Ok(_) => {
-                        stdin.flush().map_err(|e| format!("Failed to flush stdin: {}", e))?;
-                        log::debug!("HEARTBEAT_ACK sent to Python backend");
-                        Ok(())
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to send heartbeat ACK: {}", e);
-                        Err(format!("Failed to send heartbeat ACK: {}", e))
-                    }
-                }
-            } else {
-                Err("Process stdin not available".to_string())
-            }
-        } else {
-            Err("No process running".to_string())
-        }
-    }
 
     /// 重启进程
     async fn restart_process(&mut self) -> Result<(), String> {
@@ -602,15 +557,52 @@ impl PythonWatchdog {
         self.restart_attempts += 1;
 
         // 重新启动后端进程
-        let stdout_receiver = self.start_backend_process().await?;
+        self.start_backend_process().await?;
         
-        // 重新启动心跳监听任务
-        if let Some(ref mut process) = self.process {
-            let process_id = process.id();
-            let stdin_writer = Arc::new(Mutex::new(process.stdin.take()));
-            self.start_heartbeat_listener(stdout_receiver, process_id, stdin_writer);
-        }
+        // 重启成功后重置重启计数
+        self.restart_attempts = 0;
         
         Ok(())
     }
-} 
+
+    /// 发送后端就绪事件到前端
+    fn emit_backend_ready_event(&self) {
+        if let (Some(app_handle), Some(backend_info)) = (&self.app_handle, &self.backend_info) {
+            match app_handle.emit("backend-ready", backend_info) {
+                Ok(()) => {
+                    log::info!("Backend ready event sent to frontend successfully");
+                }
+                Err(e) => {
+                    log::error!("Failed to emit backend ready event: {}", e);
+                }
+            }
+        } else {
+            log::warn!("Cannot emit backend ready event: missing app handle or backend info");
+        }
+    }
+
+    /// 发送后端错误事件到前端
+    fn emit_backend_error_event(&self, error_message: &str) {
+        if let Some(app_handle) = &self.app_handle {
+            #[derive(Serialize, Clone)]
+            struct ErrorEvent {
+                error: String,
+            }
+
+            let error_event = ErrorEvent {
+                error: error_message.to_string(),
+            };
+
+            match app_handle.emit("backend-error", error_event) {
+                Ok(()) => {
+                    log::info!("Backend error event sent to frontend successfully");
+                }
+                Err(e) => {
+                    log::error!("Failed to emit backend error event: {}", e);
+                }
+            }
+        } else {
+            log::warn!("Cannot emit backend error event: missing app handle");
+        }
+    }
+}

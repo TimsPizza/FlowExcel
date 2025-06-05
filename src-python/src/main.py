@@ -60,114 +60,53 @@ def send_handshake(port, host="127.0.0.1"):
     # Send handshake as JSON line to stdout
     print(f"HANDSHAKE:{json.dumps(handshake_data)}", flush=True)
 
-def start_heartbeat_monitor():
+def start_parent_process_monitor():
     """
-    Start heartbeat monitoring in a separate thread.
-    Python sends HEARTBEAT to Tauri via stdout periodically.
-    Waits for HEARTBEAT_ACK from Tauri via stdin.
-    If no ACK received within timeout, assumes Tauri is dead and exits.
+    Start simple parent process monitoring in a separate thread.
+    This is much safer than complex heartbeat mechanisms.
+    Simply checks if parent process (Tauri) still exists every few seconds.
     """
-    def heartbeat_worker():
-        print("Starting heartbeat sender (Python -> Tauri)", flush=True)
-        
-        heartbeat_interval = 5  # Send heartbeat every 5 seconds
-        heartbeat_timeout = 15  # Wait max 15 seconds for ACK
-        failure_count = 0
-        max_failures = 3
-        
-        # Get parent process ID for monitoring
+    def monitor_worker():
         parent_pid = os.getppid()
-        print(f"Parent process PID: {parent_pid}", flush=True)
+        print(f"Starting parent process monitor for PID: {parent_pid}", flush=True)
         
         while True:
             try:
                 # Check if parent process is still alive
-                try:
-                    if platform.system() == "Windows":
-                        # On Windows, try to kill with signal 0 (it should work on newer Python versions)
-                        # If it fails, we assume parent is dead
-                        try:
-                            os.kill(parent_pid, 0)
-                        except OSError:
-                            print("Parent process no longer exists, exiting...", flush=True)
+                if platform.system() == "Windows":
+                    try:
+                        # On Windows, os.kill(pid, 0) doesn't work reliably
+                        # Use a different approach: try to open the process handle
+                        import ctypes
+                        kernel32 = ctypes.windll.kernel32
+                        handle = kernel32.OpenProcess(0x100000, False, parent_pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+                        if handle:
+                            kernel32.CloseHandle(handle)
+                        else:
+                            print("Parent process no longer exists (Windows), exiting...", flush=True)
                             os._exit(1)
-                    else:
+                    except Exception:
+                        print("Parent process no longer exists (Windows exception), exiting...", flush=True)
+                        os._exit(1)
+                else:
+                    try:
                         os.kill(parent_pid, 0)  # Signal 0 just checks if process exists
-                except (OSError, ImportError):
-                    print("Parent process no longer exists, exiting...", flush=True)
-                    os._exit(1)
-                
-                # Send heartbeat to Tauri
-                print("HEARTBEAT", flush=True)
-                heartbeat_sent_time = time.time()
-                
-                # Wait for ACK from Tauri via stdin (cross-platform approach)
-                ack_received = False
-                timeout_time = heartbeat_sent_time + heartbeat_timeout
-                
-                # Use threading approach for stdin reading to avoid platform-specific select issues
-                import queue
-                stdin_queue = queue.Queue()
-                
-                def stdin_reader():
-                    try:
-                        while True:
-                            line = sys.stdin.readline()
-                            if line:
-                                stdin_queue.put(line.strip())
-                            else:
-                                # EOF reached, parent process closed stdin
-                                stdin_queue.put(None)
-                                break
-                    except Exception as e:
-                        stdin_queue.put(None)
-                
-                # Start stdin reader thread
-                reader_thread = threading.Thread(target=stdin_reader, daemon=True)
-                reader_thread.start()
-                
-                # Check for ACK with timeout
-                while time.time() < timeout_time:
-                    try:
-                        # Try to get a line from stdin with timeout
-                        line = stdin_queue.get(timeout=1.0)
-                        
-                        if line is None:
-                            # EOF reached, parent process closed stdin
-                            print("Stdin closed by parent process, exiting...", flush=True)
-                            os._exit(1)
-                        elif line == "HEARTBEAT_ACK":
-                            print(f"Received HEARTBEAT_ACK from Tauri", flush=True)
-                            ack_received = True
-                            failure_count = 0  # Reset failure count on success
-                            break
-                    except queue.Empty:
-                        # Timeout occurred, continue checking
-                        continue
-                
-                if not ack_received:
-                    failure_count += 1
-                    print(f"No HEARTBEAT_ACK received within {heartbeat_timeout}s (failures: {failure_count}/{max_failures})", flush=True)
-                    
-                    if failure_count >= max_failures:
-                        print(f"Failed to receive heartbeat ACK {max_failures} times. Tauri appears to be dead. Exiting...", flush=True)
+                    except OSError:
+                        print("Parent process no longer exists (Unix), exiting...", flush=True)
                         os._exit(1)
                 
-                # Wait before next heartbeat
-                time.sleep(heartbeat_interval)
+                # Sleep for 10 seconds before next check (much less frequent than heartbeat)
+                time.sleep(10)
                 
             except Exception as e:
-                print(f"Heartbeat monitor error: {e}", flush=True)
-                failure_count += 1
-                if failure_count >= max_failures:
-                    print(f"Too many heartbeat errors ({failure_count}). Exiting...", flush=True)
-                    os._exit(1)
-                time.sleep(1)
+                print(f"Parent process monitor error: {e}, exiting...", flush=True)
+                os._exit(1)
     
-    # Start heartbeat thread as daemon so it doesn't prevent shutdown
-    heartbeat_thread = threading.Thread(target=heartbeat_worker, daemon=True)
-    heartbeat_thread.start()
-    print("Python heartbeat sender thread started", flush=True)
+    # Start monitor thread as daemon
+    monitor_thread = threading.Thread(target=monitor_worker, daemon=True)
+    monitor_thread.start()
+    print("Parent process monitor started", flush=True)
+
 
 # Create FastAPI application
 app = FastAPI(
@@ -217,8 +156,8 @@ if __name__ == "__main__":
         # Send handshake information to parent process
         send_handshake(port, host)
         
-        # Start heartbeat monitoring
-        start_heartbeat_monitor()
+        # Start simple parent process monitoring (much safer than heartbeat)
+        start_parent_process_monitor()
         
         # Start the server
         uvicorn.run(app, host=host, port=port, log_level="info", reload=False)

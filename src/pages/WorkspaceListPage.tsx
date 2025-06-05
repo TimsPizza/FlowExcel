@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import useToast from "@/hooks/useToast";
 import {
   useSaveWorkspaceMutation,
   useWorkspaceListQuery,
@@ -14,7 +15,6 @@ import { PlusCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Flex, Heading, Text } from "@radix-ui/themes";
 import { useQueryClient } from "react-query";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 
 type WorkspaceListItem = {
@@ -23,6 +23,7 @@ type WorkspaceListItem = {
 };
 
 export function WorkspaceListPage() {
+  const toast = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const handleNavigate = (id: string) => {
@@ -34,7 +35,7 @@ export function WorkspaceListPage() {
   const resetDirty = useWorkspaceStore((state) => state.resetDirty);
 
   // 使用React Query获取工作区列表
-  const { workspaces, isLoading, error } = useWorkspaceListQuery();
+  const { workspaces, isLoading, error, refetch } = useWorkspaceListQuery();
   const {
     saveWorkspace,
     isSaving,
@@ -75,6 +76,10 @@ export function WorkspaceListPage() {
   if (error) return (
     <Flex align="center" justify="center" style={{ height: '100vh' }}>
       <Text size="4" color="red">加载工作区列表失败: {error.message}</Text>
+      <Button size="3" color="red" onClick={() => refetch()}>
+        重试
+      </Button>
+
     </Flex>
   );
 

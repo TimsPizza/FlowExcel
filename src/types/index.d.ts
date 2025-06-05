@@ -1,6 +1,23 @@
 // 使用从nodes.ts导入的类型定义
-import { FlowNodeData, NodeType } from "./nodes";
-import { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect } from "reactflow";
+import { Edge, Node, OnConnect, OnEdgesChange, OnNodesChange } from "reactflow";
+import { FlowNodeData } from "./nodes";
+
+// Backend event types matching Rust definitions
+export interface BackendEndpoints {
+  health: string;
+  shutdown: string;
+}
+
+export interface BackendInfo {
+  host: string;
+  port: number;
+  api_base: string;
+  endpoints: BackendEndpoints;
+}
+
+export interface BackendErrorEvent {
+  error: string;
+}
 
 export interface ExcelInfo {
   sheets: string[];
