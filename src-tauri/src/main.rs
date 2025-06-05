@@ -10,6 +10,9 @@ use python_watchdog::{PythonWatchdog, BackendInfo};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+#[cfg(windows)]
+use winapi::um::consoleapi::{AllocConsole, SetConsoleTitleA};
+
 // Global watchdog instance
 static WATCHDOG: tokio::sync::OnceCell<Arc<Mutex<PythonWatchdog>>> = tokio::sync::OnceCell::const_new();
 
@@ -35,36 +38,7 @@ async fn get_backend_status() -> Result<String, String> {
     }
 }
 
-fn initialize_logging() {
-    // 配置日志系统，确保在所有平台上都能输出日志
-    #[cfg(windows)]
-    {
-        // Windows下尝试分配控制台窗口以显示日志
-        if cfg!(debug_assertions) {
-            unsafe {
-                winapi::um::consoleapi::AllocConsole();
-                let title = "Tauri Excel Debug Console\0";
-                winapi::um::consoleapi::SetConsoleTitleA(title.as_ptr() as *const i8);
-            }
-        }
-    }
-    
-    // 初始化简单的日志系统
-    env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Info)
-        .target(env_logger::Target::Stderr)
-        .init();
-    
-    log::info!("=== Tauri Excel Application Starting ===");
-    log::info!("Platform: {}", if cfg!(windows) { "Windows" } else if cfg!(target_os = "macos") { "macOS" } else { "Unix" });
-    log::info!("Debug mode: {}", cfg!(debug_assertions));
-    log::info!("Working directory: {:?}", std::env::current_dir().unwrap_or_default());
-}
-
 fn main() {
-    // 立即初始化日志系统
-    initialize_logging();
-    
     // 设置panic hook以确保在崩溃时能看到错误信息
     std::panic::set_hook(Box::new(|panic_info| {
         let payload = panic_info.payload();
@@ -96,36 +70,34 @@ fn main() {
         }
     }));
     
-    log::info!("Initializing Tokio runtime...");
-    
     // Initialize Tokio runtime for async operations
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => {
-            log::info!("Tokio runtime created successfully");
+            // Log moved to setup
             rt
         }
         Err(e) => {
             let error_msg = format!("Failed to create Tokio runtime: {}", e);
-            log::error!("{}", error_msg);
-            eprintln!("{}", error_msg);
+            // Logging here might not work if tauri_plugin_log isn't initialized yet,
+            // but eprintln should work.
+            eprintln!("{}", error_msg); 
             std::process::exit(1);
         }
     };
     
     // 在async块中初始化Python后端，但不运行Tauri
     let watchdog = rt.block_on(async {
-        log::info!("Starting Python backend watchdog...");
+        // Log moved to setup
         
         // Initialize and start the Python watchdog
         let watchdog = Arc::new(Mutex::new(PythonWatchdog::new()));
         
         match watchdog.lock().await.start().await {
             Ok(()) => {
-                log::info!("Python backend started successfully");
+                // Log moved to setup
             }
             Err(e) => {
                 let error_msg = format!("Failed to start Python backend: {}", e);
-                log::error!("{}", error_msg);
                 eprintln!("{}", error_msg);
                 
                 #[cfg(windows)]
@@ -139,7 +111,7 @@ fn main() {
             }
         }
         
-        log::info!("Starting background monitoring task...");
+        // Log moved to setup
         
         // Start monitoring in background
         let monitoring_watchdog = watchdog.clone();
@@ -153,21 +125,30 @@ fn main() {
     // Store the watchdog globally for cleanup
     if let Err(e) = rt.block_on(async { WATCHDOG.set(watchdog.clone()) }) {
         let error_msg = format!("Failed to set global watchdog: {:?}", e);
-        log::error!("{}", error_msg);
         eprintln!("{}", error_msg);
         std::process::exit(1);
     }
     
-    log::info!("Building Tauri application...");
+    // Log moved to setup
     
     // Run Tauri application in the main thread (not in async block)
     match tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_log::Builder::default().build())
+        .plugin(tauri_plugin_log::Builder::default().build()) // This initializes the logger
         .invoke_handler(tauri::generate_handler![get_backend_info, get_backend_status])
         .setup(|_app| {
+            // Moved log messages here
+            log::info!("=== Tauri Excel Application Starting ===");
+            log::info!("Platform: {}", if cfg!(windows) { "Windows" } else if cfg!(target_os = "macos") { "macOS" } else { "Unix" });
+            log::info!("Debug mode: {}", cfg!(debug_assertions));
+            log::info!("Working directory: {:?}", std::env::current_dir().unwrap_or_default());
+            log::info!("Tokio runtime created successfully");
+            log::info!("Starting Python backend watchdog...");
+            log::info!("Python backend started successfully");
+            log::info!("Starting background monitoring task...");
+            log::info!("Building Tauri application...");
             log::info!("Tauri application setup completed");
             Ok(())
         })
@@ -191,7 +172,7 @@ fn main() {
         }
         Err(e) => {
             let error_msg = format!("Error while running Tauri application: {}", e);
-            log::error!("{}", error_msg);
+            log::error!("{}", error_msg); // log::error should work here as logger is initialized
             eprintln!("{}", error_msg);
             std::process::exit(1);
         }
