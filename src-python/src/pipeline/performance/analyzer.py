@@ -208,7 +208,8 @@ class PerformanceAnalyzer:
 
             # 性能警告
             if execution_time_ms > 1000:
-                print(f"PERF WARNING: Node {node_id} took {execution_time_ms:.2f}ms")
+                pass
+                # print(f"PERF WARNING: Node {node_id} took {execution_time_ms:.2f}ms")
 
             return execution_time_ms
 
@@ -272,9 +273,10 @@ class PerformanceAnalyzer:
 
             # 性能警告
             if conversion_time_ms > 100:
-                print(
-                    f"PERF WARNING: DataFrame.to_pandas() took {conversion_time_ms:.2f}ms for {row_count or 'unknown'} rows"
-                )
+                pass
+                # print(
+                #     f"PERF WARNING: DataFrame.to_pandas() took {conversion_time_ms:.2f}ms for {row_count or 'unknown'} rows"
+                # )
 
     def onDataFrameFromPandasStart(self, row_count: int = None) -> str:
         """
@@ -323,9 +325,10 @@ class PerformanceAnalyzer:
 
             # 性能警告
             if conversion_time_ms > 100:
-                print(
-                    f"PERF WARNING: DataFrame.from_pandas() took {conversion_time_ms:.2f}ms for {row_count or 'unknown'} rows"
-                )
+                pass
+                # print(
+                #     f"PERF WARNING: DataFrame.from_pandas() took {conversion_time_ms:.2f}ms for {row_count or 'unknown'} rows"
+                # )
 
     # Excel IO性能计数hook
     def onExcelReadStart(self, file_path: str, sheet_name: str = None) -> str:
@@ -379,9 +382,10 @@ class PerformanceAnalyzer:
 
             # 性能警告
             if read_time_ms > 500:
-                print(
-                    f"PERF WARNING: Excel read took {read_time_ms:.2f}ms for {row_count or 'unknown'} rows"
-                )
+                # print(
+                #     f"PERF WARNING: Excel read took {read_time_ms:.2f}ms for {row_count or 'unknown'} rows"
+                # )
+                pass
 
     # 缓存性能计数hook
     def onCacheHit(self, cache_key: str = None):
@@ -512,6 +516,8 @@ class PerformanceAnalyzer:
             }
 
     def print_stats(self):
+        return
+        # 暂时关闭性能统计
         """打印性能统计信息"""
         stats = self.get_stats()
 

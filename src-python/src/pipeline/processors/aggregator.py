@@ -136,7 +136,7 @@ class AggregatorProcessor(AbstractNodeProcessor[AggregatorInput, AggregatorOutpu
         except ValueError:
             # 如果检查为空时出现ValueError，说明是pandas的布尔判断问题
             # 这种情况下我们假设DataFrame不为空，继续处理
-            print(f"SHOULD NOT HAPPEN: DataFrame is empty: {df}")
+            # print(f"SHOULD NOT HAPPEN: DataFrame is empty: {df}")
             pass
 
         try:

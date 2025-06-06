@@ -268,7 +268,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
 
         except Exception as e:
             # 发生任何错误时，返回默认名称
-            print(f"Warning: Failed to get source name for branch {branch_id}: {e}")
+            # print(f"Warning: Failed to get source name for branch {branch_id}: {e}")
             return f"数据源_{branch_id.replace('branch_', '').replace('_', '-')}"
 
     def _write_output_file(self, sheets: List[SheetData], output_file_path: str):
@@ -297,7 +297,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
                     # 写入Sheet
                     pandas_df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-            print(f"Output file written to: {output_file_path}")
+            # print(f"Output file written to: {output_file_path}")
 
         except Exception as e:
             raise ValueError(f"Failed to write output file '{output_file_path}': {e}")

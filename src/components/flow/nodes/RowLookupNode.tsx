@@ -128,31 +128,29 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
           </Text>
         )}
 
-        {!!nodeData.matchColumn && (
-          <Flex align="center" gap="2">
-            <Text size="1" weight="bold">
-              匹配列:
-            </Text>
-            <Select.Root
-              size="1"
-              value={nodeData.matchColumn || ""}
-              onValueChange={handleSelectMatchColumn}
-            >
-              <Select.Trigger />
-              <Select.Content>
-                <Select.Group>
-                  <ScrollArea className="max-h-60">
-                    {availableColumns.map((col: string) => (
-                      <Select.Item key={col} value={col}>
-                        {col}
-                      </Select.Item>
-                    ))}
-                  </ScrollArea>
-                </Select.Group>
-              </Select.Content>
-            </Select.Root>
-          </Flex>
-        )}
+        <Flex align="center" gap="2">
+          <Text size="1" weight="bold">
+            匹配列:
+          </Text>
+          <Select.Root
+            size="1"
+            value={nodeData.matchColumn || ""}
+            onValueChange={handleSelectMatchColumn}
+          >
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Group>
+                <ScrollArea className="max-h-60">
+                  {availableColumns.map((col: string) => (
+                    <Select.Item key={col} value={col}>
+                      {col}
+                    </Select.Item>
+                  ))}
+                </ScrollArea>
+              </Select.Group>
+            </Select.Content>
+          </Select.Root>
+        </Flex>
 
         {!!nodeData.matchColumn && (
           <Text size="1" color="gray">

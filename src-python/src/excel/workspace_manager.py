@@ -42,7 +42,7 @@ class WorkspaceManager:
                         ) as f:
                             config = json.load(f)
                     except Exception as e:
-                        print(f"Warning: Invalid workspace file {file_path}: {e}")
+                        # print(f"Warning: Invalid workspace file {file_path}: {e}")
                         continue
 
                     # Ensure the ID in the file matches the filename for consistency
@@ -56,10 +56,10 @@ class WorkspaceManager:
                             )
                         )
                 except (json.JSONDecodeError, KeyError) as e:
-                    print(f"Warning: Invalid workspace file {file_path}: {e}")
+                    # print(f"Warning: Invalid workspace file {file_path}: {e}")
                     continue
                 except Exception as e:
-                    print(f"Warning: Failed to load workspace file {file_path}: {e}")
+                    # print(f"Warning: Failed to load workspace file {file_path}: {e}")
                     continue
         except Exception as e:
             raise Exception(f"Failed to list workspaces: {str(e)}")

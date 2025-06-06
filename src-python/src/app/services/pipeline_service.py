@@ -273,7 +273,7 @@ class PipelineService:
         # 重置性能统计，开始新的测量
         self.performance_analyzer.reset()
 
-        print("PERF: 开始新的preview操作，统计已重置")
+        # print("PERF: 开始新的preview操作，统计已重置")
 
         # Performance monitoring now handled by analyzer
         try:
@@ -304,9 +304,9 @@ class PipelineService:
                     "error": f"节点 {node_id} 不存在",
                 }
 
-            print(
-                f"PERF: Starting preview for node {node_id} ({target_node.type.value})"
-            )
+            # print(
+            #     f"PERF: Starting preview for node {node_id} ({target_node.type.value})"
+            # )
 
             # 根据节点类型调用不同的预览方法
             if target_node.type == NodeType.INDEX_SOURCE:
@@ -340,24 +340,24 @@ class PipelineService:
                 }
 
             preview_time = (time.time() - preview_start_time) * 1000
-            print(f"PERF: Preview for node {node_id} completed in {preview_time:.2f}ms")
+            # print(f"PERF: Preview for node {node_id} completed in {preview_time:.2f}ms")
 
             result_dict = result.to_dict()
 
             # 打印性能分析报告和DataFrame转换统计
-            print("\nPERF: Preview操作完成，性能分析报告:")
+            # print("\nPERF: Preview操作完成，性能分析报告:")
             self.performance_analyzer.print_stats()
 
             return result_dict
 
         except Exception as e:
             preview_time = (time.time() - preview_start_time) * 1000
-            print(
-                f"PERF: Preview for node {node_id} failed after {preview_time:.2f}ms - {str(e)}"
-            )
+            # print(
+            #     f"PERF: Preview for node {node_id} failed after {preview_time:.2f}ms - {str(e)}"
+            # )
 
             # 即使失败也打印统计
-            print("\nPERF: Preview操作失败，当前统计:")
+            # print("\nPERF: Preview操作失败，当前统计:")
             self.performance_analyzer.print_stats()
 
             return {
@@ -871,7 +871,7 @@ class PipelineService:
             )
 
             path_analysis_time = (time.time() - path_analysis_start) * 1000
-            print(f"PERF: Path analysis for upstream took {path_analysis_time:.2f}ms")
+            # print(f"PERF: Path analysis for upstream took {path_analysis_time:.2f}ms")
 
             if len(execution_branches) == 0:
                 return []
@@ -883,7 +883,8 @@ class PipelineService:
                     execution_nodes, workspace_config, global_context
                 )
             except Exception as e:
-                print(f"PERF WARNING: Upstream batch preload failed - {str(e)}")
+                pass
+                # print(f"PERF WARNING: Upstream batch preload failed - {str(e)}")
                 # 预加载失败不影响主流程
 
             # 找到目标节点在执行路径中的位置
@@ -906,7 +907,7 @@ class PipelineService:
             # 使用共享的全局上下文或创建新的
             if shared_global_context is not None:
                 global_context = shared_global_context
-                print("PERF: Using shared global context with existing cache")
+                # print("PERF: Using shared global context with existing cache")
             else:
                 global_context = self.context_manager.create_global_context(
                     workspace_config, ExecutionMode.TEST
@@ -939,15 +940,16 @@ class PipelineService:
 
             index_fetch_time = (time.time() - index_fetch_start) * 1000
             index_count = len(index_output.index_values)
-            print(
-                f"PERF: Index fetch took {index_fetch_time:.2f}ms, got {index_count} index values"
-            )
+            # print(
+            #     f"PERF: Index fetch took {index_fetch_time:.2f}ms, got {index_count} index values"
+            # )
 
             # 性能警告：如果索引值过多
             if index_count > 50:
-                print(
-                    f"PERF WARNING: Processing {index_count} index values - this may cause performance issues!"
-                )
+                pass
+                # print(
+                #     f"PERF WARNING: Processing {index_count} index values - this may cause performance issues!"
+                # )
 
             # 为每个索引值执行到上游节点
             execution_start = time.time()
@@ -1023,9 +1025,9 @@ class PipelineService:
                         except ValueError:
                             # 如果检查为空时出现ValueError，说明是pandas的布尔判断问题
                             # 这种情况下我们假设DataFrame不为空，继续处理
-                            print(
-                                f"SHOULD NOT HAPPEN: DataFrame is empty: {current_dataframe}"
-                            )
+                            # print(
+                            #     f"SHOULD NOT HAPPEN: DataFrame is empty: {current_dataframe}"
+                            # )
                             pass
 
                         if hasattr(current_dataframe, "limit_rows"):
@@ -1052,28 +1054,30 @@ class PipelineService:
             execution_time = (time.time() - execution_start) * 1000
             total_time = (time.time() - upstream_start_time) * 1000
 
-            print(f"PERF: Upstream execution completed in {execution_time:.2f}ms")
-            print(f"PERF: Total upstream processing time: {total_time:.2f}ms")
-            print(f"PERF: Made {processor_call_count} processor calls")
-            print(f"PERF: Generated {len(outputs)} output dataframes")
+            # print(f"PERF: Upstream execution completed in {execution_time:.2f}ms")
+            # print(f"PERF: Total upstream processing time: {total_time:.2f}ms")
+            # print(f"PERF: Made {processor_call_count} processor calls")
+            # print(f"PERF: Generated {len(outputs)} output dataframes")
 
             # 性能警告检查
             if processor_call_count > 100:
-                print(
-                    f"PERF WARNING: Made {processor_call_count} processor calls - consider optimization!"
-                )
+                # print(
+                #     f"PERF WARNING: Made {processor_call_count} processor calls - consider optimization!"
+                # )
+                pass
             if total_time > 5000:  # 5秒
-                print(
-                    f"PERF WARNING: Upstream processing took {total_time:.2f}ms - very slow!"
-                )
+                pass
+                # print(
+                #     f"PERF WARNING: Upstream processing took {total_time:.2f}ms - very slow!"
+                # )
 
             return outputs
 
         except Exception as e:
             total_time = (time.time() - upstream_start_time) * 1000
-            print(
-                f"PERF: Upstream processing failed after {total_time:.2f}ms - {str(e)}"
-            )
+            # print(
+            #     f"PERF: Upstream processing failed after {total_time:.2f}ms - {str(e)}"
+            # )
             return []
 
     # 保留原有的方法以保持兼容性
@@ -1169,7 +1173,7 @@ class PipelineService:
         )
 
         if not batch_infos:
-            print("PERF: No files to preload for upstream analysis")
+            # print("PERF: No files to preload for upstream analysis")
             return
 
         # 执行批量预加载
@@ -1177,9 +1181,9 @@ class PipelineService:
             batch_infos, global_context
         )
 
-        print(
-            f"PERF: Upstream batch preload completed - {preload_summary.successful_sheets}/{preload_summary.total_sheets} sheets loaded"
-        )
+        # print(
+        #     f"PERF: Upstream batch preload completed - {preload_summary.successful_sheets}/{preload_summary.total_sheets} sheets loaded"
+        # )
 
     def print_performance_report(self):
         """打印性能报告"""

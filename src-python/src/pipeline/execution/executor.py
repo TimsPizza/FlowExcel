@@ -471,7 +471,7 @@ class PipelineExecutor:
             )
 
             if not batch_infos:
-                print("PERF: No files to preload")
+                # print("PERF: No files to preload")
                 return
 
             # 执行批量预加载
@@ -485,14 +485,15 @@ class PipelineExecutor:
             analyzer = get_performance_analyzer()
 
             # 这里可以添加预加载相关的性能统计
-            print(
-                f"PERF: Batch preload completed - {preload_summary.successful_sheets}/{preload_summary.total_sheets} sheets loaded"
-            )
+            # print(
+            #     f"PERF: Batch preload completed - {preload_summary.successful_sheets}/{preload_summary.total_sheets} sheets loaded"
+            # )
 
         except Exception as e:
-            print(
-                f"PERF WARNING: Batch preload failed - {str(e)}, falling back to on-demand loading"
-            )
+            # print(
+            #     f"PERF WARNING: Batch preload failed - {str(e)}, falling back to on-demand loading"
+            # )
+            pass
             # 预加载失败不应该影响主流程，继续执行
 
     def _create_execution_summary(
@@ -708,7 +709,7 @@ class PipelineExecutor:
             return None
             
         except Exception as e:
-            print(f"Warning: Failed to get last dataframe for branch {branch_id}: {e}")
+            # print(f"Warning: Failed to get last dataframe for branch {branch_id}: {e}")
             return None
             
     def _get_node_latest_dataframe_from_path_context(self, node_id: str, branch_id: str):
