@@ -8,7 +8,8 @@ use std::thread;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, Mutex};
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
+use tauri::path::BaseDirectory;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackendInfo {
@@ -40,6 +41,8 @@ pub struct HandshakeData {
 pub struct PythonWatchdog {
     process: Option<Child>,
     backend_info: Option<BackendInfo>,
+    heartbeat_url: Option<String>,
+    http_client: reqwest::Client,
     is_running: bool,
     restart_attempts: u32,
     max_restart_attempts: u32,
@@ -57,6 +60,8 @@ impl PythonWatchdog {
         Self {
             process: None,
             backend_info: None,
+            heartbeat_url: None,
+            http_client: reqwest::Client::new(),
             is_running: false,
             restart_attempts: 0,
             max_restart_attempts: 5,
@@ -77,115 +82,57 @@ impl PythonWatchdog {
     /// 自动检测后端类型（二进制文件优先）
     fn detect_backend(&self) -> Result<BackendType, String> {
         log::info!("Starting backend detection...");
-        
-        // 确定操作系统特定的文件扩展名
         let exe_extension = if cfg!(windows) { ".exe" } else { "" };
-        log::info!("Target platform: {}, executable extension: '{}'", 
-                  if cfg!(windows) { "Windows" } else if cfg!(target_os = "macos") { "macOS" } else { "Unix" }, 
-                  exe_extension);
-        
-        // 构建可能的二进制路径，使用PathBuf确保跨平台兼容性
-        let mut base_paths = vec![
-            // 开发环境路径
-            PathBuf::from("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from("..").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from(".").join(format!("excel-backend{}", exe_extension)),
-            
-            // 单文件形式的 PyInstaller 打包
-            PathBuf::from("backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from("..").join("backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from(".").join(format!("excel-backend{}", exe_extension)),
-        ];
+        let backend_binary_name = format!("excel-backend{}", exe_extension);
 
-        // 添加打包后的资源路径（根据实际Windows结构修正）
-        let bundled_paths = vec![
-            // Windows MSI安装路径: _up_\backend\excel-backend\excel-backend.exe
-            PathBuf::from("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from("..").join("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            
-            // macOS app bundle 路径
-            PathBuf::from("..").join("Resources").join("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from("Resources").join("_up_").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            
-            // 其他可能的打包路径
-            PathBuf::from("resources").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-            PathBuf::from("..").join("resources").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension)),
-        ];
-        
-        base_paths.extend(bundled_paths);
-
-        log::info!("Checking {} possible binary paths...", base_paths.len());
-        for (i, binary_path) in base_paths.iter().enumerate() {
-            log::debug!("  [{}] Checking: {:?}", i + 1, binary_path);
-            
-            if binary_path.exists() {
-                if binary_path.is_file() {
-                    log::info!("✓ Found Python backend binary: {:?}", binary_path);
-                    return Ok(BackendType::Binary { 
-                        binary_path: binary_path.clone()
-                    });
-                } else {
-                    log::warn!("  Path exists but is not a file: {:?}", binary_path);
+        // --- 优先使用Tauri资源解析器 (适用于打包后的应用) ---
+        if let Some(app_handle) = &self.app_handle {
+            let backend_resource_path = PathBuf::from("_up_").join("backend").join("excel-backend").join(&backend_binary_name);
+            if let Ok(path) = app_handle.path().resolve(&backend_resource_path, BaseDirectory::Resource) {
+                if path.exists() {
+                    log::info!("✓ Found Python backend binary via Tauri resource resolver: {:?}", path);
+                    return Ok(BackendType::Binary { binary_path: path });
                 }
-            } else {
-                log::debug!("  Path does not exist: {:?}", binary_path);
             }
         }
 
-        log::warn!("No binary backend found, attempting to find Python script...");
+        // --- 后备方案1: 相对路径查找 (适用于开发环境和某些打包结构) ---
+        log::info!("Tauri resource resolver failed or unavailable. Falling back to relative path search...");
+        let relative_paths = vec![
+            // 开发环境 (从 src-tauri 目录运行)
+            PathBuf::from("..").join("backend").join("excel-backend").join(&backend_binary_name),
+            // 打包后 (如果工作目录是程序根目录)
+            PathBuf::from("backend").join("excel-backend").join(&backend_binary_name),
+        ];
 
-        // 如果没有二进制文件，尝试查找 Python 脚本
+        for path in relative_paths {
+            if path.exists() {
+                log::info!("✓ Found Python backend binary via relative path: {:?}", path);
+                return Ok(BackendType::Binary { binary_path: path });
+            }
+        }
+
+        // --- 后备方案2: 查找Python脚本 (纯开发模式) ---
+        log::warn!("No binary backend found, attempting to find Python script...");
         let script_paths = vec![
             PathBuf::from("..").join("src-python").join("src").join("main.py"),
             PathBuf::from("..").join("src-python").join("main.py"),
-            PathBuf::from("python").join("main.py"),
-            PathBuf::from("backend").join("main.py"),
-            PathBuf::from("_up_").join("src-python").join("src").join("main.py"),
-            PathBuf::from("..").join("_up_").join("src-python").join("src").join("main.py"),
         ];
 
-        log::info!("Checking {} possible script paths...", script_paths.len());
-
-        // 查找 Python 解释器
-        let python_executable = match self.find_python_executable() {
-            Ok(path) => {
-                log::info!("Found Python executable: {:?}", path);
-                path
-            }
-            Err(e) => {
-                log::error!("Failed to find Python executable: {}", e);
-                return Err(format!("No Python executable found: {}", e));
-            }
-        };
-
-        for (i, script_path) in script_paths.iter().enumerate() {
-            log::debug!("  [{}] Checking script: {:?}", i + 1, script_path);
-            
-            if script_path.exists() && script_path.is_file() {
-                log::info!("✓ Found Python backend script: {:?}", script_path);
-                return Ok(BackendType::PythonScript {
-                    python_path: python_executable,
-                    script_path: script_path.clone(),
-                });
+        if let Ok(python_executable) = self.find_python_executable() {
+            for script_path in script_paths {
+                if script_path.exists() {
+                    log::info!("✓ Found Python backend script: {:?}", script_path);
+                    return Ok(BackendType::PythonScript {
+                        python_path: python_executable,
+                        script_path,
+                    });
+                }
             }
         }
 
         let error_msg = "No Python backend found (neither binary nor script)";
         log::error!("{}", error_msg);
-        log::error!("Working directory: {:?}", std::env::current_dir().unwrap_or_else(|_| PathBuf::from("unknown")));
-        
-        // 列出当前目录内容用于调试
-        if let Ok(current_dir) = std::env::current_dir() {
-            log::error!("Current directory contents:");
-            if let Ok(entries) = std::fs::read_dir(&current_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    let file_type = if path.is_dir() { "DIR " } else { "FILE" };
-                    log::error!("  {} {:?}", file_type, path.file_name().unwrap_or_default());
-                }
-            }
-        }
-        
         Err(error_msg.to_string())
     }
 
@@ -285,9 +232,25 @@ impl PythonWatchdog {
 
         log::info!("Python backend process started with PID: {}", process.id());
 
-        // 获取 stdout 用于握手
-        let stdout = process.stdout.take()
-            .ok_or("Failed to get process stdout")?;
+        // 获取 stdout 和 stderr
+        let stdout = process.stdout.take().ok_or("Failed to get process stdout")?;
+        let stderr = process.stderr.take().ok_or("Failed to get process stderr")?;
+
+        // 在单独的线程中处理 stderr
+        thread::spawn(|| {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines() {
+                match line {
+                    Ok(line_content) => {
+                        log::error!("Backend stderr: {}", line_content);
+                    }
+                    Err(e) => {
+                        log::error!("Failed to read backend stderr line: {}", e);
+                        break;
+                    }
+                }
+            }
+        });
 
         // 保存进程引用
         self.process = Some(process);
@@ -342,16 +305,18 @@ impl PythonWatchdog {
                                             if let (Some(host), Some(port), Some(api_base), Some(endpoints)) = 
                                                 (handshake.host, handshake.port, handshake.api_base, handshake.endpoints) {
                                                 
-                                                self.backend_info = Some(BackendInfo {
+                                                let info = BackendInfo {
                                                     host,
                                                     port,
                                                     api_base,
                                                     endpoints,
-                                                });
+                                                };
+                                                
+                                                self.heartbeat_url = Some(format!("http://{}:{}/heartbeat", info.host, info.port));
+                                                self.backend_info = Some(info);
 
-                                                log::info!("Backend handshake successful! Server running at http://{}:{}", 
-                                                         self.backend_info.as_ref().unwrap().host, 
-                                                         self.backend_info.as_ref().unwrap().port);
+                                                log::info!("Backend handshake successful! Server running at {}", 
+                                                         self.backend_info.as_ref().unwrap().api_base);
                                                 
                                                 // 发送事件通知前端
                                                 self.emit_backend_ready_event();
@@ -481,11 +446,35 @@ impl PythonWatchdog {
 
     /// 启动看门狗监控循环（需要在独立的任务中运行）
     pub async fn start_monitoring(watchdog: Arc<Mutex<PythonWatchdog>>) {
-        let mut process_check_interval = interval(Duration::from_secs(5)); // 每 5 秒检查进程
-        let mut status_broadcast_interval = interval(Duration::from_secs(10)); // 每 10 秒广播状态
+        let mut process_check_interval = interval(Duration::from_secs(5));
+        let mut status_broadcast_interval = interval(Duration::from_secs(10));
+        let mut heartbeat_interval = interval(Duration::from_secs(10));
         
         loop {
             tokio::select! {
+                // 发送心跳
+                _ = heartbeat_interval.tick() => {
+                    let watchdog_guard = watchdog.lock().await;
+                    if let (Some(url), true) = (watchdog_guard.heartbeat_url.as_ref(), watchdog_guard.is_running) {
+                        let client = watchdog_guard.http_client.clone();
+                        let url = url.clone();
+                        tokio::spawn(async move {
+                            match client.post(&url).send().await {
+                                Ok(response) => {
+                                    if response.status().is_success() {
+                                        log::debug!("Sent heartbeat successfully to {}", url);
+                                    } else {
+                                        log::warn!("Heartbeat request to {} failed with status: {}", url, response.status());
+                                    }
+                                }
+                                Err(e) => {
+                                    log::error!("Failed to send heartbeat to {}: {}", url, e);
+                                }
+                            }
+                        });
+                    }
+                },
+
                 // 进程监控检查
                 _ = process_check_interval.tick() => {
                     let mut watchdog_guard = watchdog.lock().await;
@@ -606,3 +595,11 @@ impl PythonWatchdog {
         }
     }
 }
+
+
+
+
+
+
+
+

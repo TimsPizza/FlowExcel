@@ -46,7 +46,7 @@ def build_binary():
         "--workpath", str(build_dir),  # Build directory
         "--specpath", str(script_dir),  # Spec file location
         "--clean",  # Clean build cache
-        "--console",  # Console application for FastAPI server
+        "--windowed",  # Windowed application (no console)
         "--noconfirm",  # Don't ask for confirmation
         # Add hidden imports for FastAPI and dependencies
         "--hidden-import", "uvicorn",
@@ -131,4 +131,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+    main()
