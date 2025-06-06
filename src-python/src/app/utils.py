@@ -122,6 +122,15 @@ def serialize_value(obj):
         return int(obj)
     if isinstance(obj, np.bool_):
         return bool(obj)
+    # 处理字符串编码问题，特别是Windows系统
+    if isinstance(obj, str):
+        try:
+            # 确保字符串可以正确编码
+            obj.encode('utf-8')
+            return obj
+        except UnicodeEncodeError:
+            # 如果包含无法编码的字符，则使用安全的替换
+            return obj.encode('utf-8', errors='replace').decode('utf-8')
     return obj
 
 

@@ -167,10 +167,10 @@ class PipelineService:
     """Service class for pipeline operations."""
 
     def __init__(self):
-        self.workspace_service = WorkspaceService()
+        # 初始化上下文管理器
         self.context_manager = ContextManager()
 
-        # 初始化节点处理器
+        # 初始化处理器
         self.processors = {
             NodeType.INDEX_SOURCE: IndexSourceProcessor(),
             NodeType.SHEET_SELECTOR: SheetSelectorProcessor(),
@@ -180,17 +180,38 @@ class PipelineService:
             NodeType.OUTPUT: OutputProcessor(),
         }
 
-        # 初始化上下文管理器
-        self.context_manager = ContextManager()
+        # 工作区服务
+
+        self.workspace_service = WorkspaceService()
+
+        # 性能分析器
+        self.performance_analyzer = get_performance_analyzer()
 
         # 初始化文件分析器和批量预加载器
         self.file_analyzer = FileAnalyzer()
         self.batch_preloader = BatchPreloader()
 
-        # 获取全局性能分析器
-        self.performance_analyzer = get_performance_analyzer()
-
         self.default_output_file_folder = APP_ROOT_DIR + "/output"
+
+    @staticmethod
+    def _safe_error_message(error: Exception) -> str:
+        """
+        安全处理错误信息中的Unicode字符
+
+        Args:
+            error: 异常对象
+
+        Returns:
+            安全的错误信息字符串
+        """
+        error_msg = str(error)
+        try:
+            # 确保错误信息可以正确编码
+            error_msg.encode("utf-8")
+            return error_msg
+        except UnicodeEncodeError:
+            # 如果包含无法编码的字符，使用安全的替换
+            return error_msg.encode("utf-8", errors="replace").decode("utf-8")
 
     def execute_pipeline_from_request(
         self,
@@ -259,7 +280,8 @@ class PipelineService:
 
         except Exception as e:
             return PipelineExecutionResponse(
-                result={"success": False, "error": str(e)}, execution_time=0.0
+                result={"success": False, "error": self._safe_error_message(e)},
+                execution_time=0.0,
             )
 
     def preview_node(
@@ -360,9 +382,12 @@ class PipelineService:
             # print("\nPERF: Preview操作失败，当前统计:")
             self.performance_analyzer.print_stats()
 
+            # 安全处理错误信息中的Unicode字符
+            error_msg = self._safe_error_message(e)
+
             return {
                 "success": False,
-                "error": str(e),
+                "error": error_msg,
                 "node_id": node_id,
                 "node_type": target_node.type.value if target_node else "unknown",
             }
@@ -400,8 +425,13 @@ class PipelineService:
             )
 
         except Exception as e:
+            # 安全处理错误信息中的Unicode字符
+            error_msg = self._safe_error_message(e)
             return IndexSourcePreviewResult(
-                success=False, node_id=node.id, node_type=node.type.value, error=str(e)
+                success=False,
+                node_id=node.id,
+                node_type=node.type.value,
+                error=error_msg,
             )
 
     def _preview_sheet_selector_node(
@@ -479,7 +509,10 @@ class PipelineService:
 
         except Exception as e:
             return DataFramePreviewResult(
-                success=False, node_id=node.id, node_type=node.type.value, error=str(e)
+                success=False,
+                node_id=node.id,
+                node_type=node.type.value,
+                error=self._safe_error_message(e),
             )
 
     def _preview_row_filter_node(
@@ -562,7 +595,10 @@ class PipelineService:
 
         except Exception as e:
             return DataFramePreviewResult(
-                success=False, node_id=node.id, node_type=node.type.value, error=str(e)
+                success=False,
+                node_id=node.id,
+                node_type=node.type.value,
+                error=self._safe_error_message(e),
             )
 
     def _preview_row_lookup_node(
@@ -645,7 +681,10 @@ class PipelineService:
 
         except Exception as e:
             return DataFramePreviewResult(
-                success=False, node_id=node.id, node_type=node.type.value, error=str(e)
+                success=False,
+                node_id=node.id,
+                node_type=node.type.value,
+                error=self._safe_error_message(e),
             )
 
     def _preview_aggregator_node(
@@ -737,7 +776,10 @@ class PipelineService:
 
         except Exception as e:
             return AggregationPreviewResult(
-                success=False, node_id=node.id, node_type=node.type.value, error=str(e)
+                success=False,
+                node_id=node.id,
+                node_type=node.type.value,
+                error=self._safe_error_message(e),
             )
 
     def _preview_output_node(
@@ -800,7 +842,10 @@ class PipelineService:
 
         except Exception as e:
             return DataFramePreviewResult(
-                success=False, node_id=node.id, node_type=node.type.value, error=str(e)
+                success=False,
+                node_id=node.id,
+                node_type=node.type.value,
+                error=self._safe_error_message(e),
             )
 
     def _get_upstream_index_values(

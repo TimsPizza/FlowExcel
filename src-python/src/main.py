@@ -20,6 +20,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
+# 修复Windows系统的编码问题
+if platform.system() == "Windows":
+    # 确保stdout和stderr使用UTF-8编码
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8')
+    
+    # 设置环境变量强制使用UTF-8
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+
 # Add the current directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -62,7 +73,9 @@ def send_handshake(port, host="127.0.0.1"):
     }
     
     # Send handshake as JSON line to stdout
-    print(f"HANDSHAKE:{json.dumps(handshake_data)}", flush=True)
+    # 确保JSON序列化时处理Unicode字符
+    handshake_json = json.dumps(handshake_data, ensure_ascii=False)
+    print(f"HANDSHAKE:{handshake_json}", flush=True)
 
 # --- Heartbeat Mechanism ---
 
@@ -164,7 +177,9 @@ if __name__ == "__main__":
             "status": "failed",
             "error": str(e)
         }
-        print(f"ERROR:{json.dumps(error_data)}", flush=True)
+        # 确保错误信息的JSON序列化处理Unicode字符
+        error_json = json.dumps(error_data, ensure_ascii=False)
+        print(f"ERROR:{error_json}", flush=True)
         sys.exit(1)
 
 
