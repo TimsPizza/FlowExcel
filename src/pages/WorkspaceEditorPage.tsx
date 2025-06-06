@@ -1,4 +1,5 @@
 import WorkspaceToolbar from "@/components/workspace/WorkspaceToolbar";
+import useToast from "@/hooks/useToast";
 import {
   useGetAllFileInfo,
   useSaveWorkspaceMutation,
@@ -20,8 +21,7 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import { toast } from "react-toastify";
-import { useShallow } from "zustand/shallow";
+import { useShallow } from "zustand/react/shallow";
 
 function isErrorResponse(obj: unknown): obj is ErrorResponse {
   if (typeof obj !== "object" || obj === null) {
@@ -35,6 +35,7 @@ function isErrorResponse(obj: unknown): obj is ErrorResponse {
 }
 
 export default function WorkspaceEditorPage() {
+  const toast = useToast();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const hasLoadedRef = useRef(true);
@@ -69,9 +70,7 @@ export default function WorkspaceEditorPage() {
 
   const queryClient = useQueryClient();
 
-  const { outdatedFileIds } = useWorkspaceStore(
-    useShallow(fileSelector),
-  );
+  const { outdatedFileIds } = useWorkspaceStore(useShallow(fileSelector));
 
   // 当从后端加载数据成功时，更新zustand状态
   useEffect(() => {
@@ -119,27 +118,24 @@ export default function WorkspaceEditorPage() {
       });
     if (newestFileInfo) {
       // 只检查当前工作区中存在的文件，避免已删除文件被重新标记为过期
-      const outdatedFileIds = currentFileInfo.filter((currentFile) => {
-        const newestInfo = newestFileInfo[currentFile.id];
-        return newestInfo && !_.isEqual(
-          newestInfo.file_info,
-          currentFile.file_info,
-        );
-      }).map(file => file.id);
-      
+      const outdatedFileIds = currentFileInfo
+        .filter((currentFile) => {
+          const newestInfo = newestFileInfo[currentFile.id];
+          return (
+            newestInfo &&
+            !_.isEqual(newestInfo.file_info, currentFile.file_info)
+          );
+        })
+        .map((file) => file.id);
+
       console.log("outdatedFileIds", outdatedFileIds);
-      
+
       // 重置过期文件列表，然后添加当前过期的文件
       useWorkspaceStore.setState((state) => ({
-        outdatedFileIds: outdatedFileIds
+        outdatedFileIds: outdatedFileIds,
       }));
     }
-  }, [
-    currentWorkspace,
-    newestFileInfo,
-    isFileInfoLoading,
-    fileInfoError,
-  ]);
+  }, [currentWorkspace, newestFileInfo, isFileInfoLoading, fileInfoError]);
 
   useEffect(() => {
     revalidateWorkspaceFiles();

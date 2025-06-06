@@ -4,6 +4,7 @@ import { Button, Flex, Text, TextField } from "@radix-ui/themes";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import AlertDialog from "@/components/flow/AlertDialog";
 
 interface WorkspaceToolbarProps {
   workspaceName: string;
@@ -24,6 +25,14 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
 }) => {
   const navigate = useNavigate();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
+  const isWsDirty = useWorkspaceStore((state) => state.isDirty);
+  const handleNavigateBack = (confirmLeave: boolean = false) => {
+    if (!isWsDirty) {
+      navigate(`/workspace`);
+    } else if (confirmLeave) {
+      navigate(`/workspace`);
+    }
+  };
   return (
     <Flex
       align="center"
@@ -37,12 +46,22 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           size="2"
           variant="outline"
           color="gray"
-          onClick={() => navigate(`/workspace`)}
+          onClick={() => handleNavigateBack()}
         >
           <ArrowLeftIcon />
-          <Text size="2" weight="bold" className="text-gray-600">
-            返回
-          </Text>
+          {isWsDirty ? (
+            <AlertDialog
+              title="返回"
+              description="离开工作区后，您将丢失所有未保存的更改。"
+              onConfirm={() => handleNavigateBack(true)}
+              onCancel={() => handleNavigateBack(false)}
+              noButton
+            />
+          ) : (
+            <Text size="2" weight="bold" className="text-gray-600">
+              返回
+            </Text>
+          )}
         </Button>
         <Text size="2" weight="bold" className="text-gray-600">
           工作区:

@@ -3,16 +3,17 @@ import {
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
 import { useNodeColumns } from "@/hooks/useNodeColumns";
+import useToast from "@/hooks/useToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, RowLookupNodeDataContext } from "@/types/nodes";
 import { Flex, ScrollArea, Select, Text } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
-import { toast } from "react-toastify";
 import { useNodeId } from "reactflow";
 
 export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const toast = useToast();
   const nodeId = useNodeId()!;
   const nodeData = data as RowLookupNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);

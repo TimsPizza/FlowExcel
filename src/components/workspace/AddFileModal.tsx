@@ -1,4 +1,5 @@
 import ExcelPreview from "@/components/ExcelPreview";
+import useToast from "@/hooks/useToast";
 import { useGetExcelPreview } from "@/hooks/workspaceQueries";
 import { apiClient } from "@/lib/apiClient";
 import {
@@ -10,11 +11,11 @@ import { FileMeta } from "@/types";
 import { Box, Button, Dialog, Flex, Text } from "@radix-ui/themes";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useState } from "react";
-import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 import { useShallow } from "zustand/react/shallow";
 
 const AddFileModal = () => {
+  const toast = useToast();
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [fileName, setFilename] = useState<string>("");
   const [isAddingFile, setIsAddingFile] = useState(false);

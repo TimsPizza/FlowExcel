@@ -3,6 +3,7 @@ import {
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
 import { useNodeColumns } from "@/hooks/useNodeColumns";
+import useToast from "@/hooks/useToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
@@ -20,7 +21,6 @@ import {
   TextField,
 } from "@radix-ui/themes";
 import { useMemo } from "react";
-import { toast } from "react-toastify";
 import { useNodeId } from "reactflow";
 
 const OPERATORS = [
@@ -35,6 +35,7 @@ const OPERATORS = [
 ];
 
 export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const toast = useToast();
   const nodeId = useNodeId()!;
   const nodeData = data as RowFilterNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);

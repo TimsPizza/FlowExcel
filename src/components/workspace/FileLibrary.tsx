@@ -5,21 +5,21 @@ import { apiClient } from "@/lib/apiClient";
 import { Box, Button, Flex, ScrollArea, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { toast } from "react-toastify";
 import {
   fileSelector,
-  useWorkspaceStore
+  useWorkspaceStore,
 } from "../../stores/useWorkspaceStore";
+import useToast from "@/hooks/useToast";
 
 const FileLibrary: React.FC = () => {
-  const { files, removeFileFromWorkspace, updateFileMeta, upToDateFileInfo } = useWorkspaceStore(
-    useShallow(fileSelector),
-  );
+  const toast = useToast();
+  const { files, removeFileFromWorkspace, updateFileMeta, upToDateFileInfo } =
+    useWorkspaceStore(useShallow(fileSelector));
   const { outdatedFileIds } = useWorkspaceStore(useShallow(fileSelector));
   const [syncingFileIds, setSyncingFileIds] = useState<string[]>([]);
 
   const handleSyncFile = async (fileId: string) => {
-    const file = files?.find(f => f.id === fileId);
+    const file = files?.find((f) => f.id === fileId);
     if (!file) {
       toast.error("文件不存在");
       return;
@@ -29,13 +29,13 @@ const FileLibrary: React.FC = () => {
       return; // 防止重复点击
     }
 
-    setSyncingFileIds(prev => [...prev, fileId]);
+    setSyncingFileIds((prev) => [...prev, fileId]);
 
     try {
       // 1. 获取最新文件信息和预览数据
       const [fileInfoResponse, previewData] = await Promise.all([
         apiClient.getFileInfo(file.path),
-        apiClient.previewExcelData(file.path)
+        apiClient.previewExcelData(file.path),
       ]);
 
       if (!fileInfoResponse?.file_info) {
@@ -51,7 +51,9 @@ const FileLibrary: React.FC = () => {
       // 2. 对比新旧 sheet_metas，保护用户设置的表头行信息
       const oldSheetMetas = file.sheet_metas;
       const newSheetMetas = previewData.sheets.map((sheet: any) => {
-        const existingSheet = oldSheetMetas.find(old => old.sheet_name === sheet.sheet_name);
+        const existingSheet = oldSheetMetas.find(
+          (old) => old.sheet_name === sheet.sheet_name,
+        );
         return {
           sheet_name: sheet.sheet_name,
           header_row: existingSheet?.header_row ?? 0, // 保留用户设置或默认为0
@@ -59,11 +61,19 @@ const FileLibrary: React.FC = () => {
       });
 
       // 3. 生成变动通知
-      const oldSheetNames = new Set(oldSheetMetas.map((s: any) => s.sheet_name));
-      const newSheetNames = new Set(newSheetMetas.map((s: any) => s.sheet_name));
-      
-      const addedSheets = newSheetMetas.filter((s: any) => !oldSheetNames.has(s.sheet_name));
-      const removedSheets = oldSheetMetas.filter((s: any) => !newSheetNames.has(s.sheet_name));
+      const oldSheetNames = new Set(
+        oldSheetMetas.map((s: any) => s.sheet_name),
+      );
+      const newSheetNames = new Set(
+        newSheetMetas.map((s: any) => s.sheet_name),
+      );
+
+      const addedSheets = newSheetMetas.filter(
+        (s: any) => !oldSheetNames.has(s.sheet_name),
+      );
+      const removedSheets = oldSheetMetas.filter(
+        (s: any) => !newSheetNames.has(s.sheet_name),
+      );
 
       // 4. 更新文件元数据
       updateFileMeta(fileId, {
@@ -86,13 +96,12 @@ const FileLibrary: React.FC = () => {
       }
 
       toast.success(changeMessage);
-
     } catch (error) {
       console.error("Error syncing file:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       toast.error(`同步文件失败: ${errorMsg}`);
     } finally {
-      setSyncingFileIds(prev => prev.filter(id => id !== fileId));
+      setSyncingFileIds((prev) => prev.filter((id) => id !== fileId));
     }
   };
 
@@ -137,7 +146,9 @@ const FileLibrary: React.FC = () => {
                               onClick={() => handleSyncFile(file.id)}
                               disabled={syncingFileIds.includes(file.id)}
                             >
-                              {syncingFileIds.includes(file.id) ? "同步中..." : "同步文件"}
+                              {syncingFileIds.includes(file.id)
+                                ? "同步中..."
+                                : "同步文件"}
                             </Button>
                           )}
                           {/* 编辑和删除按钮 */}
