@@ -47,50 +47,5 @@ fn main() {
         }
     }
     
-    // 创建平台特定的符号链接以满足 Tauri externalBin 要求
-    create_platform_specific_links();
-    
     tauri_build::build()
-}
-
-fn create_platform_specific_links() {
-    // 获取当前平台的 target triple
-    let output = Command::new("rustc")
-        .args(&["-vV"])
-        .output()
-        .expect("Failed to run rustc -vV");
-    
-    let output_str = String::from_utf8_lossy(&output.stdout);
-    let target_triple = output_str
-        .lines()
-        .find(|line| line.starts_with("host:"))
-        .and_then(|line| line.split_whitespace().nth(1))
-        .expect("Failed to extract target triple");
-    
-    let exe_extension = if cfg!(windows) { ".exe" } else { "" };
-    
-    // 原始后端路径（onedir结构）
-    let backend_dir = PathBuf::from("..").join("backend").join("excel-backend");
-    let backend_exe = backend_dir.join(format!("excel-backend{}", exe_extension));
-    
-    // 平台特定的文件路径
-    let platform_specific_path = PathBuf::from("..").join("backend")
-        .join("excel-backend")
-        .join(format!("excel-backend-{}{}", target_triple, exe_extension));
-    
-    if backend_exe.exists() {
-        // 如果文件已存在，先删除
-        if platform_specific_path.exists() {
-            let _ = std::fs::remove_file(&platform_specific_path);
-        }
-        
-        // 按照官方文档的要求，复制文件到带平台后缀的路径
-        let copy_result = std::fs::copy(&backend_exe, &platform_specific_path);
-        match copy_result {
-            Ok(_) => println!("cargo:warning=Created platform-specific binary: {}", platform_specific_path.display()),
-            Err(e) => println!("cargo:warning=Failed to create platform-specific binary: {}", e),
-        }
-    } else {
-        println!("cargo:warning=Backend executable not found: {}", backend_exe.display());
-    }
 }
