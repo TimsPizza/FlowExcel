@@ -1,169 +1,132 @@
-// // Prevents additional console window on Windows in release, DO NOT REMOVE!!
-// #![cfg_attr(
-//     all(not(debug_assertions), target_os = "windows"),
-//     windows_subsystem = "windows"
-// )]
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 
-mod python_watchdog;
+use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
+use tauri_plugin_shell::process::CommandEvent;
+use tauri_plugin_shell::ShellExt;
 
-use python_watchdog::{PythonWatchdog, BackendInfo};
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
-
-// Global watchdog instance
-static WATCHDOG: tokio::sync::OnceCell<Arc<Mutex<PythonWatchdog>>> = tokio::sync::OnceCell::const_new();
-
-// Tauri command to get backend information
-#[tauri::command]
-async fn get_backend_info() -> Result<Option<BackendInfo>, String> {
-    if let Some(watchdog) = WATCHDOG.get() {
-        let guard = watchdog.lock().await;
-        Ok(guard.get_backend_info().cloned())
-    } else {
-        Err("Watchdog not initialized".to_string())
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct BackendEndpoints {
+    health: String,
+    shutdown: String,
 }
 
-// Tauri command to get backend status
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct HandshakePayload {
+    host: String,
+    port: u16,
+    api_base: String,
+    endpoints: BackendEndpoints,
+}
+
+#[derive(Default)]
+struct SharedBackendState(Arc<Mutex<Option<HandshakePayload>>>);
+
 #[tauri::command]
-async fn get_backend_status() -> Result<String, String> {
-    if let Some(watchdog) = WATCHDOG.get() {
-        let guard = watchdog.lock().await;
-        Ok(guard.get_status())
-    } else {
-        Err("Watchdog not initialized".to_string())
-    }
+fn get_backend_port(state: State<SharedBackendState>) -> Result<u16, String> {
+    state
+        .0
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|p| p.port)
+        .ok_or_else(|| "Backend port not yet available. The backend may still be starting.".into())
+}
+
+fn start_heartbeat_pinger<R: Runtime>(_app: AppHandle<R>, port: u16) {
+    log::info!("Starting heartbeat pinger for port: {}", port);
+    tauri::async_runtime::spawn(async move {
+        let client = reqwest::Client::new();
+        let ping_url = format!("http://127.0.0.1:{}/ping", port);
+
+        loop {
+            log::debug!("Sending heartbeat ping to Python backend.");
+            if let Err(e) = client.get(&ping_url).send().await {
+                log::error!("Heartbeat ping failed: {}", e);
+            }
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+    });
 }
 
 fn main() {
-    // 设置panic hook以确保在崩溃时能看到错误信息
-    std::panic::set_hook(Box::new(|panic_info| {
-        let payload = panic_info.payload();
-        let location = panic_info.location().unwrap_or_else(|| std::panic::Location::caller());
-        
-        let msg = if let Some(s) = payload.downcast_ref::<&str>() {
-            s
-        } else if let Some(s) = payload.downcast_ref::<String>() {
-            s
-        } else {
-            "Unknown panic payload"
-        };
-        
-        let error_msg = format!(
-            "PANIC occurred at {}:{}: {}",
-            location.file(),
-            location.line(),
-            msg
-        );
-        
-        eprintln!("{}", error_msg);
-        
-        #[cfg(windows)]
-        {
-            use std::io::Write;
-            let _ = std::io::stderr().flush();
-            std::thread::sleep(std::time::Duration::from_millis(1000)); // 给日志一点时间输出
-        }
-    }));
-    
-    // 直接运行Tauri应用，在setup中处理异步初始化
-    match tauri::Builder::default()
+    tauri::Builder::default()
+        .manage(SharedBackendState::default())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_log::Builder::default().build()) // This initializes the logger
-        .invoke_handler(tauri::generate_handler![get_backend_info, get_backend_status])
+        .plugin(tauri_plugin_log::Builder::default().build())
+        .invoke_handler(tauri::generate_handler![get_backend_port])
         .setup(|app| {
-            log::info!("=== Tauri Excel Application Starting ===");
-            log::info!("Platform: {}", if cfg!(windows) { "Windows" } else if cfg!(target_os = "macos") { "macOS" } else { "Unix" });
-            log::info!("Debug mode: {}", cfg!(debug_assertions));
-            log::info!("Working directory: {:?}", std::env::current_dir().unwrap_or_default());
-            
-            // 添加窗口创建日志
-            log::info!("Creating main application window...");
-            
-            // 使用Tauri的runtime来处理异步初始化
             let app_handle = app.handle().clone();
+            let backend_state = app.state::<SharedBackendState>().0.clone();
+
             tauri::async_runtime::spawn(async move {
-                log::info!("Starting Python backend watchdog...");
-                
-                // Initialize and start the Python watchdog
-                let watchdog = Arc::new(Mutex::new(PythonWatchdog::new()));
-                
-                // 设置应用句柄用于发送事件
-                {
-                    let mut guard = watchdog.lock().await;
-                    guard.set_app_handle(app_handle.clone());
-                }
-                
-                // 分离锁的生命周期
-                let start_result = {
-                    let mut guard = watchdog.lock().await;
-                    guard.start().await
+                // In development mode, run the backend directly from its original location
+                // to preserve PyInstaller onedir structure
+                let backend_cmd = if cfg!(debug_assertions) {
+                    // Development mode: run from original location
+                    let backend_path = "../backend/excel-backend/excel-backend";
+                    app_handle.shell().command(backend_path)
+                } else {
+                    // Production mode: use sidecar
+                    app_handle
+                        .shell()
+                        .sidecar("excel-backend")
+                        .expect("Failed to create backend sidecar command")
                 };
-                
-                match start_result {
-                    Ok(()) => {
-                        log::info!("Python backend started successfully");
-                        
-                        // Store the watchdog globally
-                        if let Err(e) = WATCHDOG.set(watchdog.clone()) {
-                            log::error!("Failed to set global watchdog: {:?}", e);
-                            return;
+
+                let (mut rx, _child) = backend_cmd.spawn().expect("Failed to spawn backend");
+
+                while let Some(event) = rx.recv().await {
+                    match event {
+                        CommandEvent::Stdout(line_bytes) => {
+                            let line = String::from_utf8_lossy(&line_bytes);
+                            handle_stdout(&line, &app_handle, &backend_state);
                         }
-                        
-                        // Start monitoring in background
-                        let monitoring_watchdog = watchdog.clone();
-                        tauri::async_runtime::spawn(async move {
-                            log::info!("Starting background monitoring task...");
-                            PythonWatchdog::start_monitoring(monitoring_watchdog).await;
-                        });
-                        
-                        log::info!("Watchdog initialization completed");
-                    }
-                    Err(e) => {
-                        log::error!("Failed to start Python backend: {}", e);
-                        eprintln!("Failed to start Python backend: {}", e);
-                        
-                        #[cfg(windows)]
-                        {
-                            use std::io::Write;
-                            let _ = std::io::stderr().flush();
-                            std::thread::sleep(std::time::Duration::from_millis(3000));
+                        CommandEvent::Stderr(line_bytes) => {
+                            let line = String::from_utf8_lossy(&line_bytes);
+                            log::error!("Backend STDERR: {}", line);
                         }
-                        
-                        // 不要exit，让Tauri继续运行以便调试
-                        log::warn!("Continuing without Python backend for debugging purposes");
+                        CommandEvent::Terminated(payload) => {
+                            log::warn!("Backend terminated with payload: {:?}", payload);
+                            break;
+                        }
+                        _ => {}
                     }
                 }
             });
-            
-            log::info!("Tauri application setup completed");
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                log::info!("Window destroyed, shutting down watchdog...");
-                tauri::async_runtime::spawn(async {
-                    if let Some(watchdog) = WATCHDOG.get() {
-                        let _ = watchdog.lock().await.stop().await;
-                        log::info!("Python backend watchdog stopped");
-                    }
-                });
-            }
-        })
         .run(tauri::generate_context!())
-    {
-        Ok(()) => {
-            log::info!("Tauri application finished normally");
-        }
-        Err(e) => {
-            let error_msg = format!("Error while running Tauri application: {}", e);
-            log::error!("{}", error_msg); // log::error should work here as logger is initialized
-            eprintln!("{}", error_msg);
-            std::process::exit(1);
-        }
-    }
+        .expect("error while running tauri application");
 }
 
+fn handle_stdout<R: Runtime>(
+    line: &str,
+    app_handle: &AppHandle<R>,
+    state: &Arc<Mutex<Option<HandshakePayload>>>,
+) {
+    if let Some(json_str) = line.strip_prefix("HANDSHAKE:") {
+        match serde_json::from_str::<HandshakePayload>(json_str) {
+            Ok(payload) => {
+                log::info!("Received handshake from backend: {:?}", payload);
+                let port = payload.port;
+                *state.lock().unwrap() = Some(payload.clone());
+                start_heartbeat_pinger(app_handle.clone(), port);
+                app_handle.emit("backend-ready", payload).unwrap();
+            }
+            Err(e) => {
+                log::error!("Failed to parse handshake JSON: {}", e);
+            }
+        }
+    } else {
+        log::info!("Backend STDOUT: {}", line);
+    }
+}

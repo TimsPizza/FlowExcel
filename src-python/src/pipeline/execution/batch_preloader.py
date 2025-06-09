@@ -64,7 +64,7 @@ class BatchPreloader:
         """
         start_time = time.time()
 
-        print(f"PERF: Starting batch preload for {len(batch_infos)} files...")
+        # print(f"PERF: Starting batch preload for {len(batch_infos)} files...")
 
         # 准备所有需要加载的任务
         load_tasks = []
@@ -75,9 +75,9 @@ class BatchPreloader:
         # 计算估算的IO减少量
         io_reduction = len(load_tasks) - len(batch_infos)
 
-        print(
-            f"PERF: Will load {len(load_tasks)} sheets from {len(batch_infos)} files (IO reduction: {io_reduction})"
-        )
+        # print(
+        #     f"PERF: Will load {len(load_tasks)} sheets from {len(batch_infos)} files (IO reduction: {io_reduction})"
+        # )
 
         # 并行执行加载任务
         results = self._execute_parallel_loads(load_tasks, global_context)

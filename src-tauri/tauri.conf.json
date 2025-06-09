@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "tauri-vite-excel",
+  "productName": "FlowExcel",
   "version": "0.1.0",
-  "identifier": "com.timspizza.tauri-excel",
+  "identifier": "com.timspizza.flowexcel",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "tauri-vite-excel",
+        "title": "FlowExcel",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -38,6 +38,14 @@
     ],
     "resources": [
       "../backend/**/*"
+    ],
+    "externalBin": [
+      "../backend/excel-backend/excel-backend"
     ]
+  },
+  "plugins": {
+    "single-instance": {
+      "active": true
+    }
   }
 }

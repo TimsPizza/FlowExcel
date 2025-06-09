@@ -1,8 +1,28 @@
+import os
+import sys
+
+def resource_path(relative_path: str) -> str:
+    """
+    Get absolute path to resource, works for dev and for PyInstaller's onedir mode.
+    """
+    if getattr(sys, 'frozen', False):
+        # We are running in a bundle (packaged by PyInstaller)
+        # sys.executable is the path to the executable.
+        base_path = os.path.dirname(sys.executable)
+    else:
+        # We are running in a normal Python environment (development)
+        # This assumes the script is in src-python/src/app
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+    return os.path.join(base_path, relative_path)
+
 """
 工作区配置转换工具
 处理前端工作区配置到pipeline系统类型的转换
 """
 
+import os
+import sys
 from typing import Dict, Any, Optional
 from dataclasses import asdict
 import json

@@ -10,7 +10,7 @@ import {
   TryReadHeaderRowResponse,
 } from "@/types";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { BackendConfigManager } from "../utils/backendConfig";
+import { useBackendStore } from "../stores/backendStore";
 
 // API Response types matching the Python server
 interface APIResponse<T = any> {
@@ -166,11 +166,10 @@ class ApiClient {
   }
 
   private getBaseUrl(): string {
-    const configManager = BackendConfigManager.getInstance();
-    const dynamicBaseUrl = configManager.getApiBaseUrl();
+    const backendInfo = useBackendStore.getState().backendInfo;
     
-    if (dynamicBaseUrl) {
-      return dynamicBaseUrl;
+    if (backendInfo?.api_base) {
+      return backendInfo.api_base;
     }
     
     // 如果后端还没有准备好，使用回退 URL
@@ -179,8 +178,8 @@ class ApiClient {
 
   // 检查后端是否已经准备好
   isBackendReady(): boolean {
-    const configManager = BackendConfigManager.getInstance();
-    return configManager.getBackendInfo() !== null;
+    const backendInfo = useBackendStore.getState().backendInfo;
+    return backendInfo !== null;
   }
 
   // Health check
