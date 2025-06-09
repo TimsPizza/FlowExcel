@@ -13,8 +13,8 @@ fn main() {
         // 确定操作系统特定的可执行文件扩展名
         let exe_extension = if cfg!(windows) { ".exe" } else { "" };
         
-        // 检查backend目录是否存在
-        let backend_path = PathBuf::from("..").join("backend").join("excel-backend").join(format!("excel-backend{}", exe_extension));
+        // 检查binaries目录中的backend是否存在
+        let backend_path = PathBuf::from("binaries").join("flowexcel-backend").join(format!("flowexcel-backend{}", exe_extension));
         if !backend_path.exists() {
             println!("cargo:warning=Python backend not found, building...");
             

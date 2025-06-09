@@ -68,21 +68,52 @@ fn main() {
             let backend_state = app.state::<SharedBackendState>().0.clone();
 
             tauri::async_runtime::spawn(async move {
-                // In development mode, run the backend directly from its original location
-                // to preserve PyInstaller onedir structure
-                let backend_cmd = if cfg!(debug_assertions) {
-                    // Development mode: run from original location
-                    let backend_path = "../backend/excel-backend/excel-backend";
-                    app_handle.shell().command(backend_path)
-                } else {
-                    // Production mode: use sidecar
+                let (mut rx, _child) = if cfg!(debug_assertions) {
+                    // Development mode: run from binaries directory with correct working directory
+                    let binaries_dir = std::path::PathBuf::from("binaries/flowexcel-backend");
+                    let backend_exe = binaries_dir.join("flowexcel-backend");
+
+                    // Convert to absolute path
+                    let current_dir = std::env::current_dir().unwrap();
+                    let absolute_binaries_dir = current_dir.join(&binaries_dir);
+                    let absolute_backend_exe = current_dir.join(&backend_exe);
+
+                    log::info!("backend_exe: {}", backend_exe.display());
+                    log::info!("absolute_backend_exe: {}", absolute_backend_exe.display());
+                    log::info!("binaries_dir: {}", binaries_dir.display());
+                    log::info!("absolute_binaries_dir: {}", absolute_binaries_dir.display());
+                    log::info!("current working directory: {:?}", std::env::current_dir());
+
+                    // Check if the file exists
+                    if !absolute_backend_exe.exists() {
+                        log::error!(
+                            "Backend executable does not exist at: {}",
+                            absolute_backend_exe.display()
+                        );
+                        panic!("Backend executable not found");
+                    }
+
                     app_handle
                         .shell()
-                        .sidecar("excel-backend")
+                        .command(&absolute_backend_exe)
+                        .current_dir(&absolute_binaries_dir)
+                        .spawn()
+                        .expect("Failed to spawn backend")
+                } else {
+                    // Production mode: use sidecar with correct working directory
+                    let resource_dir = app_handle
+                        .path()
+                        .resource_dir()
+                        .expect("Failed to get resource directory");
+                    let onedir_path = resource_dir.join("flowexcel-backend");
+                    app_handle
+                        .shell()
+                        .sidecar("flowexcel-backend")
                         .expect("Failed to create backend sidecar command")
+                        .current_dir(onedir_path)
+                        .spawn()
+                        .expect("Failed to spawn backend")
                 };
-
-                let (mut rx, _child) = backend_cmd.spawn().expect("Failed to spawn backend");
 
                 while let Some(event) = rx.recv().await {
                     match event {

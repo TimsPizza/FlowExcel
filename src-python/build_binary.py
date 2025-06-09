@@ -10,48 +10,57 @@ import subprocess
 import shutil
 from pathlib import Path
 
+
 def get_target_triple():
     """Get the Rust target triple for current platform"""
     try:
-        result = subprocess.run(['rustc', '-vV'], capture_output=True, text=True, check=True)
-        for line in result.stdout.split('\n'):
-            if line.strip().startswith('host:'):
+        result = subprocess.run(
+            ["rustc", "-vV"], capture_output=True, text=True, check=True
+        )
+        for line in result.stdout.split("\n"):
+            if line.strip().startswith("host:"):
                 return line.split()[-1]
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("Warning: Could not get target triple from rustc")
         # Fallback based on platform
         import platform
+
         system = platform.system().lower()
         machine = platform.machine().lower()
-        
-        if system == 'windows':
-            if machine in ['amd64', 'x86_64']:
-                return 'x86_64-pc-windows-msvc'
-            elif machine in ['arm64', 'aarch64']:
-                return 'aarch64-pc-windows-msvc'
-        elif system == 'darwin':
-            if machine in ['arm64', 'aarch64']:
-                return 'aarch64-apple-darwin'
-            elif machine in ['x86_64']:
-                return 'x86_64-apple-darwin'
-        elif system == 'linux':
-            if machine in ['x86_64']:
-                return 'x86_64-unknown-linux-gnu'
-            elif machine in ['aarch64', 'arm64']:
-                return 'aarch64-unknown-linux-gnu'
-    
+
+        if system == "windows":
+            if machine in ["amd64", "x86_64"]:
+                return "x86_64-pc-windows-msvc"
+            elif machine in ["arm64", "aarch64"]:
+                return "aarch64-pc-windows-msvc"
+        elif system == "darwin":
+            if machine in ["arm64", "aarch64"]:
+                return "aarch64-apple-darwin"
+            elif machine in ["x86_64"]:
+                return "x86_64-apple-darwin"
+        elif system == "linux":
+            if machine in ["x86_64"]:
+                return "x86_64-unknown-linux-gnu"
+            elif machine in ["aarch64", "arm64"]:
+                return "aarch64-unknown-linux-gnu"
+
     return None
+
 
 def check_requirements():
     """Check if PyInstaller is installed"""
     try:
         import PyInstaller
+
         print(f"PyInstaller version: {PyInstaller.__version__}")
         return True
     except ImportError:
         print("PyInstaller not found. Installing...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "pyinstaller"], check=True
+        )
         return True
+
 
 def build_binary():
     """Build the binary using PyInstaller"""
@@ -59,136 +68,164 @@ def build_binary():
     main_script = script_dir / "src" / "main.py"  # 正确的入口文件
     build_dir = script_dir / "build"
     dist_dir = script_dir / "dist"
-    
-    # Create output directory
-    output_dir = script_dir / ".." / "backend"
+
+    # Create output directory in src-tauri/binaries as recommended by Tauri maintainers
+    output_dir = script_dir / ".." / "src-tauri" / "binaries"
     output_dir.mkdir(exist_ok=True)
-    
+
     if not main_script.exists():
         raise FileNotFoundError(f"Main script not found: {main_script}")
-    
+
     print(f"Building binary from: {main_script}")
-    
+
     # PyInstaller command for FastAPI application (directory mode for faster startup)
     cmd = [
-        sys.executable, "-m", "PyInstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--onedir",  # Create a directory with executable and dependencies (faster startup)
-        "--name", "excel-backend",  # Output directory name
-        "--distpath", str(output_dir),  # Output directory
-        "--workpath", str(build_dir),  # Build directory
-        "--specpath", str(script_dir),  # Spec file location
+        "--name",
+        "flowexcel-backend",  # Output directory name
+        "--distpath",
+        str(output_dir),  # Output directory
+        "--workpath",
+        str(build_dir),  # Build directory
+        "--specpath",
+        str(script_dir),  # Spec file location
         "--clean",  # Clean build cache
         "--windowed",  # Windowed application (no console)
         "--noconfirm",  # Don't ask for confirmation
         # Add hidden imports for FastAPI and dependencies
-        "--hidden-import", "uvicorn",
-        "--hidden-import", "fastapi",
-        "--hidden-import", "pydantic",
-        "--hidden-import", "numpy",
-        "--hidden-import", "pandas",
-        "--hidden-import", "openpyxl",
-        "--hidden-import", "xlrd",
-        "--hidden-import", "networkx",
+        "--hidden-import",
+        "uvicorn",
+        "--hidden-import",
+        "fastapi",
+        "--hidden-import",
+        "pydantic",
+        "--hidden-import",
+        "numpy",
+        "--hidden-import",
+        "pandas",
+        "--hidden-import",
+        "openpyxl",
+        "--hidden-import",
+        "xlrd",
+        "--hidden-import",
+        "networkx",
         # Include the entire src directory to preserve structure
-        "--add-data", f"{script_dir / 'src'}:src",
-        str(main_script)
+        "--add-data",
+        f"{script_dir / 'src'}:src",
+        str(main_script),
     ]
-    
+
     print(f"Running: {' '.join(cmd)}")
-    
+
     try:
         result = subprocess.run(cmd, check=True, cwd=script_dir)
         print(f"\nBinary built successfully!")
-        
+
         # Check for directory-based distribution
-        binary_dir = output_dir / "excel-backend"
-        binary_executable = binary_dir / "excel-backend"
-        
+        binary_dir = output_dir / "flowexcel-backend"
+        binary_executable = binary_dir / "flowexcel-backend"
+
         if binary_dir.exists() and binary_dir.is_dir():
             print(f"Binary directory: {binary_dir}")
             if binary_executable.exists():
                 print(f"Main executable: {binary_executable}")
-                print(f"Executable size: {binary_executable.stat().st_size / 1024 / 1024:.2f} MB")
+                print(
+                    f"Executable size: {binary_executable.stat().st_size / 1024 / 1024:.2f} MB"
+                )
             else:
                 # Try with .exe extension on Windows
-                binary_executable = binary_dir / "excel-backend.exe"
+                binary_executable = binary_dir / "flowexcel-backend.exe"
                 if binary_executable.exists():
                     print(f"Main executable: {binary_executable}")
-                    print(f"Executable size: {binary_executable.stat().st_size / 1024 / 1024:.2f} MB")
-            
+                    print(
+                        f"Executable size: {binary_executable.stat().st_size / 1024 / 1024:.2f} MB"
+                    )
+
             # Calculate total directory size
-            total_size = sum(f.stat().st_size for f in binary_dir.rglob('*') if f.is_file())
+            total_size = sum(
+                f.stat().st_size for f in binary_dir.rglob("*") if f.is_file()
+            )
             print(f"Total directory size: {total_size / 1024 / 1024:.2f} MB")
-            file_count = len(list(binary_dir.rglob('*')))
+            file_count = len(list(binary_dir.rglob("*")))
             print(f"Total files: {file_count}")
         else:
             print("Warning: Expected directory not found!")
-        
-        # Create Tauri-compatible named binary
+
+        # Create Tauri-compatible named binary for platform-specific lookup
         target_triple = get_target_triple()
         if target_triple:
-            exe_ext = ".exe" if os.name == 'nt' else ""
-            original_exe = binary_dir / f"excel-backend{exe_ext}"
-            tauri_exe = binary_dir / f"excel-backend-{target_triple}{exe_ext}"
-            
+            exe_ext = ".exe" if os.name == "nt" else ""
+            original_exe = binary_dir / f"flowexcel-backend{exe_ext}"
+            # Create platform-specific binary in src-tauri/binaries directory
+            tauri_exe = binary_dir / f"flowexcel-backend-{target_triple}{exe_ext}"
+
             if original_exe.exists():
                 try:
                     # Create hard link or copy for Tauri compatibility
                     if tauri_exe.exists():
                         tauri_exe.unlink()
-                    
+
                     # Try hard link first, fallback to copy
                     try:
                         tauri_exe.hardlink_to(original_exe)
-                        print(f"Created hard link: {tauri_exe.name}")
+                        print(f"Created Tauri-compatible binary: {tauri_exe.name}")
                     except (OSError, AttributeError):
                         shutil.copy2(original_exe, tauri_exe)
-                        print(f"Created copy: {tauri_exe.name}")
-                        
+                        print(f"Created Tauri-compatible binary: {tauri_exe.name}")
+
                 except Exception as e:
                     print(f"Warning: Could not create Tauri-compatible binary: {e}")
             else:
                 print(f"Warning: Original executable not found: {original_exe}")
         else:
             print("Warning: Could not determine target triple for Tauri compatibility")
-        
+
         # Clean up build artifacts
         if build_dir.exists():
             shutil.rmtree(build_dir)
         if dist_dir.exists():
             shutil.rmtree(dist_dir)
-        
-        spec_file = script_dir / "excel-backend.spec"
+
+        spec_file = script_dir / "flowexcel-backend.spec"
         if spec_file.exists():
             spec_file.unlink()
-            
+
         print("Build artifacts cleaned up.")
-        
+
     except subprocess.CalledProcessError as e:
         print(f"Build failed with exit code: {e.returncode}")
         sys.exit(1)
+
 
 def main():
     """Main build function"""
     print("Excel FastAPI Backend Binary Builder")
     print("=" * 40)
-    
+
     if not check_requirements():
         print("Failed to install PyInstaller")
         sys.exit(1)
-    
+
     try:
         build_binary()
         print("\nBuild completed successfully!")
         print("\nTo use the binary directory:")
         print("1. The Tauri watchdog will automatically detect and use the binary")
-        print("2. Or run manually: ../backend/excel-backend/excel-backend")
-        print("3. Backend will automatically find available port and send handshake info")
-        print("4. Directory mode provides faster startup compared to single-file packaging")
-        
+        print("2. Or run manually: ../src-tauri/binaries/backend/flowexcel-backend")
+        print(
+            "3. Backend will automatically find available port and send handshake info"
+        )
+        print(
+            "4. Directory mode provides faster startup compared to single-file packaging"
+        )
+
     except Exception as e:
         print(f"Build failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

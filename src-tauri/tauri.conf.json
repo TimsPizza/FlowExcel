@@ -37,10 +37,10 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../backend/**/*"
+      "binaries/flowexcel-backend/**/*"
     ],
     "externalBin": [
-      "../backend/excel-backend/excel-backend"
+      "binaries/flowexcel-backend/flowexcel-backend"
     ]
   },
   "plugins": {
