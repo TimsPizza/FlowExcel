@@ -97,10 +97,19 @@ fn create_platform_specific_links() {
         
         #[cfg(windows)]
         {
-            let result = std::os::windows::fs::symlink_file(&backend_exe, &platform_specific_path);
+            let relative_target = format!("excel-backend{}", exe_extension);
+            let result = std::os::windows::fs::symlink_file(&relative_target, &platform_specific_path);
             match result {
-                Ok(_) => println!("cargo:warning=Created symlink: {} -> {}", platform_specific_path.display(), backend_exe.display()),
-                Err(e) => println!("cargo:warning=Failed to create symlink: {}", e),
+                Ok(_) => println!("cargo:warning=Created symlink: {} -> {}", platform_specific_path.display(), relative_target),
+                Err(e) => {
+                    println!("cargo:warning=Failed to create symlink: {}, attempting file copy instead", e);
+                    // Fallback: copy the file instead of creating a symlink
+                    let copy_result = std::fs::copy(&backend_exe, &platform_specific_path);
+                    match copy_result {
+                        Ok(_) => println!("cargo:warning=Copied file: {} -> {}", backend_exe.display(), platform_specific_path.display()),
+                        Err(copy_e) => println!("cargo:warning=Failed to copy file: {}", copy_e),
+                    }
+                }
             }
         }
     } else {
