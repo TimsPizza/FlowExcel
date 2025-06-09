@@ -10,6 +10,38 @@ import subprocess
 import shutil
 from pathlib import Path
 
+def get_target_triple():
+    """Get the Rust target triple for current platform"""
+    try:
+        result = subprocess.run(['rustc', '-vV'], capture_output=True, text=True, check=True)
+        for line in result.stdout.split('\n'):
+            if line.strip().startswith('host:'):
+                return line.split()[-1]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("Warning: Could not get target triple from rustc")
+        # Fallback based on platform
+        import platform
+        system = platform.system().lower()
+        machine = platform.machine().lower()
+        
+        if system == 'windows':
+            if machine in ['amd64', 'x86_64']:
+                return 'x86_64-pc-windows-msvc'
+            elif machine in ['arm64', 'aarch64']:
+                return 'aarch64-pc-windows-msvc'
+        elif system == 'darwin':
+            if machine in ['arm64', 'aarch64']:
+                return 'aarch64-apple-darwin'
+            elif machine in ['x86_64']:
+                return 'x86_64-apple-darwin'
+        elif system == 'linux':
+            if machine in ['x86_64']:
+                return 'x86_64-unknown-linux-gnu'
+            elif machine in ['aarch64', 'arm64']:
+                return 'aarch64-unknown-linux-gnu'
+    
+    return None
+
 def check_requirements():
     """Check if PyInstaller is installed"""
     try:
@@ -91,6 +123,34 @@ def build_binary():
             print(f"Total files: {file_count}")
         else:
             print("Warning: Expected directory not found!")
+        
+        # Create Tauri-compatible named binary
+        target_triple = get_target_triple()
+        if target_triple:
+            exe_ext = ".exe" if os.name == 'nt' else ""
+            original_exe = binary_dir / f"excel-backend{exe_ext}"
+            tauri_exe = binary_dir / f"excel-backend-{target_triple}{exe_ext}"
+            
+            if original_exe.exists():
+                try:
+                    # Create hard link or copy for Tauri compatibility
+                    if tauri_exe.exists():
+                        tauri_exe.unlink()
+                    
+                    # Try hard link first, fallback to copy
+                    try:
+                        tauri_exe.hardlink_to(original_exe)
+                        print(f"Created hard link: {tauri_exe.name}")
+                    except (OSError, AttributeError):
+                        shutil.copy2(original_exe, tauri_exe)
+                        print(f"Created copy: {tauri_exe.name}")
+                        
+                except Exception as e:
+                    print(f"Warning: Could not create Tauri-compatible binary: {e}")
+            else:
+                print(f"Warning: Original executable not found: {original_exe}")
+        else:
+            print("Warning: Could not determine target triple for Tauri compatibility")
         
         # Clean up build artifacts
         if build_dir.exists():

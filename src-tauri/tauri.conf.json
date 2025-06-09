@@ -40,7 +40,7 @@
       "../backend/**/*"
     ],
     "externalBin": [
-      "../backend/excel-backend/excel-backend.exe"
+      "../backend/excel-backend/excel-backend"
     ]
   },
   "plugins": {
