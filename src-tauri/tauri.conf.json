@@ -38,14 +38,11 @@
     ],
     "resources": [
       "binaries/flowexcel-backend/**/*"
-    ],
-    "externalBin": [
-      "binaries/flowexcel-backend/flowexcel-backend"
     ]
   },
   "plugins": {
-    "single-instance": {
-      "active": true
+    "shell": {
+      "open": true
     }
   }
 }
