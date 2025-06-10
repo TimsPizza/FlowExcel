@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "FlowExcel",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "identifier": "com.timspizza.flowexcel",
   "build": {
     "frontendDist": "../dist",
@@ -37,15 +37,12 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../backend/**/*"
-    ],
-    "externalBin": [
-      "../backend/excel-backend/excel-backend"
+      "binaries/flowexcel-backend/**/*"
     ]
   },
   "plugins": {
-    "single-instance": {
-      "active": true
+    "shell": {
+      "open": true
     }
   }
 }
