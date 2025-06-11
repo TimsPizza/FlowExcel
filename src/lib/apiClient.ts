@@ -10,7 +10,7 @@ import {
   TryReadHeaderRowResponse,
 } from "@/types";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { useBackendStore } from "../stores/backendStore";
+import { useBackendStore } from "@/stores/useBackendStore";
 
 // API Response types matching the Python server
 interface APIResponse<T = any> {
@@ -146,7 +146,7 @@ class ApiClient {
         config.baseURL = baseURL;
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // Add response interceptor for error handling
@@ -167,11 +167,11 @@ class ApiClient {
 
   private getBaseUrl(): string {
     const backendInfo = useBackendStore.getState().backendInfo;
-    
+
     if (backendInfo?.api_base) {
       return backendInfo.api_base;
     }
-    
+
     // 如果后端还没有准备好，使用回退 URL
     return FALLBACK_API_BASE_URL;
   }

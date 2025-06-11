@@ -20,7 +20,7 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNodeId } from "reactflow";
 
 const OPERATORS = [
@@ -40,7 +40,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
   const nodeData = data as RowFilterNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const previewNodeMutation = usePreviewNodeMutation();
-
+  const [condValue, setCondValue] = useState("");
   // 使用真实的列数据
   const {
     columns: availableColumns,
@@ -84,6 +84,11 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       error: undefined,
       testResult: undefined,
     });
+  };
+
+  const handleCondValueChange = (index: number, field: string, value: any) => {
+    setCondValue(value);
+    updateCondition(index, field, value);
   };
 
   const previewNode = async () => {
@@ -238,9 +243,9 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                 {/* 值输入 */}
                 <TextField.Root
                   size="1"
-                  value={condition.value || ""}
+                  value={condValue || condition.value}
                   onChange={(e) =>
-                    updateCondition(index, "value", e.target.value)
+                    handleCondValueChange(index, "value", e.target.value)
                   }
                   placeholder="值"
                 />

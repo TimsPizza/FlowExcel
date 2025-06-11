@@ -1,4 +1,4 @@
-import ExcelPreview from "@/components/ExcelPreview";
+import ExcelPreview from "@/components/flow/ExcelPreview";
 import { Button } from "@/components/ui/button";
 import { SheetInfo } from "@/types";
 import { Box, Dialog, Skeleton, Text } from "@radix-ui/themes";

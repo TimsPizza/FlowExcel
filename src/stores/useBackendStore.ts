@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { BackendInfo } from '../types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { BackendInfo } from "../types";
 
 interface BackendState {
   // 状态数据
@@ -8,13 +8,13 @@ interface BackendState {
   backendError: string | null;
   isReady: boolean;
   lastUpdateTime: number;
-  
+
   // Actions
   setBackendInfo: (info: BackendInfo) => void;
   setBackendError: (error: string) => void;
   clearBackendInfo: () => void;
   clearError: () => void;
-  
+
   // 工具方法
   getApiBaseUrl: () => string;
   isDataFresh: (maxAgeMs?: number) => boolean;
@@ -28,7 +28,7 @@ export const useBackendStore = create<BackendState>()(
       backendError: null,
       isReady: false,
       lastUpdateTime: 0,
-      
+
       // Actions
       setBackendInfo: (info: BackendInfo) => {
         set({
@@ -37,9 +37,9 @@ export const useBackendStore = create<BackendState>()(
           isReady: true,
           lastUpdateTime: Date.now(),
         });
-        console.log('Backend info updated:', info);
+        console.log("Backend info updated:", info);
       },
-      
+
       setBackendError: (error: string) => {
         set({
           backendInfo: null,
@@ -47,9 +47,9 @@ export const useBackendStore = create<BackendState>()(
           isReady: false,
           lastUpdateTime: Date.now(),
         });
-        console.error('Backend error set:', error);
+        console.error("Backend error set:", error);
       },
-      
+
       clearBackendInfo: () => {
         set({
           backendInfo: null,
@@ -57,26 +57,27 @@ export const useBackendStore = create<BackendState>()(
           isReady: false,
           lastUpdateTime: Date.now(),
         });
-        console.log('Backend info cleared');
+        console.log("Backend info cleared");
       },
-      
+
       clearError: () => {
         set({ backendError: null });
       },
-      
+
       // 工具方法
       getApiBaseUrl: () => {
         const { backendInfo } = get();
-        return backendInfo?.api_base || '';
+        return backendInfo?.api_base || "";
       },
-      
-      isDataFresh: (maxAgeMs = 24 * 60 * 60 * 1000) => { // 默认24小时
+
+      isDataFresh: (maxAgeMs = 24 * 60 * 60 * 1000) => {
+        // 默认24小时
         const { lastUpdateTime } = get();
         return Date.now() - lastUpdateTime < maxAgeMs;
       },
     }),
     {
-      name: 'backend-status-storage', // localStorage key
+      name: "backend-status-storage", // localStorage key
       version: 1,
       // 只持久化必要的字段
       partialize: (state) => ({
@@ -101,14 +102,14 @@ export const useBackendStore = create<BackendState>()(
         ...currentState,
         ...persistedState,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // 开发环境调试支持
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
   (window as any).__BACKEND_STORE__ = useBackendStore;
 }
 
 // 导出类型供其他地方使用
-export type { BackendState }; 
+export type { BackendState };

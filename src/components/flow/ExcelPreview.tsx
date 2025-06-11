@@ -1,4 +1,4 @@
-import { DataFrameViewer } from "@/components/DataFrameViewer";
+import { DataFrameViewer } from "@/components/flow/DataFrameViewer";
 import { SheetInfo } from "@/types";
 import { Flex, Tabs } from "@radix-ui/themes";
 import { useEffect, useMemo, useState } from "react";

@@ -12,27 +12,11 @@ import {
 } from "@/stores/useWorkspaceStore";
 import { FileInfo } from "@/types";
 import { Flex } from "@radix-ui/themes";
-import _ from "lodash";
+import isEqual from "lodash/isEqual";
 import React, { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
-import {
-  ErrorResponse,
-  Outlet,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
-
-function isErrorResponse(obj: unknown): obj is ErrorResponse {
-  if (typeof obj !== "object" || obj === null) {
-    return false;
-  }
-  const potentialError = obj as Record<string, unknown>;
-  return (
-    typeof potentialError.error_type === "string" &&
-    typeof potentialError.message === "string"
-  );
-}
 
 export default function WorkspaceEditorPage() {
   const toast = useToast();
@@ -122,8 +106,7 @@ export default function WorkspaceEditorPage() {
         .filter((currentFile) => {
           const newestInfo = newestFileInfo[currentFile.id];
           return (
-            newestInfo &&
-            !_.isEqual(newestInfo.file_info, currentFile.file_info)
+            newestInfo && !isEqual(newestInfo.file_info, currentFile.file_info)
           );
         })
         .map((file) => file.id);

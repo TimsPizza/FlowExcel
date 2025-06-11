@@ -23,7 +23,7 @@ type ToastFunction = {
 };
 
 const useToast = ({
-  position = "top-right",
+  position = "top-center",
   autoClose = 1500,
   hideProgressBar = false,
   closeOnClick = true,

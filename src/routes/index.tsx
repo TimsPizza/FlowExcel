@@ -2,9 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { WorkspaceListPage } from "@/pages/WorkspaceListPage";
 import WorkspaceEditorPage from "@/pages/WorkspaceEditorPage";
 import FileLibrary from "@/components/workspace/FileLibrary";
-import { FlowEditor } from "@/components/flow";
-// Keep Layout if it's intended to wrap these pages, otherwise remove/adjust
-// import Layout from "./Layout"; // Removed unused import
+import { FlowEditor } from "@/components/flow/FlowEditor";
 
 export const router = createBrowserRouter([
   {

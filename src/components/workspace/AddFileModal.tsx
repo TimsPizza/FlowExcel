@@ -1,4 +1,4 @@
-import ExcelPreview from "@/components/ExcelPreview";
+import { ExcelPreview } from "@/components/flow";
 import useToast from "@/hooks/useToast";
 import { useGetExcelPreview } from "@/hooks/workspaceQueries";
 import { apiClient } from "@/lib/apiClient";
@@ -54,7 +54,7 @@ const AddFileModal = () => {
       }
 
       const newFile: FileMeta = {
-        id: uuidv4(), 
+        id: uuidv4(),
         name: fileName,
         path: selectedFilePath,
         sheet_metas: previewData.sheets.map((sheet) => ({

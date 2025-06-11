@@ -21,7 +21,6 @@ import type {
   AggregationPreviewResult,
   SheetInfo,
 } from "@/types";
-import _ from "lodash";
 
 /**
  * Type guards for preview results
