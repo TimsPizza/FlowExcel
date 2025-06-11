@@ -1,0 +1,5 @@
+1. fix dataframe type problem and add type check to data processing methods <urgent>
+
+2. tauri should restart backend after unexpected termination, maybe manually triggered by frontend axios middleware (frontend -> tauri_command -> tauri -> command::new ) as it is way easier to implement and more controllable?
+
+3. tbd
