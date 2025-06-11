@@ -128,8 +128,6 @@ export default function WorkspaceEditorPage() {
         })
         .map((file) => file.id);
 
-      console.log("outdatedFileIds", outdatedFileIds);
-
       // 重置过期文件列表，然后添加当前过期的文件
       useWorkspaceStore.setState((state) => ({
         outdatedFileIds: outdatedFileIds,

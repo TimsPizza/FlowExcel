@@ -6,17 +6,11 @@ import {
   isValidConnection,
   validateFlow,
 } from "@/lib/flowValidation";
+import { Button } from "@/components/ui/button";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import {
-  FlowNodeData,
-  NodeType
-} from "@/types/nodes";
-import {
-  PlayIcon,
-  PlusIcon,
-  SizeIcon
-} from "@radix-ui/react-icons";
-import { Button, Flex, Popover, Select, Text } from "@radix-ui/themes";
+import { FlowNodeData, NodeType } from "@/types/nodes";
+import { PlayIcon, PlusIcon, SizeIcon } from "@radix-ui/react-icons";
+import { Flex, Popover, Select, Text } from "@radix-ui/themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
   Background,
@@ -36,7 +30,7 @@ import ReactFlow, {
   Panel,
   useEdgesState,
   useNodesState,
-  useReactFlow
+  useReactFlow,
 } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import { FlowValidationPanel } from "./FlowValidationPanel";
@@ -341,17 +335,24 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                 <Flex direction="column" gap="3">
                   {/* 添加节点控件 */}
                   <Flex direction="column" gap="2">
-                    <Text weight="bold" size="2">添加节点</Text>
+                    <Text weight="bold" size="2">
+                      添加节点
+                    </Text>
                     <Flex gap="2" align="center">
                       <Select.Root
                         value={selectedNodeType}
-                        onValueChange={(value) => setSelectedNodeType(value as NodeType)}
+                        onValueChange={(value) =>
+                          setSelectedNodeType(value as NodeType)
+                        }
                       >
                         <Select.Trigger style={{ flex: 1 }} />
                         <Select.Content>
                           <Select.Group>
                             {NODE_TYPES.map((nodeType) => (
-                              <Select.Item key={nodeType.value} value={nodeType.value}>
+                              <Select.Item
+                                key={nodeType.value}
+                                value={nodeType.value}
+                              >
                                 {nodeType.label}
                               </Select.Item>
                             ))}
@@ -371,7 +372,9 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
 
                   {/* 自动排版控件 */}
                   <Flex direction="column" gap="2">
-                    <Text weight="bold" size="2">自动排版</Text>
+                    <Text weight="bold" size="2">
+                      自动排版
+                    </Text>
                     <Flex gap="2" align="center">
                       <Select.Root
                         value={layoutDirection}
@@ -401,7 +404,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                 </Flex>
               </Popover.Content>
             </Popover.Root>
-            
+
             <Button
               color="green"
               disabled={executePipelineMutation.isLoading}

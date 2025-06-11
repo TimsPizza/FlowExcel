@@ -1,4 +1,5 @@
-import { Button, Dialog } from "@radix-ui/themes";
+import { Dialog } from "@radix-ui/themes";
+import { Button } from "@/components/ui/button";
 
 interface HelpModalProps {
   title?: string;

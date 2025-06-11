@@ -2,14 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTryReadHeaderRow } from "@/hooks/workspaceQueries";
 import { fileSelector, useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FileMeta } from "@/types";
-import {
-  Button,
-  Dialog,
-  Flex,
-  Select,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
+import { Button } from "@/components/ui/button";
+import { Dialog, Flex, Select, Text, TextField } from "@radix-ui/themes";
 import { useState } from "react";
 import { useShallow } from "zustand/shallow";
 
@@ -32,7 +26,9 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
   const { headerRow: detectedHeaderRow, isHeaderRowLoading } =
     useTryReadHeaderRow(
       file.path,
-      selectedSheetSt && selectedSheetSt !== "all-sheets" ? selectedSheetSt : "",
+      selectedSheetSt && selectedSheetSt !== "all-sheets"
+        ? selectedSheetSt
+        : "",
       parseInt(
         file.sheet_metas
           .find((sheet) => sheet.sheet_name === selectedSheetSt)
@@ -42,14 +38,24 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
 
   const handleHeaderRowChange = (selectedSheet: string, value: string) => {
     // setHeaderRowIndex(value);
-    updateFileMeta(file.id, {
-      sheet_metas: file.sheet_metas.map((sheet) =>
-        sheet.sheet_name === selectedSheet
-          ? { ...sheet, header_row: parseInt(value) }
-          : sheet,
-      ),
-    });
-    setHeaderRowIndexSt(value);
+    if (selectedSheet === "all-sheets") {
+      console.log("changing all sheets header row to", value);
+      updateFileMeta(file.id, {
+        sheet_metas: file.sheet_metas.map((sheet) => ({
+          ...sheet,
+          header_row: parseInt(value),
+        })),
+      });
+    } else {
+      updateFileMeta(file.id, {
+        sheet_metas: file.sheet_metas.map((sheet) =>
+          sheet.sheet_name === selectedSheet
+            ? { ...sheet, header_row: parseInt(value) }
+            : sheet,
+        ),
+      });
+    }
+    setHeaderRowIndexSt(parseInt(value).toString());
   };
 
   const handleSave = () => {
@@ -121,6 +127,12 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                   </Select.Content>
                 </Select.Root>
               </Flex>
+              {selectedSheetSt === "all-sheets" && (
+                <Text size="1" color="amber">
+                  所有工作表的标题行将统一设置为{headerRowIndexSt}
+                  （覆盖现有设置）
+                </Text>
+              )}
 
               {selectedSheetSt && (
                 <Flex direction="column" gap="3">
@@ -132,9 +144,13 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                       size="2"
                       type="number"
                       value={
-                        file.sheet_metas
-                          .find((sheet) => sheet.sheet_name === selectedSheetSt)
-                          ?.header_row?.toString() || "0"
+                        selectedSheetSt === "all-sheets"
+                          ? headerRowIndexSt
+                          : file.sheet_metas
+                              .find(
+                                (sheet) => sheet.sheet_name === selectedSheetSt,
+                              )
+                              ?.header_row?.toString() || "0"
                       }
                       onChange={(e) =>
                         handleHeaderRowChange(selectedSheetSt, e.target.value)
@@ -142,9 +158,14 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                     />
                   </Flex>
 
-                  <Text size="1" color="gray">
-                    标题行用于识别列名称。0表示第一行，1表示第二行，以此类推。
-                  </Text>
+                  <Flex direction="column" gap="1">
+                    <Text size="1" color="gray">
+                      标题行用于识别列名称。0表示第一行，1表示第二行，以此类推。
+                    </Text>
+                    <Text size="1" color="amber">
+                      注意！错误的标题行号将导致执行结果异常甚至无法执行！
+                    </Text>
+                  </Flex>
 
                   <Text size="2" weight="bold">
                     检测到的列:
@@ -159,11 +180,7 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                         <Text
                           key={column}
                           size="1"
-                          style={{
-                            border: "1px solid var(--gray-5)",
-                            borderRadius: "var(--radius-1)",
-                            padding: "2px 6px",
-                          }}
+                          className="border-gray-5 rounded-md border px-2 py-1"
                         >
                           {column}
                         </Text>

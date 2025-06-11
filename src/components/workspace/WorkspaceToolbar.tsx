@@ -1,6 +1,7 @@
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { CheckIcon, PlusIcon, UpdateIcon } from "@radix-ui/react-icons";
-import { Button, Flex, Text, TextField } from "@radix-ui/themes";
+import { Flex, Text, TextField } from "@radix-ui/themes";
+import { Button } from "@/components/ui/button";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";

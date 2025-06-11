@@ -4,24 +4,15 @@ import {
 } from "@/components/flow/nodes/EnhancedBaseNode";
 import useToast from "@/hooks/useToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
-import { isDataFrameResult, isMultiSheetResult } from "@/lib/dataTransforms";
-import { convertPreviewToSheets, getPreviewMetadata } from "@/lib/utils";
+import { convertPreviewToSheets } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { SheetInfo, SimpleDataframe } from "@/types";
 import { FlowNodeProps, OutputNodeDataContext } from "@/types/nodes";
-import { CopyIcon, FileIcon } from "@radix-ui/react-icons";
-import {
-  Badge,
-  Button,
-  Card,
-  Flex,
-  ScrollArea,
-  Select,
-  Text,
-  TextField,
-} from "@radix-ui/themes";
+import { FileIcon } from "@radix-ui/react-icons";
+import { Flex, Text, TextField } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
 import { useNodeId } from "reactflow";
+import { Button } from "@/components/ui/button";
+
 import { useShallow } from "zustand/react/shallow";
 
 export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {

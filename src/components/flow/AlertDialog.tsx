@@ -1,10 +1,5 @@
-import React from "react";
-import {
-  AlertDialog as AlertDialog_,
-  Button,
-  Flex,
-  Text,
-} from "@radix-ui/themes";
+import { Button } from "@/components/ui/button";
+import { AlertDialog as AlertDialog_, Flex, Text } from "@radix-ui/themes";
 
 interface AlertDialogProps {
   title: string;

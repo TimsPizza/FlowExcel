@@ -8,7 +8,8 @@ import {
   workspaceSelector,
 } from "@/stores/useWorkspaceStore";
 import { FileMeta } from "@/types";
-import { Box, Button, Dialog, Flex, Text } from "@radix-ui/themes";
+import { Button } from "@/components/ui/button";
+import { Box, Dialog, Flex, Text } from "@radix-ui/themes";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -53,7 +54,7 @@ const AddFileModal = () => {
       }
 
       const newFile: FileMeta = {
-        id: uuidv4(), // Generate unique ID
+        id: uuidv4(), 
         name: fileName,
         path: selectedFilePath,
         sheet_metas: previewData.sheets.map((sheet) => ({
@@ -64,7 +65,8 @@ const AddFileModal = () => {
       };
 
       addFileToWorkspace(newFile);
-      toast.success(`文件 '${fileName}' 已成功添加到工作区`);
+      setSelectedFilePath(null);
+      setFilename("");
     } catch (error) {
       console.error("Error adding file to workspace:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);

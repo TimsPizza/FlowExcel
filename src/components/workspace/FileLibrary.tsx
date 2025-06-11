@@ -1,15 +1,16 @@
+import { Button } from "@/components/ui/button";
 import AddFileModal from "@/components/workspace/AddFileModal";
 import FileMetaEditorModal from "@/components/workspace/FileMetaEditorModal";
 import { cn } from "@/lib/utils";
+import useToast from "@/hooks/useToast";
 import { apiClient } from "@/lib/apiClient";
-import { Box, Button, Flex, ScrollArea, Text } from "@radix-ui/themes";
+import { Box, Flex, ScrollArea, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import {
   fileSelector,
   useWorkspaceStore,
 } from "../../stores/useWorkspaceStore";
-import useToast from "@/hooks/useToast";
 
 const FileLibrary: React.FC = () => {
   const toast = useToast();
