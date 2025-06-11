@@ -1,31 +1,31 @@
 import { Button } from "@/components/ui/button";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { AlertDialog as AlertDialog_, Flex, Text } from "@radix-ui/themes";
 
-interface AlertDialogProps {
+interface AlertExitProps {
   title: string;
   description: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  noButton?: boolean;
+  onConfirm?: () => void;
+  onCancel?: () => void;
 }
 
-const AlertDialog = ({
+const AlertExit = ({
   title,
   description,
   onConfirm,
   onCancel,
-  noButton = false,
-}: AlertDialogProps) => {
+}: AlertExitProps) => {
   return (
     <AlertDialog_.Root>
       <AlertDialog_.Trigger>
-        {noButton ? (
-          <Text size="2" weight="bold" className="text-gray-600">
-            {title}
-          </Text>
-        ) : (
-          <Button color="red">{title}</Button>
-        )}
+        <Flex align="center" gap="2">
+          <Button color="gray" variant="outline">
+            <ArrowLeftIcon />
+            <Text size="2" weight="bold" color="gray">
+              {title}
+            </Text>
+          </Button>
+        </Flex>
       </AlertDialog_.Trigger>
       <AlertDialog_.Content maxWidth="450px">
         <AlertDialog_.Title>{title}</AlertDialog_.Title>
@@ -35,12 +35,12 @@ const AlertDialog = ({
 
         <Flex gap="3" mt="4" justify="end">
           <AlertDialog_.Cancel>
-            <Button variant="soft" color="gray" onClick={onCancel}>
+            <Button variant="soft" color="gray" onClick={() => onCancel?.()}>
               {`取消`}
             </Button>
           </AlertDialog_.Cancel>
           <AlertDialog_.Action>
-            <Button variant="solid" color="red" onClick={onConfirm}>
+            <Button variant="solid" color="red" onClick={() => onConfirm?.()}>
               {`确定`}
             </Button>
           </AlertDialog_.Action>
@@ -50,4 +50,4 @@ const AlertDialog = ({
   );
 };
 
-export default AlertDialog;
+export default AlertExit;

@@ -41,7 +41,7 @@ export const NODE_CONNECTION_RULES: Record<NodeType, NodeType[]> = {
  */
 export const NODE_TYPE_DESCRIPTIONS: Record<NodeType, string> = {
   [NodeType.INDEX_SOURCE]:
-    "你希望统计哪些数据项？比如，你希望对某张表的某列进行统计，选择“列名”，并选择那个列，否则选择“工作表名”",
+    "你希望统计哪些数据项？比如，你希望对某张表的某列进行统计，选择“列名”，并选择相应的列名（这是大部分情况），否则选择“工作表名”",
   [NodeType.SHEET_SELECTOR]:
     "关于索引项如何匹配工作表，如果索引项对应某个excel文件的表名，请选择自动匹配，否则请选择手动匹配",
   [NodeType.ROW_FILTER]: "对上一级的表的所有行进行条件过滤",

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
-import AlertDialog from "@/components/flow/AlertDialog";
+import AlertExit from "@/components/flow/AlertExit";
 
 interface WorkspaceToolbarProps {
   workspaceName: string;
@@ -27,12 +27,8 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
   const navigate = useNavigate();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const isWsDirty = useWorkspaceStore((state) => state.isDirty);
-  const handleNavigateBack = (confirmLeave: boolean = false) => {
-    if (!isWsDirty) {
-      navigate(`/workspace`);
-    } else if (confirmLeave) {
-      navigate(`/workspace`);
-    }
+  const handleNavigateBack = () => {
+    navigate(`/workspace`);
   };
   return (
     <Flex
@@ -43,28 +39,21 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     >
       {/* Left side: Workspace Name */}
       <Flex align="center" gap="3">
-        <Button
-          size="2"
-          variant="outline"
-          color="gray"
-          onClick={() => handleNavigateBack()}
-        >
-          <ArrowLeftIcon />
-          {isWsDirty ? (
-            <AlertDialog
-              title="返回"
-              description="离开工作区后，您将丢失所有未保存的更改。"
-              onConfirm={() => handleNavigateBack(true)}
-              onCancel={() => handleNavigateBack(false)}
-              noButton
-            />
-          ) : (
-            <Text size="2" weight="bold" className="text-gray-600">
+        {isWsDirty ? (
+          <AlertExit
+            title="返回"
+            description="离开工作区后，您将丢失所有未保存的更改。"
+            onConfirm={handleNavigateBack}
+          />
+        ) : (
+          <Button color="gray" variant="outline" onClick={handleNavigateBack}>
+            <ArrowLeftIcon />
+            <Text size="2" weight="bold" color="gray">
               返回
             </Text>
-          )}
-        </Button>
-        <Text size="2" weight="bold" className="text-gray-600">
+          </Button>
+        )}
+        <Text size="2" weight="bold" color="gray">
           工作区:
         </Text>
         <TextField.Root
