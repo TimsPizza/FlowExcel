@@ -5,11 +5,11 @@
 """
 
 import pandas as pd
-from typing import Dict, List
+from typing import Dict, List, Union
 import os
 
-from .base import AbstractNodeProcessor
-from ..models import (
+from pipeline.processors.base import AbstractNodeProcessor
+from pipeline.models import (
     BaseNode,
     OutputInput,
     OutputResult,
@@ -22,7 +22,7 @@ from ..models import (
     NodeType,
     ExecutionMode,
 )
-from ..execution.context_manager import ContextManager
+from pipeline.execution.context_manager import ContextManager
 
 
 class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
@@ -65,17 +65,19 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
 
             # 创建Sheet数据列表
             sheets = []
-            
+
             # 收集所有分支ID（来自聚合结果和dataframe结果）
             all_branch_ids = set(input_data.branch_aggregated_results.keys())
             all_branch_ids.update(input_data.branch_dataframes.keys())
-            
-            # 遍历所有分支，为每个分支创建一个Sheet
+
+            # 遍历所有分支，为每个分支创建Sheet（可能是多个）
             for branch_id in all_branch_ids:
-                branch_aggregations = input_data.branch_aggregated_results.get(branch_id, {})
+                branch_aggregations = input_data.branch_aggregated_results.get(
+                    branch_id, {}
+                )
                 branch_dataframe = input_data.branch_dataframes.get(branch_id)
-                
-                sheet_data = self._create_sheet_for_branch(
+
+                sheet_data_list = self._create_sheet_for_branch(
                     branch_id,
                     branch_aggregations,
                     branch_dataframe,
@@ -85,7 +87,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
                     node_map,
                     context_manager,
                 )
-                sheets.append(sheet_data)
+                sheets.extend(sheet_data_list)
 
             # 如果是生产模式且指定了输出路径，则写入文件
             if (
@@ -105,20 +107,20 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
         self,
         branch_id: str,
         branch_aggregations: Dict[IndexValue, Dict[str, float | int | str | None]],
-        branch_dataframe: DataFrame | None,
+        branch_dataframe: pd.DataFrame | Dict[IndexValue, pd.DataFrame] | None,
         include_index_column: bool,
         index_column_name: str,
         global_context: GlobalContext,
         node_map: Dict[str, BaseNode] = None,
         context_manager=None,
-    ) -> SheetData:
+    ):
         """
         为单个分支创建Sheet数据（包含该分支所有索引值的聚合结果）
 
         Args:
             branch_id: 分支ID
             branch_aggregations: 该分支的聚合结果 {索引值: {列名: 值}}
-            branch_dataframe: 该分支的非聚合dataframe
+            branch_dataframe: 该分支的非聚合dataframe（可能是单个DataFrame或按索引值组织的DataFrame字典）
             include_index_column: 是否包含索引列
             index_column_name: 索引列名
             global_context: 全局上下文
@@ -126,40 +128,57 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
             context_manager: 上下文管理器（用于获取分支上下文）
 
         Returns:
-            Sheet数据
+            Sheet数据列表
         """
         # 优先级逻辑：
         # 1. 如果有聚合结果，使用聚合结果
         # 2. 如果没有聚合结果但有非聚合dataframe，使用dataframe
         # 3. 否则创建空Sheet
-        
+
         source_name = self._get_source_name_for_branch(
             branch_id, global_context, node_map, context_manager
         )
         sheet_name = source_name or f"分支_{branch_id}"
-        
+
         if branch_aggregations:
-            # 情况1：有聚合结果，使用原有逻辑
-            return self._create_aggregated_sheet(
-                branch_id, branch_aggregations, include_index_column, 
-                index_column_name, sheet_name, source_name
-            )
+            # 情况1：有聚合结果，使用原有逻辑（单个Sheet）
+            return [
+                self._create_aggregated_sheet(
+                    branch_id,
+                    branch_aggregations,
+                    include_index_column,
+                    index_column_name,
+                    sheet_name,
+                    source_name,
+                )
+            ]
         elif branch_dataframe is not None:
-            # 情况2：没有聚合结果但有dataframe，直接使用dataframe
-            return self._create_dataframe_sheet(
-                branch_id, branch_dataframe, sheet_name, source_name
-            )
+            # 情况2：没有聚合结果但有dataframe
+            if isinstance(branch_dataframe, dict):
+                # 按索引值组织的DataFrame字典，为每个索引值创建一个Sheet
+                return self._create_multiple_dataframe_sheets(
+                    branch_id, branch_dataframe, sheet_name, source_name
+                )
+            else:
+                # 单个DataFrame，直接使用dataframe
+                return [
+                    self._create_dataframe_sheet(
+                        branch_id, branch_dataframe, sheet_name, source_name
+                    )
+                ]
         else:
             # 情况3：既没有聚合结果也没有dataframe，创建空Sheet
             columns = [index_column_name] if include_index_column else []
-            df = DataFrame(columns=columns, data=[], total_rows=0)
-            return SheetData(
-                sheet_name=sheet_name,
-                dataframe=df,
-                branch_id=branch_id,
-                source_name=source_name,
-            )
-            
+            df = pd.DataFrame(columns=columns)
+            return [
+                SheetData(
+                    sheet_name=sheet_name,
+                    dataframe=df,
+                    branch_id=branch_id,
+                    source_name=source_name,
+                )
+            ]
+
     def _create_aggregated_sheet(
         self,
         branch_id: str,
@@ -201,7 +220,8 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
             data_rows.append(row)
 
         # 创建DataFrame
-        df = DataFrame(columns=columns, data=data_rows, total_rows=len(data_rows))
+        # df = DataFrame(columns=columns, data=data_rows, total_rows=len(data_rows))
+        df = pd.DataFrame(columns=columns, data=data_rows)
 
         return SheetData(
             sheet_name=sheet_name,
@@ -209,11 +229,46 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
             branch_id=branch_id,
             source_name=source_name,
         )
-        
+
+    def _create_multiple_dataframe_sheets(
+        self,
+        branch_id: str,
+        index_dataframes: Dict[IndexValue, pd.DataFrame],
+        base_sheet_name: str,
+        source_name: str,
+    ) -> List[SheetData]:
+        """
+        根据按索引值组织的DataFrame字典创建多个Sheet
+
+        Args:
+            branch_id: 分支ID
+            index_dataframes: 按索引值组织的DataFrame字典
+            base_sheet_name: 基础sheet名称
+            source_name: 源名称
+
+        Returns:
+            Sheet数据列表
+        """
+        sheets = []
+        for index_value, dataframe in index_dataframes.items():
+            # 为每个索引值创建独立的sheet，名称格式为 "分支名-索引值"
+            sheet_name = f"{base_sheet_name}-{index_value}"
+            sheet_name = self._sanitize_sheet_name(sheet_name)
+
+            sheet_data = SheetData(
+                sheet_name=sheet_name,
+                dataframe=dataframe,
+                branch_id=branch_id,
+                source_name=f"{source_name}-{index_value}",
+            )
+            sheets.append(sheet_data)
+
+        return sheets
+
     def _create_dataframe_sheet(
         self,
         branch_id: str,
-        branch_dataframe: DataFrame,
+        branch_dataframe: pd.DataFrame,
         sheet_name: str,
         source_name: str,
     ) -> SheetData:
@@ -273,7 +328,7 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
 
     def _write_output_file(self, sheets: List[SheetData], output_file_path: str):
         """
-        将结果写入Excel文件
+        将结果写入Excel文件，并抹掉nan为None
 
         Args:
             sheets: Sheet数据列表
@@ -289,13 +344,17 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
             with pd.ExcelWriter(output_file_path, engine="openpyxl") as writer:
                 for sheet_data in sheets:
                     # 转换为pandas DataFrame
-                    pandas_df = sheet_data.dataframe.to_pandas()
+                    # 现在使用pandas DataFrame
+                    # pandas_df = sheet_data.dataframe.to_pandas()
+                    pandas_df = sheet_data.dataframe
 
                     # 确保sheet名称符合Excel规范
                     sheet_name = self._sanitize_sheet_name(sheet_data.sheet_name)
 
                     # 写入Sheet
-                    pandas_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    pandas_df.to_excel(
+                        writer, sheet_name=sheet_name, index=False, na_rep=""
+                    )
 
             # print(f"Output file written to: {output_file_path}")
 

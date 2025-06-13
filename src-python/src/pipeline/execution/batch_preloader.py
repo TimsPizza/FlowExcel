@@ -171,13 +171,17 @@ class BatchPreloader:
         # read_id = self.analyzer.onExcelReadStart(batch_info.file_path, sheet_name)
 
         try:
-            # 获取header row
+            # 获取header row信息
             header_row = batch_info.sheet_header_rows.get(sheet_name, 0)
 
             # 读取Excel
             df = pd.read_excel(
                 batch_info.file_path, sheet_name=sheet_name, header=header_row
             )
+            
+            # 使用智能数据清理器进行清理
+            from ..utils.data_cleaner import clean_dataframe_with_smart_strategy
+            cleaned_df = clean_dataframe_with_smart_strategy(df)
 
             load_time_ms = (time.time() - start_time) * 1000
 
@@ -188,15 +192,15 @@ class BatchPreloader:
                 file_size = None
 
             # 批量预加载不计入常规Excel IO统计
-            # self.analyzer.onExcelReadFinish(read_id, len(df), file_size)
+            # self.analyzer.onExcelReadFinish(read_id, len(cleaned_df), file_size)
 
             return PreloadResult(
                 file_id=batch_info.file_id,
                 sheet_name=sheet_name,
                 success=True,
-                dataframe=df,
+                dataframe=cleaned_df,
                 load_time_ms=load_time_ms,
-                rows=len(df),
+                rows=len(cleaned_df),
             )
 
         except Exception as e:

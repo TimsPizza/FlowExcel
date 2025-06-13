@@ -12,6 +12,7 @@ import pandas as pd
 import time
 from threading import Lock
 from pipeline.performance.analyzer import get_performance_analyzer
+import numpy as np
 
 
 # ==================== 基础数据类型 ====================
@@ -73,8 +74,41 @@ class DataFrame(BaseModel):
             conversion_id = None
 
         try:
+            # 安全地转换DataFrame数据，处理各种pandas数据类型
+            def safe_convert_value(value):
+                """安全转换单个值"""
+                if pd.isna(value):
+                    return None
+                elif hasattr(value, 'item'):  # pandas扩展类型或numpy标量
+                    try:
+                        converted = value.item()
+                        if isinstance(converted, (int, float, str, bool)):
+                            return converted
+                        else:
+                            return str(converted)
+                    except (ValueError, AttributeError):
+                        return str(value)
+                elif isinstance(value, (int, float, str, bool)):
+                    return value
+                elif isinstance(value, np.integer):
+                    return int(value)
+                elif isinstance(value, np.floating):
+                    return float(value)
+                else:
+                    return str(value)
+            
+            # 使用numpy的向量化操作处理数据
+            data_rows = []
+            for i in range(len(df)):
+                row_data = []
+                for j, col in enumerate(df.columns):
+                    value = df.iloc[i, j]
+                    converted_value = safe_convert_value(value)
+                    row_data.append(converted_value)
+                data_rows.append(row_data)
+            
             result = cls(
-                columns=df.columns.tolist(), data=df.values.tolist(), total_rows=len(df)
+                columns=df.columns.astype(str).tolist(), data=data_rows, total_rows=len(df)
             )
 
             if analyzer and conversion_id:
@@ -155,7 +189,7 @@ class SheetSelectorInput(NodeInput):
 class SheetSelectorOutput(NodeOutput):
     """表选择节点输出"""
 
-    dataframe: Union[DataFrame, pd.DataFrame] = Field(
+    dataframe: pd.DataFrame = Field(
         ..., description="选中的DataFrame"
     )
     sheet_name: str = Field(..., description="实际使用的sheet名")
@@ -169,7 +203,7 @@ class SheetSelectorOutput(NodeOutput):
 class RowFilterInput(NodeInput):
     """行过滤节点输入"""
 
-    dataframe: Union[DataFrame, pd.DataFrame] = Field(
+    dataframe: pd.DataFrame = Field(
         ..., description="待过滤的DataFrame"
     )
     index_value: IndexValue = Field(..., description="当前索引值")
@@ -181,7 +215,7 @@ class RowFilterInput(NodeInput):
 class RowFilterOutput(NodeOutput):
     """行过滤节点输出"""
 
-    dataframe: Union[DataFrame, pd.DataFrame] = Field(
+    dataframe: pd.DataFrame = Field(
         ..., description="过滤后的DataFrame"
     )
     index_value: IndexValue = Field(..., description="对应的索引值")
@@ -195,7 +229,7 @@ class RowFilterOutput(NodeOutput):
 class RowLookupInput(NodeInput):
     """行查找节点输入"""
 
-    dataframe: Union[DataFrame, pd.DataFrame] = Field(..., description="源DataFrame")
+    dataframe: pd.DataFrame = Field(..., description="源DataFrame")
     index_value: IndexValue = Field(..., description="用于匹配的索引值")
 
     class Config:
@@ -205,7 +239,7 @@ class RowLookupInput(NodeInput):
 class RowLookupOutput(NodeOutput):
     """行查找节点输出"""
 
-    dataframe: Union[DataFrame, pd.DataFrame] = Field(
+    dataframe: pd.DataFrame = Field(
         ..., description="匹配的行组成的DataFrame"
     )
     index_value: IndexValue = Field(..., description="对应的索引值")
@@ -219,7 +253,7 @@ class RowLookupOutput(NodeOutput):
 class AggregatorInput(NodeInput):
     """聚合节点输入"""
 
-    dataframe: Union[DataFrame, pd.DataFrame] = Field(
+    dataframe: pd.DataFrame = Field(
         ..., description="完整的上游非聚合节点输出DataFrame"
     )
     index_value: IndexValue = Field(..., description="当前索引值")
@@ -253,18 +287,25 @@ class OutputInput(NodeInput):
         ..., description="按分支组织的聚合结果，格式为 {分支ID: {索引值: {列名: 值}}}"
     )
     
-    branch_dataframes: Dict[str, DataFrame] = Field(
-        default_factory=dict, description="按分支组织的非聚合 dataframe 结果，格式为 {分支ID: DataFrame}"
+    branch_dataframes: Dict[str, Union[pd.DataFrame, Dict[IndexValue, pd.DataFrame]]] = Field(
+        default_factory=dict, description="按分支组织的非聚合 dataframe 结果，格式为 {分支ID: DataFrame} 或 {分支ID: {索引值: DataFrame}}"
     )
+
+    class Config:
+        arbitrary_types_allowed = True  # 允许pandas DataFrame
 
 
 class SheetData(BaseModel):
     """单个Sheet的数据"""
 
     sheet_name: str = Field(..., description="Sheet名称")
-    dataframe: DataFrame = Field(..., description="Sheet内容")
+    dataframe: pd.DataFrame = Field(..., description="Sheet内容")
+    # dataframe: DataFrame = Field(..., description="Sheet内容")
     branch_id: str = Field(..., description="对应的分支ID")
     source_name: str = Field(..., description="索引源的易读名称")
+    class Config:
+        arbitrary_types_allowed = True  # 允许pandas DataFrame
+
 
 
 class OutputResult(NodeOutput):
@@ -305,10 +346,10 @@ class PathContext(BaseModel):
     """路径执行上下文 - 单个索引值执行期间的上下文"""
 
     current_index: IndexValue = Field(..., description="当前索引值")
-    last_non_aggregator_dataframe: Optional[Union[DataFrame, pd.DataFrame]] = Field(
+    last_non_aggregator_dataframe: Optional[pd.DataFrame] = Field(
         None, description="最近的非聚合节点输出DataFrame"
     )
-    current_dataframe: Optional[Union[DataFrame, pd.DataFrame]] = Field(
+    current_dataframe: Optional[pd.DataFrame] = Field(
         None, description="当前节点的DataFrame"
     )
     execution_trace: List[str] = Field(default_factory=list, description="执行轨迹")
@@ -328,8 +369,11 @@ class BranchContext(BaseModel):
     branch_metadata: Dict[str, Any] = Field(
         default_factory=dict, description="分支元数据"
     )
-    last_non_aggregated_dataframe: Optional[Union[DataFrame, pd.DataFrame]] = Field(
+    last_non_aggregated_dataframe: Optional[pd.DataFrame] = Field(
         None, description="最后一个非聚合节点的DataFrame输出"
+    )
+    index_dataframes: Dict[IndexValue, pd.DataFrame] = Field(
+        default_factory=dict, description="按索引值组织的非聚合节点DataFrame输出"
     )
     
     class Config:
@@ -351,6 +395,14 @@ class BranchContext(BaseModel):
                 result.column_name: result.result_value for result in results
             }
         return final_results
+
+    def add_index_dataframe(self, index_value: IndexValue, dataframe: pd.DataFrame):
+        """添加索引值对应的DataFrame"""
+        self.index_dataframes[index_value] = dataframe
+
+    def get_index_dataframes(self) -> Dict[IndexValue, pd.DataFrame]:
+        """获取所有索引值对应的DataFrame"""
+        return self.index_dataframes.copy()
 
 
 # ==================== 节点定义类型 ====================

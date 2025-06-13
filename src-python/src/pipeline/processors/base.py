@@ -4,19 +4,18 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Optional
 import pandas as pd
 
-from ..models import (
+from pipeline.models import (
     BaseNode,
     GlobalContext,
     PathContext,
     BranchContext,
     NodeType,
-    NodeExecutionResult,
     ExecutionMode,
 )
-from ..performance.analyzer import get_performance_analyzer
+from pipeline.performance.analyzer import get_performance_analyzer
 
 # 泛型类型变量
 InputType = TypeVar("InputType")
@@ -123,6 +122,10 @@ class AbstractNodeProcessor(ABC, Generic[InputType, OutputType]):
         try:
             df = pd.read_excel(file_info.path, sheet_name=sheet_name, header=header_row)
             
+            # 应用智能数据清洗逻辑
+            from ..utils.data_cleaner import clean_dataframe_with_smart_strategy
+            df = clean_dataframe_with_smart_strategy(df)
+            
             # 获取文件大小（可选，用于更详细的性能分析）
             try:
                 import os
@@ -131,7 +134,7 @@ class AbstractNodeProcessor(ABC, Generic[InputType, OutputType]):
                 file_size = None
             
             self.analyzer.onExcelReadFinish(read_id, len(df), file_size)
-            
+
         except Exception as e:
             self.analyzer.onExcelReadFinish(read_id, 0, None)
             raise e

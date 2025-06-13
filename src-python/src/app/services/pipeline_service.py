@@ -213,6 +213,50 @@ class PipelineService:
             # 如果包含无法编码的字符，使用安全的替换
             return error_msg.encode("utf-8", errors="replace").decode("utf-8")
 
+    @staticmethod
+    def _normalize_pandas_data(data):
+        """
+        专门处理pandas DataFrame中的numpy数据类型，确保FastAPI可以正常序列化
+        
+        Args:
+            data: 包含DataFrame的数据结构
+            
+        Returns:
+            处理后的数据结构
+        """
+        import pandas as pd
+        import numpy as np
+        
+        if isinstance(data, dict):
+            # 递归处理字典
+            return {k: PipelineService._normalize_pandas_data(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            # 递归处理列表
+            return [PipelineService._normalize_pandas_data(item) for item in data]
+        elif isinstance(data, pd.DataFrame):
+            # 处理DataFrame - 转换numpy数据类型为Python原生类型
+            normalized_df = data.copy()
+            for col in normalized_df.columns:
+                if pd.api.types.is_integer_dtype(normalized_df[col]):
+                    # 将numpy整数转为Python int
+                    normalized_df[col] = normalized_df[col].apply(
+                        lambda x: int(x) if pd.notna(x) else None
+                    )
+                elif pd.api.types.is_float_dtype(normalized_df[col]):
+                    # 将numpy浮点数转为Python float
+                    normalized_df[col] = normalized_df[col].apply(
+                        lambda x: float(x) if pd.notna(x) else None
+                    )
+                elif normalized_df[col].dtype == 'bool':
+                    # 将numpy布尔值转为Python bool
+                    normalized_df[col] = normalized_df[col].apply(
+                        lambda x: bool(x) if pd.notna(x) else None
+                    )
+            return normalized_df
+        else:
+            # 对于其他类型，直接返回
+            return data
+
     def execute_pipeline_from_request(
         self,
         workspace_id: Optional[str] = None,
@@ -261,12 +305,10 @@ class PipelineService:
             # 执行pipeline
             result = execute_pipeline(request)
 
-            # 转换结果格式
+
+            #  不再返回执行结果dataframe，这没有意义
             response_data = {
                 "success": result.success,
-                "output_data": (
-                    result.output_data.dict() if result.output_data else None
-                ),
                 "execution_summary": result.execution_summary.dict(),
                 "error": result.error,
                 "warnings": result.warnings,
@@ -1081,9 +1123,9 @@ class PipelineService:
                             limited_df = current_dataframe
                         else:
                             # 如果是pandas DataFrame，转换后限制行数
-                            custom_df = DataFrame.from_pandas(current_dataframe)
+                            # custom_df = DataFrame.from_pandas(current_dataframe)
                             # limited_df = custom_df.limit_rows(max_rows)
-                            limited_df = custom_df
+                            limited_df = current_dataframe
 
                         outputs.append(
                             {

@@ -1,11 +1,12 @@
 import os
 import sys
 
+
 def resource_path(relative_path: str) -> str:
     """
     Get absolute path to resource, works for dev and for PyInstaller's onedir mode.
     """
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # We are running in a bundle (packaged by PyInstaller)
         # sys.executable is the path to the executable.
         base_path = os.path.dirname(sys.executable)
@@ -15,6 +16,7 @@ def resource_path(relative_path: str) -> str:
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
     return os.path.join(base_path, relative_path)
+
 
 """
 工作区配置转换工具
@@ -31,18 +33,25 @@ import datetime
 import numpy as np
 
 from pipeline.models import (
-    WorkspaceConfig, FileInfo, BaseNode, Edge, NodeType, ExecutionMode,
-    ExecutePipelineRequest
+    WorkspaceConfig,
+    FileInfo,
+    BaseNode,
+    Edge,
+    NodeType,
+    ExecutionMode,
+    ExecutePipelineRequest,
 )
 
 
-def convert_workspace_config_from_json(workspace_data: Dict[str, Any]) -> WorkspaceConfig:
+def convert_workspace_config_from_json(
+    workspace_data: Dict[str, Any],
+) -> WorkspaceConfig:
     """
     将前端JSON格式的工作区配置转换为pipeline系统的WorkspaceConfig
-    
+
     Args:
         workspace_data: 前端工作区配置字典
-        
+
     Returns:
         转换后的WorkspaceConfig对象
     """
@@ -53,16 +62,18 @@ def convert_workspace_config_from_json(workspace_data: Dict[str, Any]) -> Worksp
             id=file_data["id"],
             name=file_data.get("name", file_data.get("alias", "")),
             path=file_data["path"],
-            sheet_metas=file_data.get("sheet_metas", [])
+            sheet_metas=file_data.get("sheet_metas", []),
         )
         files.append(file_info)
-    
+
     # 转换节点信息
     flow_nodes = []
     for node_data in workspace_data.get("flow_nodes", []):
         # 将前端节点类型转换为NodeType枚举
-        node_type_str = node_data.get("type") or node_data.get("data", {}).get("nodeType")
-        
+        node_type_str = node_data.get("type") or node_data.get("data", {}).get(
+            "nodeType"
+        )
+
         node_type_mapping = {
             "indexSource": NodeType.INDEX_SOURCE,
             "sheetSelector": NodeType.SHEET_SELECTOR,
@@ -71,31 +82,26 @@ def convert_workspace_config_from_json(workspace_data: Dict[str, Any]) -> Worksp
             "aggregator": NodeType.AGGREGATOR,
             "output": NodeType.OUTPUT,
         }
-        
+
         node_type = node_type_mapping.get(node_type_str, NodeType.INDEX_SOURCE)
-        
+
         base_node = BaseNode(
-            id=node_data["id"],
-            type=node_type,
-            data=node_data.get("data", {})
+            id=node_data["id"], type=node_type, data=node_data.get("data", {})
         )
         flow_nodes.append(base_node)
-    
+
     # 转换边信息
     flow_edges = []
     for edge_data in workspace_data.get("flow_edges", []):
-        edge = Edge(
-            source=edge_data["source"],
-            target=edge_data["target"]
-        )
+        edge = Edge(source=edge_data["source"], target=edge_data["target"])
         flow_edges.append(edge)
-    
+
     return WorkspaceConfig(
         id=workspace_data["id"],
         name=workspace_data["name"],
         files=files,
         flow_nodes=flow_nodes,
-        flow_edges=flow_edges
+        flow_edges=flow_edges,
     )
 
 
@@ -107,27 +113,29 @@ def create_execute_pipeline_request(
 ) -> ExecutePipelineRequest:
     """
     创建pipeline执行请求
-    
+
     Args:
         workspace_config: 工作区配置
         target_node_id: 目标节点ID
         execution_mode: 执行模式字符串
         test_mode_max_rows: 测试模式最大行数
-        
+
     Returns:
         ExecutePipelineRequest对象
     """
     # 转换执行模式
-    exec_mode = ExecutionMode.TEST if execution_mode.lower() == "test" else ExecutionMode.PRODUCTION
-    
+    exec_mode = (
+        ExecutionMode.TEST
+        if execution_mode.lower() == "test"
+        else ExecutionMode.PRODUCTION
+    )
+
     return ExecutePipelineRequest(
         workspace_config=workspace_config,
         target_node_id=target_node_id,
         execution_mode=exec_mode,
         test_mode_max_rows=test_mode_max_rows,
-    ) 
-    
-
+    )
 
 
 def serialize_value(obj):
@@ -146,11 +154,11 @@ def serialize_value(obj):
     if isinstance(obj, str):
         try:
             # 确保字符串可以正确编码
-            obj.encode('utf-8')
+            obj.encode("utf-8")
             return obj
         except UnicodeEncodeError:
             # 如果包含无法编码的字符，则使用安全的替换
-            return obj.encode('utf-8', errors='replace').decode('utf-8')
+            return obj.encode("utf-8", errors="replace").decode("utf-8")
     return obj
 
 

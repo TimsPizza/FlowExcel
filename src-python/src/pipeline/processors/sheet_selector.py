@@ -98,12 +98,6 @@ class SheetSelectorProcessor(
                 global_context, target_file_id, sheet_name
             )
 
-            # 应用测试模式限制
-            # pandas_df = self.apply_test_mode_limit(pandas_df, global_context)
-
-            # 直接返回pandas DataFrame，避免转换开销
-            # custom_df = DataFrame.from_pandas(pandas_df)  # 移除转换
-
             # 更新路径上下文
             path_context.current_dataframe = pandas_df  # 直接使用pandas DataFrame
             if path_context.last_non_aggregator_dataframe is None:

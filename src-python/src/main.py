@@ -112,11 +112,11 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logging.info("Application starting up...")
-    watchdog.start()
+    # watchdog.start() # comment out for debugging
     yield
     # Shutdown
     logging.info("Application shutting down...")
-    watchdog.stop()
+    # watchdog.stop() # comment out for debugging
 
 
 app = FastAPI(

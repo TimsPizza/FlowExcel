@@ -5,33 +5,42 @@
 """
 
 import time
-from typing import List, Dict
+from typing import Dict, List
+import pandas as pd
 
-from .path_analyzer import PathAnalyzer, ExecutionBranch, MultiInputNodeInfo
-from .context_manager import ContextManager
-from .file_analyzer import FileAnalyzer
-from .batch_preloader import BatchPreloader
-from ..models import (
+from pipeline.models import (
+    BaseNode,
+    BranchContext,
+    BranchExecutionResult,
     DataFrame,
     ExecutePipelineRequest,
-    PipelineExecutionResult,
-    PipelineExecutionSummary,
+    ExecutionMode,
     IndexExecutionResult,
-    BranchExecutionResult,
-    NodeExecutionResult,
-    IndexValue,
     IndexSourceInput,
     IndexSourceOutput,
+    IndexValue,
+    NodeExecutionResult,
+    NodeType,
     OutputInput,
     OutputResult,
-    BaseNode,
-    NodeType,
-    ExecutionMode,
     PathContext,
-    BranchContext,
+    PipelineExecutionResult,
+    PipelineExecutionSummary,
     SheetSelectorOutput,
 )
-from ..processors import IndexSourceProcessor, OutputProcessor
+from pipeline.processors import (
+    AggregatorProcessor,
+    IndexSourceProcessor,
+    OutputProcessor,
+    RowFilterProcessor,
+    RowLookupProcessor,
+    SheetSelectorProcessor,
+)
+
+from .batch_preloader import BatchPreloader
+from .context_manager import ContextManager
+from .file_analyzer import FileAnalyzer
+from .path_analyzer import ExecutionBranch, MultiInputNodeInfo, PathAnalyzer
 
 
 class PipelineExecutor:
@@ -46,14 +55,6 @@ class PipelineExecutor:
         # 用于特殊节点的处理器
         self.index_source_processor = IndexSourceProcessor()
         self.output_processor = OutputProcessor()
-
-        # 添加其他节点处理器
-        from ..processors import (
-            SheetSelectorProcessor,
-            RowFilterProcessor,
-            RowLookupProcessor,
-            AggregatorProcessor,
-        )
 
         self.processors = {
             NodeType.INDEX_SOURCE: self.index_source_processor,
@@ -295,10 +296,16 @@ class PipelineExecutor:
                     self._update_path_context_from_output(
                         path_context, node.type, output
                     )
-                    
+
                     # 如果是非聚合节点，更新分支上下文的最后非聚合dataframe
-                    if node.type not in [NodeType.AGGREGATOR, NodeType.OUTPUT, NodeType.INDEX_SOURCE] and hasattr(output, "dataframe"):
+                    if node.type not in [
+                        NodeType.AGGREGATOR,
+                        NodeType.OUTPUT,
+                        NodeType.INDEX_SOURCE,
+                    ] and hasattr(output, "dataframe"):
                         branch_context.last_non_aggregated_dataframe = output.dataframe
+                        # 同时按索引值保存DataFrame
+                        branch_context.add_index_dataframe(index_value, output.dataframe)
 
                 except Exception as e:
                     error_result = NodeExecutionResult(
@@ -401,24 +408,24 @@ class PipelineExecutor:
         # 收集各分支的聚合结果和非聚合dataframe结果
         branch_aggregated_results = {}
         branch_dataframes = {}
-        
+
         for branch_id, branch in execution_branches.items():
             branch_context = self.context_manager.get_branch_context(branch_id)
             if branch_context:
                 # 获取分支的聚合结果
                 branch_final_results = branch_context.get_final_results()
                 branch_aggregated_results[branch_id] = branch_final_results
-                
-                # 如果没有聚合结果，尝试获取最后一个非聚合节点的dataframe输出
+
+                # 如果没有聚合结果，尝试获取按索引值组织的dataframe输出
                 if not branch_final_results:
-                    dataframe = self._get_last_dataframe_for_branch(branch_id, branch, branch_results, node_map)
-                    if dataframe is not None:
-                        branch_dataframes[branch_id] = dataframe if isinstance(dataframe, DataFrame) else DataFrame.from_pandas(dataframe)
+                    index_dataframes = self._get_index_dataframes_for_branch(branch_id)
+                    if index_dataframes:
+                        branch_dataframes[branch_id] = index_dataframes
 
         # 创建输出节点输入 - 传递按分支组织的数据
         output_input = OutputInput(
             branch_aggregated_results=branch_aggregated_results,
-            branch_dataframes=branch_dataframes
+            branch_dataframes=branch_dataframes,
         )
 
         # 创建临时路径上下文（输出节点不需要特定的路径上下文）
@@ -561,12 +568,12 @@ class PipelineExecutor:
             节点输入数据
         """
         from ..models import (
+            AggregatorInput,
             IndexSourceInput,
-            SheetSelectorInput,
+            OutputInput,
             RowFilterInput,
             RowLookupInput,
-            AggregatorInput,
-            OutputInput,
+            SheetSelectorInput,
         )
 
         if node.type == NodeType.INDEX_SOURCE:
@@ -630,12 +637,12 @@ class PipelineExecutor:
             ValueError: 如果输出类型不匹配预期
         """
         from ..models import (
+            AggregatorOutput,
             IndexSourceOutput,
-            SheetSelectorOutput,
+            OutputResult,
             RowFilterOutput,
             RowLookupOutput,
-            AggregatorOutput,
-            OutputResult,
+            SheetSelectorOutput,
         )
 
         try:
@@ -687,12 +694,18 @@ class PipelineExecutor:
                 f"Output type: {type(output)}, error: {str(e)}"
             ) from e
 
-    def _get_last_dataframe_for_branch(self, branch_id: str, branch: ExecutionBranch, branch_results: List[BranchExecutionResult], node_map: Dict[str, BaseNode]):
+    def _get_last_dataframe_for_branch(
+        self,
+        branch_id: str,
+        branch: ExecutionBranch,
+        branch_results: List[BranchExecutionResult],
+        node_map: Dict[str, BaseNode],
+    ):
         """
         获取分支的最后一个非聚合节点的dataframe输出
 
         Args:
-            branch_id: 分支ID  
+            branch_id: 分支ID
             branch: 执行分支
             branch_results: 分支执行结果列表
             node_map: 节点映射
@@ -703,23 +716,47 @@ class PipelineExecutor:
         try:
             # 直接从分支上下文获取最后的非聚合dataframe
             branch_context = self.context_manager.get_branch_context(branch_id)
-            if branch_context and branch_context.last_non_aggregated_dataframe is not None:
+            if (
+                branch_context
+                and branch_context.last_non_aggregated_dataframe is not None
+            ):
                 return branch_context.last_non_aggregated_dataframe
-                
+
             return None
-            
+
         except Exception as e:
             # print(f"Warning: Failed to get last dataframe for branch {branch_id}: {e}")
             return None
-            
-    def _get_node_latest_dataframe_from_path_context(self, node_id: str, branch_id: str):
+
+    def _get_index_dataframes_for_branch(self, branch_id: str) -> Dict[IndexValue, pd.DataFrame]:
+        """
+        获取分支的按索引值组织的dataframe输出
+
+        Args:
+            branch_id: 分支ID
+
+        Returns:
+            按索引值组织的dataframe字典，如果找不到则返回空字典
+        """
+        try:
+            branch_context = self.context_manager.get_branch_context(branch_id)
+            if branch_context:
+                return branch_context.get_index_dataframes()
+            return {}
+        except Exception as e:
+            # print(f"Warning: Failed to get index dataframes for branch {branch_id}: {e}")
+            return {}
+
+    def _get_node_latest_dataframe_from_path_context(
+        self, node_id: str, branch_id: str
+    ):
         """
         从路径上下文中获取节点的最新dataframe输出
-        
+
         Args:
             node_id: 节点ID
             branch_id: 分支ID
-            
+
         Returns:
             节点的dataframe输出，如果找不到则返回None
         """
