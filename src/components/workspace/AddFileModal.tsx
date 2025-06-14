@@ -14,8 +14,10 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useShallow } from "zustand/react/shallow";
+import { useTranslation } from "react-i18next";
 
 const AddFileModal = () => {
+  const { t } = useTranslation();
   const toast = useToast();
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [fileName, setFilename] = useState<string>("");
@@ -30,17 +32,17 @@ const AddFileModal = () => {
 
   const handleAddFileToWorkspace = useCallback(async () => {
     if (!selectedFilePath || !fileName || !previewData) {
-      toast.error("无法添加文件: 缺少路径、别名或有效的预览数据。");
+      toast.error(t("file.add.missingData"));
       return;
     }
     if (previewError) {
-      toast.error("无法添加文件: 请先解决预览错误。");
+      toast.error(t("file.add.previewError"));
       return;
     }
 
     // Check if a file with the same path or alias already exists
     if (files?.some((f) => f.path === selectedFilePath)) {
-      toast.warning(`文件 '${fileName}' 已存在于工作区中。`);
+      toast.warning(t("file.add.alreadyExists", { fileName }));
       return;
     }
 
@@ -49,7 +51,7 @@ const AddFileModal = () => {
       // 获取文件信息
       const fileInfoResponse = await apiClient.getFileInfo(selectedFilePath);
       if (!fileInfoResponse?.file_info) {
-        toast.error("无法获取文件信息，请检查文件是否存在");
+        toast.error(t("file.add.fileInfoError"));
         return;
       }
 
@@ -70,7 +72,7 @@ const AddFileModal = () => {
     } catch (error) {
       console.error("Error adding file to workspace:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`添加文件失败: ${errorMsg}`);
+      toast.error(t("file.add.failed", { error: errorMsg }));
     } finally {
       setIsAddingFile(false);
     }
@@ -92,7 +94,7 @@ const AddFileModal = () => {
         multiple: false,
         filters: [
           {
-            name: "Excel Files",
+            name: t("file.excelFiles"),
             extensions: ["xlsx", "xls", "csv"],
           },
         ],
@@ -111,7 +113,7 @@ const AddFileModal = () => {
     } catch (err) {
       console.error("Error selecting file:", err);
       const errorMsg = typeof err === "string" ? err : (err as Error).message;
-      toast.error(`选择文件失败: ${errorMsg}`);
+      toast.error(t("file.select.failed", { error: errorMsg }));
     }
   }, []);
 
@@ -126,7 +128,7 @@ const AddFileModal = () => {
     } catch (error) {
       console.error("Error previewing file:", error);
       const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`预览文件失败: ${errorMsg}`);
+      toast.error(t("file.preview.failed", { error: errorMsg }));
     }
   };
 
@@ -139,7 +141,7 @@ const AddFileModal = () => {
     >
       <Dialog.Trigger>
         <Button variant="soft" size="2">
-          添加文件
+          {t("file.add.title")}
         </Button>
       </Dialog.Trigger>
       <Dialog.Content>
@@ -147,32 +149,32 @@ const AddFileModal = () => {
           <Flex direction="row" justify="between">
             <Text>{selectedFilePath?.split("/").pop()}</Text>
             <Dialog.Close>
-              <Button variant="soft">关闭</Button>
+              <Button variant="soft">{t("common.close")}</Button>
             </Dialog.Close>
           </Flex>
         </Dialog.Title>
         <Dialog.Content className="min-h-48 max-w-2xl px-4 py-2">
           {!selectedFilePath && (
             <Flex direction="column" justify="between" gap="2" flexGrow={"1"}>
-              <Text align="center">请选择文件</Text>
-              <Button onClick={handleFileSelect}>选择文件</Button>
+              <Text align="center">{t("file.select.prompt")}</Text>
+              <Button onClick={handleFileSelect}>{t("file.select.button")}</Button>
             </Flex>
           )}
           {selectedFilePath && isPreviewLoading && (
             <Flex direction="row" justify="between">
-              <Text>加载中...</Text>
+              <Text>{t("common.loading")}</Text>
             </Flex>
           )}
           {selectedFilePath && !previewData && !isPreviewLoading && (
             <Flex direction="row" justify="between">
-              <Text>加载失败</Text>
+              <Text>{t("file.preview.loadFailed")}</Text>
               <Button
                 onClick={() => {
                   setSelectedFilePath(null);
                   handleFileSelect();
                 }}
               >
-                重新加载
+                {t("file.preview.reload")}
               </Button>
             </Flex>
           )}
@@ -187,7 +189,7 @@ const AddFileModal = () => {
               </Box>
               <Dialog.Close onClick={handleAddFileToWorkspace}>
                 <Button variant="soft" disabled={isAddingFile}>
-                  {isAddingFile ? "添加中..." : "添加文件"}
+                  {isAddingFile ? t("file.add.adding") : t("file.add.button")}
                 </Button>
               </Dialog.Close>
             </Flex>

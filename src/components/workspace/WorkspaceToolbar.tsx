@@ -6,6 +6,10 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import AlertExit from "@/components/flow/AlertExit";
+import { useSaveWorkspaceMutation } from "@/hooks/workspaceQueries";
+import { ChevronLeftIcon } from "@radix-ui/react-icons";
+import { useTranslation } from "react-i18next";
+import { Heading } from "@radix-ui/themes";
 
 interface WorkspaceToolbarProps {
   workspaceName: string;
@@ -27,6 +31,8 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
   const navigate = useNavigate();
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const isWsDirty = useWorkspaceStore((state) => state.isDirty);
+  const { t } = useTranslation();
+
   const handleNavigateBack = () => {
     navigate(`/workspace`);
   };
@@ -41,24 +47,24 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
       <Flex align="center" gap="3">
         {isWsDirty ? (
           <AlertExit
-            title="返回"
-            description="离开工作区后，您将丢失所有未保存的更改。"
+            title={t("workspace.exitTitle")}
+            description={t("workspace.exitDescription")}
             onConfirm={handleNavigateBack}
           />
         ) : (
           <Button color="gray" variant="outline" onClick={handleNavigateBack}>
             <ArrowLeftIcon />
             <Text size="2" weight="bold" color="gray">
-              返回
+              {t("workspace.back")}
             </Text>
           </Button>
         )}
         <Text size="2" weight="bold" color="gray">
-          工作区:
+          {t("workspace.title")}:
         </Text>
         <TextField.Root
           size="2"
-          placeholder="输入工作区名称"
+          placeholder={t("workspace.namePlaceholder")}
           value={workspaceName}
           onChange={onNameChange}
           disabled={isSaving} // Disable editing while saving
@@ -73,7 +79,7 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           }
         >
           <PlusIcon className="mr-1" />
-          文件管理
+          {t("workspace.fileManager")}
         </Button>
         <Button
           size="2"
@@ -84,20 +90,20 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           }
         >
           <PlusIcon className="mr-1" />
-          流程编辑
+          {t("workspace.flowEditor")}
         </Button>
         {isDirty && (
           <Text size="1" color="orange" className="ml-2">
-            * 未保存的更改
+            {t("workspace.unsavedChanges")}
           </Text>
         )}
         {isOutdated && (
           <Flex align="start" gap="1" direction="column">
             <Text size="1" color="red" className="ml-2">
-              * 侦测到工作区文件发生变动, 执行可能出现异常
+              {t("file.someFilesOutdated")}
             </Text>
             <Text size="1" color="red" className="ml-2">
-              * 需前往文件管理进行操作
+              {t("file.needFileManagerAction")}
             </Text>
           </Flex>
         )}
@@ -117,7 +123,11 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           ) : (
             <CheckIcon className="mr-0.5" />
           )}
-          {isDirty ? (isSaving ? "保存中..." : "保存工作区") : "无更改"}
+          {isDirty
+            ? isSaving
+              ? t("common.saving")
+              : t("common.save")
+            : t("workspace.noChanges")}
         </Button>
       </Flex>
     </Flex>

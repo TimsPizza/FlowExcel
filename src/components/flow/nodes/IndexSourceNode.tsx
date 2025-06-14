@@ -13,8 +13,10 @@ import { Flex, TextField, RadioGroup, Select, Text } from "@radix-ui/themes";
 import { useMemo, useState } from "react";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
+import { useTranslation } from "react-i18next";
 
 export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const { t } = useTranslation();
   const nodeId = useNodeId()!;
   const nodeData = data as IndexSourceNodeDataContext;
   const { files } = useWorkspaceStore(useShallow(fileSelector));
@@ -109,7 +111,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
 
     if (!nodeData.sourceFileID) {
-      updateIndexSourceNodeData(nodeId, { error: "请选择源文件" });
+      updateIndexSourceNodeData(nodeId, { error: t("node.indexSourceNode.selectSourceFile") });
       return;
     }
 
@@ -132,14 +134,14 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
             }
           } else {
             updateIndexSourceNodeData(nodeId, {
-              error: result.error || "预览失败",
+              error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
           updateIndexSourceNodeData(nodeId, {
-            error: `预览失败: ${error.message}`,
+            error: t("node.common.previewFailedWithError", { error: error.message }),
             testResult: undefined,
           });
         },
@@ -155,7 +157,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         variant: "soft",
         label:
           files?.find((file) => file.id === nodeData.sourceFileID)?.name ||
-          "未指定!",
+          t("node.indexSourceNode.notSpecified"),
       });
     }
 
@@ -163,13 +165,13 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
       badges.push({
         color: "orange",
         variant: "soft",
-        label: "列名索引",
+        label: t("node.indexSourceNode.columnIndex"),
       });
     } else {
       badges.push({
         color: "blue",
         variant: "soft",
-        label: "工作表索引",
+        label: t("node.indexSourceNode.sheetIndex"),
       });
     }
     if (indexMode === "column" && nodeData.sheetName) {
@@ -193,6 +195,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     nodeData.columnName,
     indexMode,
     files,
+    t,
   ]);
 
   return (
@@ -208,7 +211,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         <Flex direction="column" gap="3">
           <Flex align="center" gap="2">
             <Text size="1" weight="bold" style={{ width: "60px" }}>
-              输出名称:
+              {t("node.indexSourceNode.outputName")}
             </Text>
             <TextField.Root
               value={nodeData.displayName}
@@ -219,13 +222,13 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
           </Flex>
           <Flex align="center" gap="2">
             <Text size="1" weight="bold" style={{ width: "60px" }}>
-              源文件:
+              {t("node.indexSourceNode.sourceFile")}
             </Text>
             <Select.Root
               value={nodeData.sourceFileID || ""}
               onValueChange={handleSelectFile}
             >
-              <Select.Trigger placeholder="选择文件" />
+              <Select.Trigger placeholder={t("node.indexSourceNode.selectFile")} />
               <Select.Content>
                 <Select.Group>
                   {files && files.length > 0 ? (
@@ -235,7 +238,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                       </Select.Item>
                     ))
                   ) : (
-                    <Text size="1">暂无文件</Text>
+                    <Text size="1">{t("node.indexSourceNode.noFiles")}</Text>
                   )}
                 </Select.Group>
               </Select.Content>
@@ -244,7 +247,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
 
           <Flex align="center" gap="2">
             <Text size="1" weight="bold" style={{ width: "60px" }}>
-              索引方式:
+              {t("node.indexSourceNode.indexMode")}
             </Text>
             <RadioGroup.Root
               value={indexMode}
@@ -254,8 +257,8 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
               size="1"
             >
               <Flex gap="2">
-                <RadioGroup.Item value="sheet">工作表名</RadioGroup.Item>
-                <RadioGroup.Item value="column">列名</RadioGroup.Item>
+                <RadioGroup.Item value="sheet">{t("node.indexSourceNode.sheetName")}</RadioGroup.Item>
+                <RadioGroup.Item value="column">{t("node.indexSourceNode.columnName")}</RadioGroup.Item>
               </Flex>
             </RadioGroup.Root>
           </Flex>
@@ -264,7 +267,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
             <>
               <Flex align="center" gap="2">
                 <Text size="1" weight="bold" style={{ width: "60px" }}>
-                  工作表:
+                  {t("node.indexSourceNode.worksheet")}
                 </Text>
                 <Select.Root
                   size="1"
@@ -272,7 +275,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   onValueChange={handleSheetChange}
                   disabled={!nodeData.sourceFileID}
                 >
-                  <Select.Trigger placeholder="选择工作表" />
+                  <Select.Trigger placeholder={t("node.indexSourceNode.selectSheet")} />
                   <Select.Content>
                     <Select.Group>
                       {nodeData.sourceFileID &&
@@ -293,7 +296,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
 
               <Flex align="center" gap="2">
                 <Text size="1" weight="bold" style={{ width: "60px" }}>
-                  索引列:
+                  {t("node.indexSourceNode.indexColumn")}
                 </Text>
                 <Select.Root
                   size="1"
@@ -301,7 +304,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   onValueChange={handleColumnNameChange}
                   disabled={!nodeData.sourceFileID || !nodeData.sheetName}
                 >
-                  <Select.Trigger placeholder="选择索引列" />
+                  <Select.Trigger placeholder={t("node.indexSourceNode.selectIndexColumn")} />
                   <Select.Content>
                     <Select.Group>
                       {headerRow?.column_names?.map((column: string) => (

@@ -3,7 +3,7 @@ import {
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
 import { useNodeColumns } from "@/hooks/useNodeColumns";
-import useToast from "@/hooks/useToast";
+import useI18nToast from "@/hooks/useI18nToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
@@ -11,15 +11,16 @@ import { FlowNodeProps, RowLookupNodeDataContext } from "@/types/nodes";
 import { Flex, ScrollArea, Select, Text } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
 import { useNodeId } from "reactflow";
+import { useTranslation } from "react-i18next";
 
 export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const toast = useToast();
+  const { t } = useTranslation();
+  const toast = useI18nToast();
   const nodeId = useNodeId()!;
   const nodeData = data as RowLookupNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const previewNodeMutation = usePreviewNodeMutation();
 
-  // 使用真实的列数据
   const {
     columns: availableColumns,
     isLoading: isLoadingColumns,
@@ -55,10 +56,9 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
     });
   };
 
-  // 新的预览函数，使用新API
   const previewNode = async () => {
     if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
+      toast.error("node.common.noWorkspaceFound");
       return;
     }
 
@@ -79,14 +79,16 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
             });
           } else {
             updateLocalNodeData({
-              error: result.error || "预览失败",
+              error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
           updateLocalNodeData({
-            error: `预览失败: ${error.message}`,
+            error: t("node.common.previewFailedWithError", {
+              error: error.message,
+            }),
             testResult: undefined,
           });
         },
@@ -100,11 +102,11 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
       badges.push({
         color: "green",
         variant: "soft",
-        label: "匹配列: " + nodeData.matchColumn,
+        label: nodeData.matchColumn,
       });
     }
     return badges;
-  }, [nodeData.matchColumn]);
+  }, [nodeData.matchColumn, t]);
 
   return (
     <EnhancedBaseNode
@@ -119,19 +121,21 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
         {/* 列加载状态 */}
         {isLoadingColumns && (
           <Text size="1" color="gray">
-            加载列名中...
+            {t("node.rowLookupNode.loadingColumns")}
           </Text>
         )}
 
         {columnsError && (
           <Text size="1" color="red">
-            无法获取列名：{columnsError.message}
+            {t("node.rowLookupNode.columnsError", {
+              message: columnsError.message,
+            })}
           </Text>
         )}
 
         <Flex align="center" gap="2">
           <Text size="1" weight="bold">
-            匹配列:
+            {t("node.rowLookupNode.matchColumn")}
           </Text>
           <Select.Root
             size="1"
@@ -155,8 +159,9 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
 
         {!!nodeData.matchColumn && (
           <Text size="1" color="gray">
-            此节点将在表格中查找列 "{nodeData.matchColumn}"
-            中与索引值匹配的所有行
+            {t("node.rowLookupNode.description", {
+              column: nodeData.matchColumn,
+            })}
           </Text>
         )}
       </Flex>

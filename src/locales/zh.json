@@ -1,0 +1,343 @@
+{
+  "app": {
+    "name": "FlowExcel"
+  },
+  "common": {
+    "retry": "重试",
+    "createNew": "创建新",
+    "save": "保存",
+    "saving": "保存中...",
+    "delete": "删除",
+    "help": "帮助",
+    "expand": "展开",
+    "collapse": "收起",
+    "cancel": "取消",
+    "confirm": "确认",
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "close": "关闭",
+    "add": "添加",
+    "selectLanguage": "选择语言",
+    "create": "创建",
+    "loading": "加载中..."
+  },
+  "workspace": {
+    "defaultName": "新工作区 {{date}}",
+    "create_success": "工作区创建成功",
+    "create_failed": "创建工作区失败",
+    "loadingList": "加载工作区列表中...",
+    "loadListFailed": "加载工作区列表失败: {{message}}",
+    "createNew": "创建新工作区",
+    "description": "您可以创建多个工作区来处理不同的数据分析任务，每个工作区有独立的文件管理、数据处理规则和数据处理流程。",
+    "open": "打开工作区",
+    "noWorkspaces": "暂无工作区",
+    "createFirst": "创建第一个工作区",
+    "back": "返回",
+    "title": "工作区",
+    "save_success": "工作区已保存",
+    "loading": "加载工作区中...",
+    "create": "创建工作区",
+    "load": "加载工作区",
+    "delete_confirm": "确定要删除这个工作区吗？",
+    "no_workspace_loaded": "未找到当前工作区",
+    "not_available": "工作区 (ID: {{id}}) 不可用",
+    "saved": "已保存",
+    "load_failed": "加载失败: {{message}}",
+    "save_failed": "保存失败: {{message}}",
+    "unsavedChanges": "有未保存的更改",
+    "exitWarning": "离开工作区后，您将丢失所有未保存的更改。",
+    "namePlaceholder": "输入工作区名称",
+    "noChanges": "无更改",
+    "fileManager": "文件管理",
+    "flowEditor": "流程编辑",
+    "exitTitle": "返回",
+    "exitDescription": "离开工作区后，您将丢失所有未保存的更改。"
+  },
+  "flow": {
+    "execute": "执行流程",
+    "execute_success": "流程执行完成，耗时{{time}}秒",
+    "execute_failed": "流程执行失败: {{error}}",
+    "validation_failed": "流程验证失败: {{errors}}",
+    "connection_failed": "连接失败: {{reason}}",
+    "auto_layout": "自动排版",
+    "auto_layout_success": "已使用{{direction}}布局重新排版",
+    "auto_layout_failed": "自动排版失败: {{error}}",
+    "no_nodes_to_layout": "没有节点需要排版",
+    "validation": {
+      "passed": "流程验证通过",
+      "status": "流程验证状态",
+      "executable": "可执行",
+      "notExecutable": "不可执行",
+      "missingNodes": "连接缺少源节点或目标节点",
+      "nodeNotFound": "找不到对应的节点",
+      "invalidConnection": "{{source}} 不能连接到 {{target}}",
+      "connectionExists": "已存在相同的连接",
+      "singleInputOnly": "{{nodeType}} 只能有一个输入连接",
+      "cycleDetected": "此连接会产生环路，不允许创建",
+      "needIndexSource": "流程必须包含至少一个索引源节点",
+      "needOutput": "流程必须包含至少一个输出节点",
+      "singleOutputOnly": "流程只能包含一个输出节点",
+      "noInput": "节点 \"{{label}}\" 没有输入连接",
+      "noOutput": "节点 \"{{label}}\" 没有输出连接",
+      "cycleInFlow": "流程中存在环路，请检查节点连接",
+      "invalidConnectionDetail": "无效连接: {{reason}}",
+      "sheetSelector": {
+        "noFile": "工作表选择器节点必须选择一个文件",
+        "noSheet": "请选择手动指定的sheet名称"
+      },
+      "filter": {
+        "incomplete": "过滤器节点未完成配置",
+        "noConditions": "请至少添加一个过滤条件"
+      },
+      "join": {
+        "insufficientInputs": "合并节点必须有两个或更多输入",
+        "noType": "合并节点必须选择一个合并类型",
+        "noKeys": "合并节点必须指定左连接键和右连接键"
+      },
+      "aggregation": {
+        "incomplete": "聚合节点必须指定分组依据并至少有一个聚合操作",
+        "invalidOperation": "聚合节点中的聚合操作无效"
+      },
+      "columnOperation": {
+        "noOperation": "列操作节点必须至少有一个操作",
+        "incompleteOperation": "列操作节点中的操作未完成配置"
+      },
+      "csvOutput": {
+        "noPath": "CSV输出节点必须指定一个输出文件路径"
+      },
+      "excelOutput": {
+        "noPath": "Excel输出节点必须指定一个输出文件路径"
+      }
+    },
+    "previewFailed": "预览失败",
+    "previewFailedWithError": "预览失败: {{error}}",
+    "previewRunFailed": "预览运行失败",
+    "notSpecified": "未指定",
+    "autoMatch": "自动匹配",
+    "targetFile": "目标文件",
+    "sheetMode": "Sheet定位模式",
+    "autoMatchIndex": "自动匹配索引到sheet名",
+    "manualSheet": "手动指定sheet名",
+    "sheetName": "Sheet名称",
+    "operators": {
+      "equals": "等于",
+      "notEquals": "不等于",
+      "greaterThan": "大于",
+      "greaterThanOrEqual": "大于等于",
+      "lessThan": "小于",
+      "lessThanOrEqual": "小于等于",
+      "contains": "包含",
+      "notContains": "不包含"
+    },
+    "filterConditions": "过滤条件",
+    "addCondition": "添加条件",
+    "loadingColumns": "加载列名中...",
+    "columnsError": "无法获取列名：{{message}}",
+    "addConditionsPrompt": "请添加过滤条件以筛选数据",
+    "logicAnd": "且 (AND)",
+    "logicOr": "或 (OR)",
+    "valuePlaceholder": "值",
+    "toolPanel": "工具面板",
+    "addNode": "添加节点",
+    "layout": "排版",
+    "autoLayoutTooltip": "根据节点连接关系自动排版",
+    "vertical": "垂直",
+    "horizontal": "水平",
+    "executing": "执行中...",
+    "test": "测试",
+    "testResult": "测试运行结果",
+    "addNextNode": "添加后续节点",
+    "selectNodeType": "选择节点类型"
+  },
+  "node": {
+    "index_source": "索引源",
+    "indexSource": "索引源",
+    "sheet_selector": "工作表定位",
+    "sheetSelector": "工作表定位",
+    "row_filter": "行过滤",
+    "rowFilter": "行过滤",
+    "row_lookup": "行查找/列匹配",
+    "rowLookup": "行查找/列匹配",
+    "aggregator": "统计/聚合",
+    "output": "输出",
+    "dataSourcePrefix": "数据源-",
+    "indexSourceNode": {
+      "selectSourceFile": "请选择源文件",
+      "notSpecified": "未指定!",
+      "columnIndex": "列名索引",
+      "sheetIndex": "工作表索引",
+      "outputName": "输出名称:",
+      "sourceFile": "源文件:",
+      "selectFile": "选择文件",
+      "noFiles": "暂无文件",
+      "indexMode": "索引方式:",
+      "sheetName": "工作表名",
+      "columnName": "列名",
+      "worksheet": "工作表:",
+      "selectSheet": "选择工作表",
+      "indexColumn": "索引列:",
+      "selectIndexColumn": "选择索引列"
+    },
+    "rowLookupNode": {
+      "matchColumnPrefix": "匹配列: ",
+      "loadingColumns": "加载列名中...",
+      "columnsError": "无法获取列名：{{message}}",
+      "matchColumn": "匹配列:",
+      "description": "此节点将在表格中查找列 \"{{column}}\" 中与索引值匹配的所有行"
+    },
+    "aggregatorNode": {
+      "methods": {
+        "sum": "求和",
+        "avg": "平均值",
+        "count": "计数",
+        "min": "最小值",
+        "max": "最大值"
+      },
+      "selectStatColumn": "请选择要统计的列",
+      "selectStatMethod": "请选择统计方法",
+      "methodPrefix": "方法: ",
+      "statColumn": "统计列",
+      "loadingColumns": "加载列名中...",
+      "columnsError": "无法获取列名：{{message}}",
+      "noColumnsFound": "未找到可用列，请检查上游节点配置",
+      "statMethod": "统计方法",
+      "outputColumnName": "输出列名（可选）"
+    },
+    "outputNode": {
+      "format": "格式: Excel",
+      "savePathPrefix": "保存路径: ",
+      "notSet": "未设置",
+      "worksheetCountPrefix": "工作表数: ",
+      "outputFormat": "输出格式:",
+      "excelFormat": "Excel (.xlsx)",
+      "savePath": "保存路径",
+      "pathPlaceholder": "选择 Excel 文件保存路径...",
+      "selectPathFailed": "选择文件路径失败:",
+      "selectPathError": "选择文件路径失败"
+    },
+    "common": {
+      "noWorkspaceFound": "未找到当前工作区",
+      "previewFailed": "预览失败",
+      "previewFailedWithError": "预览失败: {{error}}"
+    }
+  },
+  "file": {
+    "add_file": "添加文件",
+    "select_file": "选择文件",
+    "preview_file": "预览文件",
+    "file_exists": "文件已存在于工作区中",
+    "file_not_found": "文件未找到",
+    "read_failed": "读取文件失败",
+    "invalid_file": "无效文件",
+    "file_expired": "文件过期检测失败，这可能会导致数据错误！",
+    "expirationCheckFailed": "文件过期检测失败，这可能会导致数据错误！",
+    "someFilesOutdatedDetailed": "部分文件已过时，请前往文件管理同步。",
+    "needFileManagerAction": "* 需前往文件管理进行操作",
+    "excelFiles": "Excel 文件",
+    "add": {
+      "title": "添加文件",
+      "button": "添加文件",
+      "adding": "添加中...",
+      "missingData": "无法添加文件: 缺少路径、别名或有效的预览数据。",
+      "previewError": "无法添加文件: 请先解决预览错误。",
+      "alreadyExists": "文件 '{{fileName}}' 已存在于工作区中。",
+      "fileInfoError": "无法获取文件信息，请检查文件是否存在",
+      "failed": "添加文件失败: {{error}}"
+    },
+    "select": {
+      "prompt": "请选择文件",
+      "button": "选择文件",
+      "failed": "选择文件失败: {{error}}"
+    },
+    "preview": {
+      "loadFailed": "加载失败",
+      "reload": "重新加载",
+      "failed": "预览文件失败: {{error}}"
+    },
+    "addTitle": "添加新文件到工作区",
+    "addDescription": "选择一个Excel或CSV文件，它将被添加到当前工作区以供后续在流程中使用。",
+    "pathPlaceholder": "文件路径将显示在这里",
+    "namePlaceholder": "为文件设置一个别名",
+    "previewTitle": "文件内容预览",
+    "adding": "添加中...",
+    "filterName": "Excel 文件",
+    "addError": {
+      "missingData": "无法添加文件：缺少路径、别名或有效的预览数据。",
+      "previewError": "无法添加文件：请先解决预览错误。",
+      "alreadyExists": "文件 '{{fileName}}' 已存在于工作区中。",
+      "getInfoFailed": "无法获取文件信息，请检查文件是否存在",
+      "generic": "添加文件失败: {{errorMsg}}"
+    },
+    "addSuccess": "文件 '{{fileName}}' 添加成功",
+    "selectError": "选择文件失败: {{errorMsg}}",
+    "libraryTitle": "工作区文件",
+    "noFiles": "当前工作区还没有添加文件。",
+    "syncing": "同步中...",
+    "syncSuccess": "文件 '{{fileName}}' 同步成功。",
+    "syncError": {
+      "notFound": "文件不存在。",
+      "getInfoFailed": "无法获取文件信息，文件可能已被删除。",
+      "readFailed": "无法读取文件内容，文件可能已损坏。",
+      "generic": "同步文件时发生未知错误。"
+    },
+    "sync": {
+      "prompt": "同步文件",
+      "sheetsAdded": "文件 '{{fileName}}' 新增了工作表: {{sheets}}",
+      "sheetsRemoved": "文件 '{{fileName}}' 删除了工作表: {{sheets}}"
+    },
+    "meta": {
+      "edit": "设置",
+      "title": "元数据编辑器",
+      "basicInfo": "基本信息",
+      "alias": "别名",
+      "path": "路径",
+      "sheetSettings": "工作表设置",
+      "selectSheet": "选择工作表",
+      "allSheets": "所有工作表",
+      "headerRowIndex": "标题行号",
+      "headerRowTooltip": "标题行用于识别列名。0代表第一行，1代表第二行，以此类推。错误的行号将导致执行异常！",
+      "headerRowWarning": "注意！错误的标题行号将导致执行结果异常甚至无法执行！",
+      "detectingHeader": "正在检测标题行...",
+      "detectedHeader": "检测到的列",
+      "noHeaderDetected": "未检测到标题行或当前设置不正确"
+    }
+  },
+  "api": {
+    "backend_not_started": "后端服务未启动，这可能是个bug",
+    "preview_data_failed": "预览数据失败",
+    "get_index_values_failed": "获取索引值失败",
+    "read_headers_failed": "读取表头失败",
+    "read_sheet_names_failed": "读取表名失败",
+    "missing_params": "必须提供workspaceId或workspaceConfigJson参数",
+    "execution_failed": "执行流程失败",
+    "preview_node_failed": "预览流程节点失败",
+    "workspace_list_failed": "获取工作空间列表失败",
+    "workspace_load_failed": "加载工作区失败",
+    "workspace_save_failed": "保存工作区失败",
+    "workspace_delete_failed": "删除工作区失败",
+    "error": {
+      "unknown": "发生未知API错误",
+      "network": "网络错误，请检查后端服务是否正在运行以及网络连接是否正常。"
+    }
+  },
+  "error": {
+    "unexpected": "发生意外错误",
+    "file_operation": "文件操作失败",
+    "network": "网络请求失败",
+    "validation": "数据验证失败",
+    "processing": "数据处理失败",
+    "unknown": "未知错误"
+  },
+  "backend": {
+    "status": "后端状态",
+    "ready": "就绪",
+    "not_ready": "未就绪",
+    "api_base": "API地址",
+    "error": "后端服务错误",
+    "restartApp": "请重新启动应用程序",
+    "starting": "正在启动后端服务",
+    "initializing": "请稍候，后端服务正在初始化..."
+  }
+}

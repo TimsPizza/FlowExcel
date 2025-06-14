@@ -7,6 +7,7 @@ import {
 import { Badge, Box, Card, Flex, Text } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { useEdges, useNodes } from "reactflow";
+import { useTranslation } from "react-i18next";
 
 interface FlowValidationResult {
   isValid: boolean;
@@ -15,6 +16,7 @@ interface FlowValidationResult {
 }
 
 export const FlowValidationPanel: React.FC = () => {
+  const { t } = useTranslation();
   const nodes = useNodes();
   const edges = useEdges();
   const [validation, setValidation] = useState<FlowValidationResult>({
@@ -34,7 +36,7 @@ export const FlowValidationPanel: React.FC = () => {
         <Flex align="center" gap="2">
           <CheckIcon color="green" />
           <Text size="1" color="green">
-            流程验证通过
+            {t("flow.validation.passed")}
           </Text>
         </Flex>
       </Card>
@@ -45,7 +47,7 @@ export const FlowValidationPanel: React.FC = () => {
     <Card size="1" variant="surface">
       <Flex direction="column" gap="2">
         <Text size="2" weight="bold">
-          流程验证状态
+          {t("flow.validation.status")}
         </Text>
 
         {validation.errors.length > 0 && (
@@ -53,7 +55,7 @@ export const FlowValidationPanel: React.FC = () => {
             <Flex align="center" gap="2" mb="1">
               <CrossCircledIcon color="red" />
               <Text size="1" weight="medium" color="red">
-                错误
+                {t("common.error")}
               </Text>
             </Flex>
             {validation.errors.map((error, index) => (
@@ -71,7 +73,7 @@ export const FlowValidationPanel: React.FC = () => {
             <Flex align="center" gap="2" mb="1">
               <ExclamationTriangleIcon color="orange" />
               <Text size="1" weight="medium" color="orange">
-                警告
+                {t("common.warning")}
               </Text>
             </Flex>
             {validation.warnings.map((warning, index) => (
@@ -85,7 +87,9 @@ export const FlowValidationPanel: React.FC = () => {
         )}
 
         <Badge color={validation.isValid ? "green" : "red"} size="1">
-          {validation.isValid ? "可执行" : "不可执行"}
+          {validation.isValid
+            ? t("flow.validation.executable")
+            : t("flow.validation.notExecutable")}
         </Badge>
       </Flex>
     </Card>

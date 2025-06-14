@@ -1,0 +1,41 @@
+{
+  "error": {
+    "workspace_not_found": "工作区不存在: {workspace_id}",
+    "invalid_json": "无效的工作区配置JSON: {error}",
+    "file_not_found": "文件未找到: {file_path}",
+    "permission_denied": "权限被拒绝: {file_path}",
+    "invalid_excel_file": "无效的Excel文件: {file_path}",
+    "sheet_not_found": "表格未找到: {sheet_name}",
+    "pipeline_execution_failed": "流程执行失败: {error}",
+    "node_execution_failed": "节点执行失败: {node_id}",
+    "missing_required_param": "缺少必需参数: {param_name}",
+    "invalid_node_type": "无效的节点类型: {node_type}",
+    "connection_error": "连接错误: {error}",
+    "timeout": "操作超时",
+    "internal_server_error": "内部服务器错误: {error}"
+  },
+  "success": {
+    "workspace_saved": "工作区保存成功",
+    "workspace_loaded": "工作区加载成功",
+    "workspace_deleted": "工作区删除成功",
+    "pipeline_executed": "流程执行成功",
+    "file_processed": "文件处理成功"
+  },
+  "warning": {
+    "file_modified": "文件可能已被修改",
+    "performance_slow": "执行时间较长，可能影响性能",
+    "memory_usage_high": "内存使用率较高"
+  },
+  "info": {
+    "processing": "正在处理...",
+    "loading": "正在加载...",
+    "saving": "正在保存...",
+    "system_healthy": "系统运行正常"
+  },
+  "validation": {
+    "required_field": "字段 {field} 是必需的",
+    "invalid_format": "字段 {field} 格式无效",
+    "out_of_range": "字段 {field} 超出范围",
+    "duplicate_value": "字段 {field} 值重复"
+  }
+} 

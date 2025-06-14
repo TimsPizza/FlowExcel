@@ -22,26 +22,28 @@ import {
 } from "@radix-ui/themes";
 import { useMemo, useState } from "react";
 import { useNodeId } from "reactflow";
+import { useTranslation } from "react-i18next";
 
-const OPERATORS = [
-  { value: "==", label: "等于" },
-  { value: "!=", label: "不等于" },
-  { value: ">", label: "大于" },
-  { value: ">=", label: "大于等于" },
-  { value: "<", label: "小于" },
-  { value: "<=", label: "小于等于" },
-  { value: "contains", label: "包含" },
-  { value: "not_contains", label: "不包含" },
+const getOperators = (t: any) => [
+  { value: "==", label: t("flow.operators.equals") },
+  { value: "!=", label: t("flow.operators.notEquals") },
+  { value: ">", label: t("flow.operators.greaterThan") },
+  { value: ">=", label: t("flow.operators.greaterThanOrEqual") },
+  { value: "<", label: t("flow.operators.lessThan") },
+  { value: "<=", label: t("flow.operators.lessThanOrEqual") },
+  { value: "contains", label: t("flow.operators.contains") },
+  { value: "not_contains", label: t("flow.operators.notContains") },
 ];
 
 export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const { t } = useTranslation();
   const toast = useToast();
   const nodeId = useNodeId()!;
   const nodeData = data as RowFilterNodeDataContext;
+  const OPERATORS = getOperators(t);
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const previewNodeMutation = usePreviewNodeMutation();
   const [condValue, setCondValue] = useState("");
-  // 使用真实的列数据
   const {
     columns: availableColumns,
     isLoading: isLoadingColumns,
@@ -93,13 +95,13 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const previewNode = async () => {
     if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
+      toast.error(t("workspace.no_workspace_loaded"));
       return;
     }
 
     if (!nodeData.conditions || nodeData.conditions.length === 0) {
       updateRowFilterNodeDataInStore(nodeId, {
-        error: "请至少添加一个过滤条件",
+        error: t("flow.validation.filter.noConditions"),
         testResult: undefined,
       });
       return;
@@ -121,14 +123,14 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
             });
           } else {
             updateRowFilterNodeDataInStore(nodeId, {
-              error: result.error || "预览失败",
+              error: result.error || t("flow.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
           updateRowFilterNodeDataInStore(nodeId, {
-            error: `预览失败: ${error.message}`,
+            error: t("flow.previewFailedWithError", { error: error.message }),
             testResult: undefined,
           });
         },
@@ -159,29 +161,29 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
         <Flex direction="column" gap="2">
           <Flex justify="between" align="center">
             <Text size="1" weight="bold">
-              过滤条件
+              {t("flow.filterConditions")}
             </Text>
             <Button size="1" variant="soft" onClick={addCondition}>
-              <PlusIcon /> 添加条件
+              <PlusIcon /> {t("flow.addCondition")}
             </Button>
           </Flex>
 
           {/* 列加载状态 */}
           {isLoadingColumns && (
             <Text size="1" color="gray">
-              加载列名中...
+              {t("flow.loadingColumns")}
             </Text>
           )}
 
           {columnsError && (
             <Text size="1" color="red">
-              无法获取列名：{columnsError.message}
+              {t("flow.columnsError", { message: columnsError.message })}
             </Text>
           )}
 
           {(!nodeData.conditions || nodeData.conditions.length === 0) && (
             <Text size="1" color="gray">
-              请添加过滤条件以筛选数据
+              {t("flow.addConditionsPrompt")}
             </Text>
           )}
 
@@ -197,8 +199,8 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                 >
                   <Select.Trigger />
                   <Select.Content>
-                    <Select.Item value="AND">且 (AND)</Select.Item>
-                    <Select.Item value="OR">或 (OR)</Select.Item>
+                    <Select.Item value="AND">{t("flow.logicAnd")}</Select.Item>
+                    <Select.Item value="OR">{t("flow.logicOr")}</Select.Item>
                   </Select.Content>
                 </Select.Root>
               )}
@@ -247,7 +249,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                   onChange={(e) =>
                     handleCondValueChange(index, "value", e.target.value)
                   }
-                  placeholder="值"
+                  placeholder={t("flow.valuePlaceholder")}
                 />
 
                 {/* 删除按钮 */}

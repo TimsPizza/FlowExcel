@@ -11,6 +11,7 @@ import {
 } from "@/types";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { useBackendStore } from "@/stores/useBackendStore";
+import { getCurrentLanguage } from "./i18n";
 
 // API Response types matching the Python server
 interface APIResponse<T = any> {
@@ -138,12 +139,16 @@ class ApiClient {
       },
     });
 
-    // Add request interceptor to set dynamic base URL
+    // Add request interceptor to set dynamic base URL and language header
     this.client.interceptors.request.use(
       (config) => {
         const baseURL = this.getBaseUrl();
         console.log("Using API base URL:", baseURL);
         config.baseURL = baseURL;
+        
+        // 添加语言头
+        config.headers['Accept-Language'] = getCurrentLanguage();
+        
         return config;
       },
       (error) => Promise.reject(error),
@@ -158,7 +163,7 @@ class ApiClient {
           throw new Error(error.response.data.error);
         }
         if (error.code === "ECONNREFUSED") {
-          throw new Error("后端服务未启动，这可能是个bug");
+          throw new Error("api.backend_not_started");
         }
         throw error;
       },
@@ -201,7 +206,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "预览数据失败");
+      throw new Error(response.data.error || "api.preview_data_failed");
     }
 
     return response.data.data;
@@ -226,7 +231,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "获取索引值失败");
+      throw new Error(response.data.error || "api.get_index_values_failed");
     }
 
     return response.data.data;
@@ -247,7 +252,7 @@ class ApiClient {
       await this.client.post("/excel/header-row", request);
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "读取表头失败");
+      throw new Error(response.data.error || "api.read_headers_failed");
     }
 
     return response.data.data;
@@ -262,7 +267,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "读取表名失败");
+      throw new Error(response.data.error || "api.read_sheet_names_failed");
     }
 
     return response.data.data;
@@ -275,7 +280,7 @@ class ApiClient {
     executionMode: string = "production",
   ): Promise<APIResponse<PipelineExecutionResult>> {
     if (!workspaceId && !workspaceConfigJson) {
-      throw new Error("必须提供workspaceId或workspaceConfigJson参数");
+      throw new Error("api.missing_params");
     }
     const request: PipelineRequest = {
       workspace_id: workspaceId,
@@ -288,7 +293,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "执行流程失败");
+      throw new Error(response.data.error || "api.execution_failed");
     }
 
     return response.data;
@@ -312,7 +317,7 @@ class ApiClient {
     } else if (workspaceId) {
       request.workspace_id = workspaceId;
     } else {
-      throw new Error("必须提供 workspaceId 或 workspaceConfigJson 参数");
+      throw new Error("api.missing_params");
     }
 
     const response: AxiosResponse<APIResponse> = await this.client.post(
@@ -321,7 +326,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "预览流程节点失败");
+      throw new Error(response.data.error || "api.preview_node_failed");
     }
 
     return response.data.data as PreviewNodeResult;
@@ -333,7 +338,7 @@ class ApiClient {
       await this.client.get("/workspace/list");
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "获取工作空间列表失败");
+      throw new Error(response.data.error || "api.workspace_list_failed");
     }
 
     return response.data.data;
@@ -345,7 +350,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "加载工作区失败");
+      throw new Error(response.data.error || "api.workspace_load_failed");
     }
 
     return response.data.data;
@@ -362,7 +367,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "保存工作区失败");
+      throw new Error(response.data.error || "api.workspace_save_failed");
     }
 
     return response.data.data;
@@ -374,7 +379,7 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "删除工作区失败");
+      throw new Error(response.data.error || "api.workspace_delete_failed");
     }
 
     return response.data.data;

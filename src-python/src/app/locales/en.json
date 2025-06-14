@@ -1,0 +1,41 @@
+{
+  "error": {
+    "workspace_not_found": "Workspace not found: {workspace_id}",
+    "invalid_json": "Invalid workspace configuration JSON: {error}",
+    "file_not_found": "File not found: {file_path}",
+    "permission_denied": "Permission denied: {file_path}",
+    "invalid_excel_file": "Invalid Excel file: {file_path}",
+    "sheet_not_found": "Sheet not found: {sheet_name}",
+    "pipeline_execution_failed": "Pipeline execution failed: {error}",
+    "node_execution_failed": "Node execution failed: {node_id}",
+    "missing_required_param": "Missing required parameter: {param_name}",
+    "invalid_node_type": "Invalid node type: {node_type}",
+    "connection_error": "Connection error: {error}",
+    "timeout": "Operation timeout",
+    "internal_server_error": "Internal server error: {error}"
+  },
+  "success": {
+    "workspace_saved": "Workspace saved successfully",
+    "workspace_loaded": "Workspace loaded successfully",
+    "workspace_deleted": "Workspace deleted successfully",
+    "pipeline_executed": "Pipeline executed successfully",
+    "file_processed": "File processed successfully"
+  },
+  "warning": {
+    "file_modified": "File may have been modified",
+    "performance_slow": "Execution time is long, may affect performance",
+    "memory_usage_high": "Memory usage is high"
+  },
+  "info": {
+    "processing": "Processing...",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "system_healthy": "System is running normally"
+  },
+  "validation": {
+    "required_field": "Field {field} is required",
+    "invalid_format": "Field {field} has invalid format",
+    "out_of_range": "Field {field} is out of range",
+    "duplicate_value": "Field {field} has duplicate value"
+  }
+} 

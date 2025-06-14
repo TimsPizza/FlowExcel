@@ -12,6 +12,7 @@ import { FlowNodeData, NodeType } from "@/types/nodes";
 import { PlayIcon, PlusIcon, SizeIcon } from "@radix-ui/react-icons";
 import { Flex, Popover, Select, Text } from "@radix-ui/themes";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ReactFlow, {
   Background,
   Connection,
@@ -50,13 +51,13 @@ function isEdgeOnRemove(change: EdgeChange): change is EdgeRemoveChange {
   return "type" in change && change.type === "remove";
 }
 
-const NODE_TYPES = [
-  { value: NodeType.INDEX_SOURCE, label: "索引源" },
-  { value: NodeType.SHEET_SELECTOR, label: "Sheet定位" },
-  { value: NodeType.ROW_FILTER, label: "行过滤" },
-  { value: NodeType.ROW_LOOKUP, label: "行查找/列匹配" },
-  { value: NodeType.AGGREGATOR, label: "统计" },
-  { value: NodeType.OUTPUT, label: "输出" },
+const getNodeTypes = (t: any) => [
+  { value: NodeType.INDEX_SOURCE, label: t("node.index_source") },
+  { value: NodeType.SHEET_SELECTOR, label: t("node.sheet_selector") },
+  { value: NodeType.ROW_FILTER, label: t("node.row_filter") },
+  { value: NodeType.ROW_LOOKUP, label: t("node.row_lookup") },
+  { value: NodeType.AGGREGATOR, label: t("node.aggregator") },
+  { value: NodeType.OUTPUT, label: t("node.output") },
 ];
 
 interface FlowEditorProps {
@@ -82,7 +83,9 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 
 // 内部FlowEditor组件，在ReactFlowProvider内部
 export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
+  const { t } = useTranslation();
   const toast = useToast();
+  const NODE_TYPES = getNodeTypes(t);
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
   const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
   const onConnect = useWorkspaceStore((state) => state.onConnect);
@@ -148,7 +151,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const handleAutoLayout = useCallback(
     (direction: "TB" | "LR" = layoutDirection) => {
       if (nodes.length === 0) {
-        toast.warning("没有节点需要排版");
+        toast.warning(t("flow.no_nodes_to_layout"));
         return;
       }
 
@@ -170,10 +173,12 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         }, 100);
 
         toast.success(
-          `已使用${direction === "TB" ? "垂直" : "水平"}布局重新排版`,
+          t("flow.auto_layout_success", { 
+            direction: direction === "TB" ? t("flow.vertical") : t("flow.horizontal") 
+          }),
         );
       } catch (error) {
-        toast.error("自动排版失败: " + (error as Error).message);
+        toast.error(t("flow.auto_layout_failed", { error: (error as Error).message }));
         console.error("自动排版失败:", error);
       }
     },
@@ -243,7 +248,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
       // 验证连接是否有效
       const validation = isValidConnection(connection, nodes, edges);
       if (!validation.isValid) {
-        toast.error(`连接失败: ${validation.reason}`);
+        toast.error(t("flow.connection_failed", { reason: validation.reason }));
         return;
       }
 
@@ -258,12 +263,12 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     const flowValidation = validateFlow(nodes, edges);
 
     if (!flowValidation.isValid) {
-      toast.error(`流程验证失败: ${flowValidation.errors.join(", ")}`);
+      toast.error(t("flow.validation_failed", { errors: flowValidation.errors.join(", ") }));
       return;
     }
 
     if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
+      toast.error(t("workspace.no_workspace_loaded"));
       return;
     }
 
@@ -280,17 +285,21 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
 
           if (!pipelineResult || !pipelineResult.result.success) {
             toast.error(
-              `流程执行失败: ${pipelineResult?.result?.error || "未知错误"}`,
+              t("flow.execute_failed", { 
+          error: pipelineResult?.result?.error || t("error.unknown") 
+        }),
             );
             return;
           }
 
           toast.success(
-            `流程执行完成，耗时${pipelineResult.execution_time?.toFixed(2)}秒`,
+            t("flow.execute_success", { 
+              time: pipelineResult.execution_time?.toFixed(2) 
+            }),
           );
         },
         onError: (error) => {
-          toast.error(`流程执行失败: ${error.message}`);
+          toast.error(t("flow.execute_failed", { error: error.message }));
         },
       },
     );
@@ -328,7 +337,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
             <Popover.Root>
               <Popover.Trigger>
                 <Button variant="soft" size="2">
-                  <PlusIcon /> 工具面板
+                  <PlusIcon /> {t("flow.toolPanel")}
                 </Button>
               </Popover.Trigger>
               <Popover.Content size="3" style={{ width: "320px" }}>
@@ -336,7 +345,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   {/* 添加节点控件 */}
                   <Flex direction="column" gap="2">
                     <Text weight="bold" size="2">
-                      添加节点
+                      {t("flow.addNode")}
                     </Text>
                     <Flex gap="2" align="center">
                       <Select.Root
@@ -361,7 +370,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       </Select.Root>
                       <Popover.Close>
                         <Button onClick={handleAddNode}>
-                          <PlusIcon /> 添加
+                          <PlusIcon /> {t("common.add")}
                         </Button>
                       </Popover.Close>
                     </Flex>
@@ -373,7 +382,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                   {/* 自动排版控件 */}
                   <Flex direction="column" gap="2">
                     <Text weight="bold" size="2">
-                      自动排版
+                      {t("flow.auto_layout")}
                     </Text>
                     <Flex gap="2" align="center">
                       <Select.Root
@@ -384,8 +393,8 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       >
                         <Select.Trigger style={{ flex: 1 }} />
                         <Select.Content>
-                          <Select.Item value="LR">水平布局</Select.Item>
-                          <Select.Item value="TB">垂直布局</Select.Item>
+                                                  <Select.Item value="LR">{t("flow.horizontal")}</Select.Item>
+                        <Select.Item value="TB">{t("flow.vertical")}</Select.Item>
                         </Select.Content>
                       </Select.Root>
                       <Popover.Close>
@@ -394,9 +403,9 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                           color="blue"
                           onClick={() => handleAutoLayout()}
                           disabled={nodes.length === 0}
-                          title="根据节点连接关系自动排版"
+                          title={t("flow.autoLayoutTooltip")}
                         >
-                          <SizeIcon /> 排版
+                          <SizeIcon /> {t("flow.layout")}
                         </Button>
                       </Popover.Close>
                     </Flex>
@@ -412,7 +421,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
               size="2"
             >
               <PlayIcon />
-              {executePipelineMutation.isLoading ? "执行中..." : "执行流程"}
+              {executePipelineMutation.isLoading ? t("flow.executing") : t("flow.execute")}
             </Button>
           </Flex>
         </Panel>

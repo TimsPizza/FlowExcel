@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, Flex, Select, Text, TextField } from "@radix-ui/themes";
 import { useState } from "react";
 import { useShallow } from "zustand/shallow";
+import { useTranslation } from "react-i18next";
 
 interface FileMetaEditorModalProps {
   file: FileMeta;
 }
 
 const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
+  const { t } = useTranslation();
   const { updateFileMeta } = useWorkspaceStore(useShallow(fileSelector));
   const [open, setOpen] = useState(false);
   const [selectedSheetSt, setSelectedSheetSt] = useState<string | null>(
@@ -86,26 +88,26 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger>
         <Button variant="soft" size="1">
-          设置
+          {t("file.meta.edit")}
         </Button>
       </Dialog.Trigger>
       <Dialog.Content>
         <Card>
           <CardHeader>
-            <CardTitle>元数据编辑器</CardTitle>
+            <CardTitle>{t("file.meta.title")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Flex direction="column" gap="3">
               <Flex align="center" gap="2">
                 <Text size="2" weight="bold">
-                  文件名:
+                  {t("file.meta.alias")}:
                 </Text>
                 <Text size="2">{file.name}</Text>
               </Flex>
 
               <Flex align="center" gap="2">
                 <Text size="2" weight="bold">
-                  工作表:
+                  {t("file.meta.selectSheet")}:
                 </Text>
                 <Select.Root
                   value={selectedSheetSt || ""}
@@ -114,7 +116,7 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                   <Select.Trigger />
                   <Select.Content>
                     <Select.Item key={"all-sheets"} value={"all-sheets"}>
-                      所有工作表
+                      {t("file.meta.allSheets")}
                     </Select.Item>
                     {file.sheet_metas.map((sheet) => (
                       <Select.Item
@@ -129,8 +131,7 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
               </Flex>
               {selectedSheetSt === "all-sheets" && (
                 <Text size="1" color="amber">
-                  所有工作表的标题行将统一设置为{headerRowIndexSt}
-                  （覆盖现有设置）
+                  {t("file.meta.headerRowTooltip")} {headerRowIndexSt}
                 </Text>
               )}
 
@@ -138,7 +139,7 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
                 <Flex direction="column" gap="3">
                   <Flex align="center" gap="2">
                     <Text size="2" weight="bold">
-                      标题行:
+                      {t("file.meta.headerRowIndex")}:
                     </Text>
                     <TextField.Root
                       size="2"
@@ -160,19 +161,19 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
 
                   <Flex direction="column" gap="1">
                     <Text size="1" color="gray">
-                      标题行用于识别列名称。0表示第一行，1表示第二行，以此类推。
+                      {t("file.meta.headerRowTooltip")}
                     </Text>
                     <Text size="1" color="amber">
-                      注意！错误的标题行号将导致执行结果异常甚至无法执行！
+                      {t("file.meta.headerRowWarning")}
                     </Text>
                   </Flex>
 
                   <Text size="2" weight="bold">
-                    检测到的列:
+                    {t("file.meta.detectedHeader")}:
                   </Text>
                   {isHeaderRowLoading ? (
                     <Text size="1" color="gray">
-                      正在检测标题行...
+                      {t("file.meta.detectingHeader")}
                     </Text>
                   ) : (
                     <Flex gap="1" wrap="wrap">
@@ -193,10 +194,10 @@ const FileMetaEditorModal = ({ file }: FileMetaEditorModalProps) => {
               <Flex justify="end" gap="2" mt="4">
                 <Dialog.Close>
                   <Button variant="soft" color="gray">
-                    取消
+                    {t("common.cancel")}
                   </Button>
                 </Dialog.Close>
-                <Button onClick={handleSave}>保存</Button>
+                <Button onClick={handleSave}>{t("common.save")}</Button>
               </Flex>
             </Flex>
           </CardContent>

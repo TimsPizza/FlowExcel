@@ -168,6 +168,7 @@ def main():
     Finds an available port, sends a handshake to stdout, and then starts the server.
     """
     # Configure logging
+    
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',

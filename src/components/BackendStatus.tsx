@@ -1,12 +1,14 @@
 // src/components/BackendStatus.tsx
 import { useBackendEvents } from '../hooks/useBackendEvents';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface BackendStatusProps {
   children: React.ReactNode;
 }
 
 export const BackendStatus: React.FC<BackendStatusProps> = ({ children }) => {
+  const { t } = useTranslation();
   const { backendInfo, backendError, isReady, getApiBaseUrl } = useBackendEvents();
 
   useEffect(() => {
@@ -26,9 +28,9 @@ export const BackendStatus: React.FC<BackendStatusProps> = ({ children }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">后端服务错误</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{t("backend.error")}</h2>
             <p className="text-sm text-gray-600 mb-4">{backendError}</p>
-            <p className="text-xs text-gray-500">请重新启动应用程序</p>
+            <p className="text-xs text-gray-500">{t("backend.restartApp")}</p>
           </div>
         </div>
       </div>
@@ -46,8 +48,8 @@ export const BackendStatus: React.FC<BackendStatusProps> = ({ children }) => {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">正在启动后端服务</h2>
-            <p className="text-sm text-gray-600 mb-4">请稍候，后端服务正在初始化...</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{t("backend.starting")}</h2>
+            <p className="text-sm text-gray-600 mb-4">{t("backend.initializing")}</p>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
             </div>

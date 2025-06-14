@@ -10,6 +10,7 @@ import {
 } from "@/types/nodes";
 import { Connection, Node, Edge } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
+import i18n from "@/lib/i18n";
 
 /**
  * 节点连接规则定义
@@ -71,14 +72,14 @@ export function isValidConnection(
   edges: Edge[],
 ): { isValid: boolean; reason?: string } {
   if (!connection.source || !connection.target) {
-    return { isValid: false, reason: "连接缺少源节点或目标节点" };
+    return { isValid: false, reason: i18n.t("flow.validation.missingNodes") };
   }
 
   const sourceNode = nodes.find((n) => n.id === connection.source);
   const targetNode = nodes.find((n) => n.id === connection.target);
 
   if (!sourceNode || !targetNode) {
-    return { isValid: false, reason: "找不到对应的节点" };
+    return { isValid: false, reason: i18n.t("flow.validation.nodeNotFound") };
   }
 
   const sourceType = sourceNode.data.nodeType as NodeType;
@@ -89,7 +90,10 @@ export function isValidConnection(
   if (!allowedTargets.includes(targetType)) {
     return {
       isValid: false,
-      reason: `${NODE_TYPE_NAMES[sourceType]} 不能连接到 ${NODE_TYPE_NAMES[targetType]}`,
+      reason: i18n.t("flow.validation.invalidConnection", { 
+        source: i18n.t(`node.${sourceType}`), 
+        target: i18n.t(`node.${targetType}`) 
+      }),
     };
   }
 
@@ -99,7 +103,7 @@ export function isValidConnection(
       edge.source === connection.source && edge.target === connection.target,
   );
   if (existingConnection) {
-    return { isValid: false, reason: "已存在相同的连接" };
+    return { isValid: false, reason: i18n.t("flow.validation.connectionExists") };
   }
 
   // 检查单入节点限制
@@ -116,7 +120,9 @@ export function isValidConnection(
     if (existingInputs.length > 0) {
       return {
         isValid: false,
-        reason: `${NODE_TYPE_NAMES[targetType]} 只能有一个输入连接`,
+        reason: i18n.t("flow.validation.singleInputOnly", { 
+          nodeType: i18n.t(`node.${targetType}`) 
+        }),
       };
     }
   }
@@ -125,7 +131,7 @@ export function isValidConnection(
   if (wouldCreateCycle(connection, nodes, edges)) {
     return {
       isValid: false,
-      reason: "此连接会产生环路，不允许创建",
+      reason: i18n.t("flow.validation.cycleDetected"),
     };
   }
 
@@ -271,15 +277,15 @@ export function validateFlow(
     (n) => n.data.nodeType === NodeType.INDEX_SOURCE,
   );
   if (indexSourceNodes.length === 0) {
-    errors.push("流程必须包含至少一个索引源节点");
+    errors.push(i18n.t("flow.validation.needIndexSource"));
   }
 
   // 检查是否有输出节点
   const outputNodes = nodes.filter((n) => n.data.nodeType === NodeType.OUTPUT);
   if (outputNodes.length === 0) {
-    errors.push("流程必须包含至少一个输出节点");
+    errors.push(i18n.t("flow.validation.needOutput"));
   }else if (outputNodes.length > 1) {
-    errors.push("流程只能包含一个输出节点");
+    errors.push(i18n.t("flow.validation.singleOutputOnly"));
   }
 
   // 检查孤立节点
@@ -288,17 +294,17 @@ export function validateFlow(
     const hasOutgoing = edges.some((edge) => edge.source === node.id);
 
     if (node.data.nodeType !== NodeType.INDEX_SOURCE && !hasIncoming) {
-      warnings.push(`节点 "${node.data.label}" 没有输入连接`);
+      warnings.push(i18n.t("flow.validation.noInput", { label: node.data.label }));
     }
 
     if (node.data.nodeType !== NodeType.OUTPUT && !hasOutgoing) {
-      warnings.push(`节点 "${node.data.label}" 没有输出连接`);
+      warnings.push(i18n.t("flow.validation.noOutput", { label: node.data.label }));
     }
   });
 
   // 检查是否存在环路
   if (detectCycle(nodes, edges)) {
-    errors.push("流程中存在环路，请检查节点连接");
+    errors.push(i18n.t("flow.validation.cycleInFlow"));
   }
 
   // 检查连接的有效性
@@ -315,7 +321,7 @@ export function validateFlow(
       edges.filter((e) => e.id !== edge.id),
     );
     if (!validation.isValid) {
-      errors.push(`无效连接: ${validation.reason}`);
+      errors.push(i18n.t("flow.validation.invalidConnectionDetail", { reason: validation.reason }));
     }
   });
 
@@ -385,8 +391,8 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: NodeType.INDEX_SOURCE,
-        label: "索引源",
-        displayName: "数据源-" + uuidv4().slice(0, 4),
+        label: i18n.t("node.index_source"),
+        displayName: i18n.t("node.dataSourcePrefix") + uuidv4().slice(0, 4),
         sourceFileID: undefined,
         bySheetName: false,
         sheetName: undefined,
@@ -399,7 +405,7 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: NodeType.SHEET_SELECTOR,
-        label: "Sheet定位",
+        label: i18n.t("node.sheet_selector"),
         targetFileID: undefined,
         mode: "auto_by_index",
         manualSheetName: undefined,
@@ -410,7 +416,7 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: NodeType.ROW_FILTER,
-        label: "行过滤",
+        label: i18n.t("node.row_filter"),
         conditions: [],
         testResult: undefined,
         error: undefined,
@@ -419,7 +425,7 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: NodeType.ROW_LOOKUP,
-        label: "行查找/列匹配",
+        label: i18n.t("node.row_lookup"),
         matchColumn: undefined,
         testResult: undefined,
         error: undefined,
@@ -428,7 +434,7 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: NodeType.AGGREGATOR,
-        label: "统计",
+        label: i18n.t("node.aggregator"),
         statColumn: undefined,
         method: "sum",
         outputAs: "",
@@ -439,7 +445,7 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: NodeType.OUTPUT,
-        label: "输出",
+        label: i18n.t("node.output"),
         outputFormat: "table",
         outputPath: undefined,
         testResult: undefined,

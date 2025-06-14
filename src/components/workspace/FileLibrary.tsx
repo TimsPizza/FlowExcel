@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import AddFileModal from "@/components/workspace/AddFileModal";
 import FileMetaEditorModal from "@/components/workspace/FileMetaEditorModal";
-import { cn } from "@/lib/utils";
-import useToast from "@/hooks/useToast";
+import useI18nToast from "@/hooks/useI18nToast";
 import { apiClient } from "@/lib/apiClient";
+import { cn } from "@/lib/utils";
 import { Box, Flex, ScrollArea, Text } from "@radix-ui/themes";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import {
   fileSelector,
@@ -13,7 +14,8 @@ import {
 } from "../../stores/useWorkspaceStore";
 
 const FileLibrary: React.FC = () => {
-  const toast = useToast();
+  const toast = useI18nToast();
+  const { t } = useTranslation();
   const { files, removeFileFromWorkspace, updateFileMeta, upToDateFileInfo } =
     useWorkspaceStore(useShallow(fileSelector));
   const { outdatedFileIds } = useWorkspaceStore(useShallow(fileSelector));
@@ -22,34 +24,36 @@ const FileLibrary: React.FC = () => {
   const handleSyncFile = async (fileId: string) => {
     const file = files?.find((f) => f.id === fileId);
     if (!file) {
-      toast.error("文件不存在");
+      toast.error("file.syncError.notFound");
       return;
     }
 
     if (syncingFileIds.includes(fileId)) {
-      return; // 防止重复点击
+      return; // Prevent duplicate clicks
     }
 
     setSyncingFileIds((prev) => [...prev, fileId]);
 
     try {
-      // 1. 获取最新文件信息和预览数据
+      // 1. Get latest file info and preview data
       const [fileInfoResponse, previewData] = await Promise.all([
         apiClient.getFileInfo(file.path),
         apiClient.previewExcelData(file.path),
       ]);
 
       if (!fileInfoResponse?.file_info) {
-        toast.error("无法获取文件信息，文件可能已被删除");
+        toast.error("file.syncError.getInfoFailed");
+        setSyncingFileIds((prev) => prev.filter((id) => id !== fileId));
         return;
       }
 
       if (!previewData?.sheets) {
-        toast.error("无法读取文件内容，文件可能已损坏");
+        toast.error("file.syncError.readFailed");
+        setSyncingFileIds((prev) => prev.filter((id) => id !== fileId));
         return;
       }
 
-      // 2. 对比新旧 sheet_metas，保护用户设置的表头行信息
+      // 2. Compare old and new sheet_metas to preserve user-set header row info
       const oldSheetMetas = file.sheet_metas;
       const newSheetMetas = previewData.sheets.map((sheet: any) => {
         const existingSheet = oldSheetMetas.find(
@@ -57,11 +61,11 @@ const FileLibrary: React.FC = () => {
         );
         return {
           sheet_name: sheet.sheet_name,
-          header_row: existingSheet?.header_row ?? 0, // 保留用户设置或默认为0
+          header_row: existingSheet?.header_row ?? 0, // Preserve user settings or default to 0
         };
       });
 
-      // 3. 生成变动通知
+      // 3. Generate change notifications
       const oldSheetNames = new Set(
         oldSheetMetas.map((s: any) => s.sheet_name),
       );
@@ -69,38 +73,38 @@ const FileLibrary: React.FC = () => {
         newSheetMetas.map((s: any) => s.sheet_name),
       );
 
-      const addedSheets = newSheetMetas.filter(
-        (s: any) => !oldSheetNames.has(s.sheet_name),
-      );
-      const removedSheets = oldSheetMetas.filter(
-        (s: any) => !newSheetNames.has(s.sheet_name),
-      );
+      const addedSheets = newSheetMetas
+        .filter((s: any) => !oldSheetNames.has(s.sheet_name))
+        .map((s: any) => s.sheet_name);
+      const removedSheets = oldSheetMetas
+        .filter((s: any) => !newSheetNames.has(s.sheet_name))
+        .map((s: any) => s.sheet_name);
 
-      // 4. 更新文件元数据
+      if (addedSheets.length > 0) {
+        toast.info("file.sync.sheetsAdded", {
+          fileName: file.name,
+          sheets: addedSheets.join(", "),
+        });
+      }
+      if (removedSheets.length > 0) {
+        toast.warning("file.sync.sheetsRemoved", {
+          fileName: file.name,
+          sheets: removedSheets.join(", "),
+        });
+      }
+
+      // 4. Update file metadata
       updateFileMeta(fileId, {
         sheet_metas: newSheetMetas,
       });
 
-      // 5. 更新文件信息（这会将文件从过期列表中移除）
+      // 5. Update file info (this will remove the file from the outdated list)
       upToDateFileInfo(fileId, fileInfoResponse.file_info);
 
-      // 6. 通知用户变动
-      let changeMessage = `文件 "${file.name}" 同步完成`;
-      if (addedSheets.length > 0) {
-        changeMessage += `\n新增工作表: ${addedSheets.map((s: any) => s.sheet_name).join(", ")}`;
-      }
-      if (removedSheets.length > 0) {
-        changeMessage += `\n删除工作表: ${removedSheets.map((s: any) => s.sheet_name).join(", ")}`;
-      }
-      if (addedSheets.length === 0 && removedSheets.length === 0) {
-        changeMessage += "\n工作表结构无变化";
-      }
-
-      toast.success(changeMessage);
+      toast.success("file.syncSuccess", { fileName: file.name });
     } catch (error) {
-      console.error("Error syncing file:", error);
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`同步文件失败: ${errorMsg}`);
+      toast.error("file.syncError.generic");
+      console.error("File sync error:", error);
     } finally {
       setSyncingFileIds((prev) => prev.filter((id) => id !== fileId));
     }
@@ -113,13 +117,13 @@ const FileLibrary: React.FC = () => {
           <Box>
             <Flex justify="start" align="baseline" gap="2">
               <Text weight="medium" size="3" mb="2">
-                工作区文件
+                {t("file.libraryTitle")}
               </Text>
               <AddFileModal />
             </Flex>
             {files?.length === 0 ? (
               <Text size="2" color="gray">
-                当前工作区还没有添加文件。
+                {t("file.noFiles")}
               </Text>
             ) : (
               <ScrollArea className="mt-4">
@@ -138,7 +142,7 @@ const FileLibrary: React.FC = () => {
                           {file.path.substring(file.path.lastIndexOf("/") + 1)}
                         </Text>
                         <Flex gap="1">
-                          {/* 同步按钮 - 仅为过期文件显示 */}
+                          {/* Sync button - only show for outdated files */}
                           {outdatedFileIds.includes(file.id) && (
                             <Button
                               size="1"
@@ -148,11 +152,11 @@ const FileLibrary: React.FC = () => {
                               disabled={syncingFileIds.includes(file.id)}
                             >
                               {syncingFileIds.includes(file.id)
-                                ? "同步中..."
-                                : "同步文件"}
+                                ? t("file.syncing")
+                                : t("file.sync")}
                             </Button>
                           )}
-                          {/* 编辑和删除按钮 */}
+                          {/* Edit and delete buttons */}
                           <FileMetaEditorModal file={file} />
                           <Button
                             size="1"
@@ -162,7 +166,7 @@ const FileLibrary: React.FC = () => {
                               removeFileFromWorkspace(file.id);
                             }}
                           >
-                            删除
+                            {t("common.delete")}
                           </Button>
                         </Flex>
                       </Flex>

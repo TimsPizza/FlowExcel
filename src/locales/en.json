@@ -1,0 +1,342 @@
+{
+  "app": {
+    "name": "FlowExcel"
+  },
+  "common": {
+    "retry": "Retry",
+    "createNew": "Create New",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "help": "Help",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "close": "Close",
+    "add": "Add",
+    "selectLanguage": "Select Language",
+    "create": "Create",
+    "loading": "Loading..."
+  },
+  "workspace": {
+    "defaultName": "New Workspace {{date}}",
+    "create_success": "Workspace created successfully",
+    "create_failed": "Failed to create workspace",
+    "loadingList": "Loading workspaces...",
+    "loadListFailed": "Failed to load workspaces: {{message}}",
+    "createNew": "Create New Workspace",
+    "description": "You can create multiple workspaces to handle different data analysis tasks. Each workspace has independent file management, data processing rules, and data processing flows.",
+    "open": "Open Workspace",
+    "noWorkspaces": "No workspaces found",
+    "createFirst": "Create your first workspace",
+    "back": "Back",
+    "title": "Workspace",
+    "save_success": "Workspace saved",
+    "loading": "Loading workspace...",
+    "create": "Create Workspace",
+    "load": "Load Workspace",
+    "delete_confirm": "Are you sure you want to delete this workspace?",
+    "no_workspace_loaded": "No workspace loaded",
+    "not_available": "Workspace (ID: {{id}}) not available",
+    "saved": "Saved",
+    "load_failed": "Load failed: {{message}}",
+    "save_failed": "Save failed: {{message}}",
+    "unsavedChanges": "Unsaved changes",
+    "exitWarning": "You will lose all unsaved changes if you leave the workspace.",
+    "namePlaceholder": "Enter workspace name",
+    "noChanges": "No changes",
+    "fileManager": "File Manager",
+    "flowEditor": "Flow Editor",
+    "exitTitle": "Back",
+    "exitDescription": "You will lose all unsaved changes if you leave the workspace."
+  },
+  "flow": {
+    "execute": "Execute Flow",
+    "execute_success": "Flow execution completed in {{time}} seconds",
+    "execute_failed": "Flow execution failed: {{error}}",
+    "validation_failed": "Flow validation failed: {{errors}}",
+    "connection_failed": "Connection failed: {{reason}}",
+    "auto_layout": "Auto Layout",
+    "auto_layout_success": "Re-layouted using {{direction}} layout",
+    "auto_layout_failed": "Auto layout failed: {{error}}",
+    "no_nodes_to_layout": "No nodes to layout",
+    "validation": {
+      "passed": "Flow validation passed",
+      "status": "Flow validation status",
+      "executable": "Executable",
+      "notExecutable": "Not executable",
+      "missingNodes": "Connection missing source or target node",
+      "nodeNotFound": "Cannot find corresponding node",
+      "invalidConnection": "{{source}} cannot connect to {{target}}",
+      "connectionExists": "Connection already exists",
+      "singleInputOnly": "{{nodeType}} can only have one input connection",
+      "cycleDetected": "This connection would create a cycle, not allowed",
+      "needIndexSource": "Flow must contain at least one index source node",
+      "needOutput": "Flow must contain at least one output node",
+      "singleOutputOnly": "Flow can only contain one output node",
+      "noInput": "Node \"{{label}}\" has no input connection",
+      "noOutput": "Node \"{{label}}\" has no output connection",
+      "cycleInFlow": "Cycle detected in flow, please check node connections",
+      "invalidConnectionDetail": "Invalid connection: {{reason}}",
+      "sheetSelector": {
+        "noFile": "Sheet Selector node must select a file",
+        "noSheet": "Please select a manually specified sheet name"
+      },
+      "filter": {
+        "incomplete": "Filter node is not fully configured",
+        "noConditions": "Please add at least one filter condition"
+      },
+      "join": {
+        "insufficientInputs": "Join node must have two or more inputs",
+        "noType": "Join node must have a join type selected",
+        "noKeys": "Join node must have left and right join keys specified"
+      },
+      "aggregation": {
+        "incomplete": "Aggregation node must specify a group by column and have at least one aggregation operation",
+        "invalidOperation": "Invalid aggregation operation in Aggregation node"
+      },
+      "columnOperation": {
+        "noOperation": "Column Operation node must have at least one operation",
+        "incompleteOperation": "An operation in the Column Operation node is not fully configured"
+      },
+      "csvOutput": {
+        "noPath": "CSV Output node must specify an output file path"
+      },
+      "excelOutput": {
+        "noPath": "Excel Output node must specify an output file path"
+      }
+    },
+    "previewFailed": "Preview failed",
+    "previewFailedWithError": "Preview failed: {{error}}",
+    "previewRunFailed": "Preview run failed",
+    "notSpecified": "Not specified",
+    "autoMatch": "Auto match",
+    "targetFile": "Target file",
+    "sheetMode": "Sheet positioning mode",
+    "autoMatchIndex": "Auto match index to sheet name",
+    "manualSheet": "Manually specify sheet name",
+    "sheetName": "Sheet name",
+    "operators": {
+      "equals": "Equals",
+      "notEquals": "Not equals",
+      "greaterThan": "Greater than",
+      "greaterThanOrEqual": "Greater than or equal",
+      "lessThan": "Less than",
+      "lessThanOrEqual": "Less than or equal",
+      "contains": "Contains",
+      "notContains": "Does not contain"
+    },
+    "filterConditions": "Filter conditions",
+    "addCondition": "Add condition",
+    "loadingColumns": "Loading columns...",
+    "columnsError": "Unable to get columns: {{message}}",
+    "addConditionsPrompt": "Please add filter conditions to filter data",
+    "logicAnd": "AND",
+    "logicOr": "OR",
+    "valuePlaceholder": "Value",
+    "toolPanel": "Tool Panel",
+    "addNode": "Add Node",
+    "layout": "Layout",
+    "autoLayoutTooltip": "Auto layout based on node connections",
+    "vertical": "Vertical",
+    "horizontal": "Horizontal",
+    "executing": "Executing...",
+    "test": "Test",
+    "testResult": "Test Run Result",
+    "addNextNode": "Add Next Node",
+    "selectNodeType": "Select Node Type"
+  },
+  "node": {
+    "index_source": "Index Source",
+    "sheet_selector": "Sheet Selector",
+    "row_filter": "Row Filter",
+    "row_lookup": "Row Lookup",
+    "aggregator": "Aggregator",
+    "output": "Output",
+    "dataSourcePrefix": "DataSource-",
+    "indexSource": "Index Source",
+    "sheetSelector": "Sheet Selector",
+    "rowFilter": "Row Filter",
+    "rowLookup": "Row Lookup",
+    "indexSourceNode": {
+      "selectSourceFile": "Please select source file",
+      "notSpecified": "Not specified!",
+      "columnIndex": "Column Index",
+      "sheetIndex": "Sheet Index",
+      "outputName": "Output Name:",
+      "sourceFile": "Source File:",
+      "selectFile": "Select File",
+      "noFiles": "No files",
+      "indexMode": "Index Mode:",
+      "sheetName": "Sheet Name",
+      "columnName": "Column Name",
+      "worksheet": "Worksheet:",
+      "selectSheet": "Select Sheet",
+      "indexColumn": "Index Column:",
+      "selectIndexColumn": "Select Index Column"
+    },
+    "rowLookupNode": {
+      "matchColumnPrefix": "Match Column: ",
+      "loadingColumns": "Loading columns...",
+      "columnsError": "Unable to get columns: {{message}}",
+      "matchColumn": "Match Column:",
+      "description": "This node will lookup all rows in the table where column \"{{column}}\" matches the index value"
+    },
+    "aggregatorNode": {
+      "methods": {
+        "sum": "Sum",
+        "avg": "Average",
+        "count": "Count",
+        "min": "Minimum",
+        "max": "Maximum"
+      },
+      "selectStatColumn": "Please select column to aggregate",
+      "selectStatMethod": "Please select aggregation method",
+      "methodPrefix": "Method: ",
+      "statColumn": "Stat Column",
+      "loadingColumns": "Loading columns...",
+      "columnsError": "Unable to get columns: {{message}}",
+      "noColumnsFound": "No available columns found, please check upstream node configuration",
+      "statMethod": "Aggregation Method",
+      "outputColumnName": "Output Column Name (Optional)"
+    },
+    "outputNode": {
+      "format": "Format: Excel",
+      "savePathPrefix": "Save Path: ",
+      "notSet": "Not set",
+      "worksheetCountPrefix": "Worksheet Count: ",
+      "outputFormat": "Output Format:",
+      "excelFormat": "Excel (.xlsx)",
+      "savePath": "Save Path",
+      "pathPlaceholder": "Select Excel file save path...",
+      "selectPathFailed": "Failed to select file path:",
+      "selectPathError": "Failed to select file path"
+    },
+    "common": {
+      "noWorkspaceFound": "No workspace found",
+      "previewFailed": "Preview failed",
+      "previewFailedWithError": "Preview failed: {{error}}"
+    }
+  },
+  "file": {
+    "add_file": "Add File",
+    "select_file": "Select File",
+    "preview_file": "Preview File",
+    "file_exists": "File already exists in workspace",
+    "file_not_found": "File not found",
+    "read_failed": "Failed to read file",
+    "invalid_file": "Invalid file",
+    "file_expired": "File expiration check failed, this may cause data errors!",
+    "expirationCheckFailed": "File expiration check failed, which may cause data errors!",
+    "someFilesOutdatedDetailed": "Some files are outdated. Please go to File Management to sync.",
+    "needFileManagerAction": "* Please go to File Manager for operations",
+    "excelFiles": "Excel Files",
+    "add": {
+      "title": "Add File",
+      "button": "Add File",
+      "adding": "Adding...",
+      "missingData": "Cannot add file: Missing path, alias, or valid preview data.",
+      "previewError": "Cannot add file: Please resolve the preview error first.",
+      "alreadyExists": "File '{{fileName}}' already exists in the workspace.",
+      "fileInfoError": "Could not get file information. Please check if the file exists.",
+      "failed": "Failed to add file: {{error}}"
+    },
+    "select": {
+      "prompt": "Please select a file",
+      "button": "Select File",
+      "failed": "Failed to select file: {{error}}"
+    },
+    "preview": {
+      "loadFailed": "Load failed",
+      "reload": "Reload",
+      "failed": "Failed to preview file: {{error}}"
+    },
+    "addTitle": "Add a new file to the workspace",
+    "addDescription": "Select an Excel or CSV file to add it to the current workspace for use in your flows.",
+    "pathPlaceholder": "File path will be displayed here",
+    "namePlaceholder": "Set an alias for the file",
+    "previewTitle": "File Content Preview",
+    "adding": "Adding...",
+    "filterName": "Excel Files",
+    "addError": {
+      "missingData": "Cannot add file: Missing path, alias, or valid preview data.",
+      "previewError": "Cannot add file: Please resolve the preview error first.",
+      "alreadyExists": "File '{{fileName}}' already exists in the workspace.",
+      "getInfoFailed": "Could not get file information. Please check if the file exists.",
+      "generic": "Failed to add file: {{errorMsg}}"
+    },
+    "addSuccess": "File '{{fileName}}' added successfully",
+    "selectError": "Failed to select file: {{errorMsg}}",
+    "libraryTitle": "Workspace Files",
+    "noFiles": "No files have been added to the current workspace yet.",
+    "syncing": "Syncing...",
+    "syncSuccess": "File '{{fileName}}' synced successfully.",
+    "syncError": {
+      "notFound": "File not found.",
+      "getInfoFailed": "Could not get file information, the file may have been deleted.",
+      "readFailed": "Could not read file content, the file may be corrupted.",
+      "generic": "An unknown error occurred while syncing the file."
+    },
+    "sync": {
+      "sheetsAdded": "File '{{fileName}}' has new sheets: {{sheets}}",
+      "sheetsRemoved": "Sheets removed from file '{{fileName}}': {{sheets}}"
+    },
+    "meta": {
+      "edit": "Settings",
+      "title": "Metadata Editor",
+      "basicInfo": "Basic Info",
+      "alias": "Alias",
+      "path": "Path",
+      "sheetSettings": "Sheet Settings",
+      "selectSheet": "Select Sheet",
+      "allSheets": "All Sheets",
+      "headerRowIndex": "Header Row Index",
+      "headerRowTooltip": "The header row is used to identify column names. 0 means the first row, 1 means the second, and so on. An incorrect row number will cause execution errors!",
+      "headerRowWarning": "Warning! Incorrect header row number will cause execution errors or failures!",
+      "detectingHeader": "Detecting header row...",
+      "detectedHeader": "Detected columns",
+      "noHeaderDetected": "No header detected or current setting is incorrect"
+    }
+  },
+  "api": {
+    "backend_not_started": "Backend service not started, this might be a bug",
+    "preview_data_failed": "Failed to preview data",
+    "get_index_values_failed": "Failed to get index values",
+    "read_headers_failed": "Failed to read headers",
+    "read_sheet_names_failed": "Failed to read sheet names",
+    "missing_params": "Must provide workspaceId or workspaceConfigJson parameter",
+    "execution_failed": "Execution failed",
+    "preview_node_failed": "Failed to preview flow node",
+    "workspace_list_failed": "Failed to get workspace list",
+    "workspace_load_failed": "Failed to load workspace",
+    "workspace_save_failed": "Failed to save workspace",
+    "workspace_delete_failed": "Failed to delete workspace",
+    "error": {
+      "unknown": "An unknown API error occurred",
+      "network": "Network error. Please check if the backend service is running and the network connection is stable."
+    }
+  },
+  "error": {
+    "unexpected": "Unexpected error occurred",
+    "file_operation": "File operation failed",
+    "network": "Network request failed",
+    "validation": "Data validation failed",
+    "processing": "Data processing failed",
+    "unknown": "Unknown error"
+  },
+  "backend": {
+    "status": "Backend Status",
+    "ready": "Ready",
+    "not_ready": "Not Ready",
+    "api_base": "API Base",
+    "error": "Backend Service Error",
+    "restartApp": "Please restart the application",
+    "starting": "Starting Backend Service",
+    "initializing": "Please wait, backend service is initializing..."
+  }
+}

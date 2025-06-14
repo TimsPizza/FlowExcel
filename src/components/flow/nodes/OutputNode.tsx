@@ -2,7 +2,7 @@ import {
   BadgeConfig,
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
-import useToast from "@/hooks/useToast";
+import useI18nToast from "@/hooks/useI18nToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
@@ -12,15 +12,16 @@ import { Flex, Text, TextField } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
 import { useNodeId } from "reactflow";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 import { useShallow } from "zustand/react/shallow";
 
 export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const toast = useToast();
+  const { t } = useTranslation();
+  const toast = useI18nToast();
   const nodeId = useNodeId()!;
   const nodeData = data as OutputNodeDataContext;
 
-  // 使用新的预览API作为主要方法
   const previewNodeMutation = usePreviewNodeMutation();
 
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -65,7 +66,6 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const handleSelectOutputPath = async () => {
     try {
-      // 使用Tauri的文件对话框选择保存路径
       const { save } = await import("@tauri-apps/plugin-dialog");
 
       const filePath = await save({
@@ -77,15 +77,14 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
         handleOutputPathChange(filePath);
       }
     } catch (error) {
-      console.error("选择文件路径失败:", error);
-      toast.error("选择文件路径失败");
+      console.error(t("node.outputNode.selectPathFailed"), error);
+      toast.error("node.outputNode.selectPathError");
     }
   };
 
-  // 新的预览函数，使用新API
   const previewNode = async () => {
     if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
+      toast.error("node.common.noWorkspaceFound");
       return;
     }
 
@@ -107,14 +106,16 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
             });
           } else {
             updateLocalNodeData({
-              error: result.error || "预览失败",
+              error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
           updateLocalNodeData({
-            error: `预览失败: ${error.message}`,
+            error: t("node.common.previewFailedWithError", {
+              error: error.message,
+            }),
             testResult: undefined,
           });
         },
@@ -125,22 +126,23 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   const badges: BadgeConfig[] = useMemo(() => {
     return [
       {
-        label: "格式: Excel",
+        label: t("node.outputNode.format"),
         color: "green",
         variant: "soft",
       },
       {
-        label: `保存路径: ${nodeData.outputPath?.split("/").pop() || "未设置"}`,
+        label:
+          nodeData.outputPath?.split("/").pop() || t("node.outputNode.notSet"),
         color: nodeData.outputPath ? "blue" : "gray",
         variant: "soft",
       },
       {
-        label: `工作表数: ${connectedEdgesCount}`,
+        label: t("node.outputNode.worksheetCountPrefix") + connectedEdgesCount,
         color: connectedEdgesCount > 0 ? "orange" : "gray",
         variant: "soft",
       },
     ];
-  }, [nodeData.outputPath, connectedEdgesCount]);
+  }, [nodeData.outputPath, connectedEdgesCount, t]);
 
   return (
     <EnhancedBaseNode
@@ -155,23 +157,23 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
         {/* 输出格式信息（只读显示） */}
         <Flex align="center" gap="2">
           <Text size="1" weight="bold">
-            输出格式:
+            {t("node.outputNode.outputFormat")}
           </Text>
           <Text size="1" color="green" weight="medium">
-            Excel (.xlsx)
+            {t("node.outputNode.excelFormat")}
           </Text>
         </Flex>
 
         {/* 输出路径选择 */}
         <Flex direction="column" gap="1">
           <Text size="1" weight="medium">
-            保存路径
+            {t("node.outputNode.savePath")}
           </Text>
           <Flex gap="1">
             <TextField.Root
               value={nodeData.outputPath || ""}
               onChange={(e) => handleOutputPathChange(e.target.value)}
-              placeholder="选择 Excel 文件保存路径..."
+              placeholder={t("node.outputNode.pathPlaceholder")}
               style={{ flex: 1 }}
             />
             <Button size="1" variant="soft" onClick={handleSelectOutputPath}>

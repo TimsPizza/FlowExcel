@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import useToast from "@/hooks/useToast";
+import useI18nToast from "@/hooks/useI18nToast";
 import {
   useSaveWorkspaceMutation,
   useWorkspaceListQuery,
@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "react-query";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import LanguageSelector from "@/components/ui/LanguageSelector";
+import { useTranslation } from "react-i18next";
 
 type WorkspaceListItem = {
   id: string;
@@ -24,18 +26,17 @@ type WorkspaceListItem = {
 };
 
 export function WorkspaceListPage() {
-  const toast = useToast();
+  const toast = useI18nToast();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const handleNavigate = (id: string) => {
     navigate(`/workspace/${id}`);
   };
 
-  // 只获取需要的zustand方法
   const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
   const resetDirty = useWorkspaceStore((state) => state.resetDirty);
 
-  // 使用React Query获取工作区列表
   const { workspaces, isLoading, error, refetch } = useWorkspaceListQuery();
   const { saveWorkspace, isSaving } = useSaveWorkspaceMutation();
 
@@ -43,7 +44,9 @@ export function WorkspaceListPage() {
     if (isSaving) return;
 
     const newId = uuidv4();
-    const defaultNewName = `新工作区 ${new Date().toLocaleDateString()}`;
+    const defaultNewName = t("workspace.defaultName", {
+      date: new Date().toLocaleDateString(),
+    });
 
     // 在zustand中创建新工作区
     createWorkspace(newId, defaultNewName);
@@ -56,10 +59,10 @@ export function WorkspaceListPage() {
         await saveWorkspace({ id: newId, workspace: newWorkspace });
         resetDirty();
         queryClient.invalidateQueries(["workspaces"]);
-        toast.success("工作区创建成功");
+        toast.success("workspace.create_success");
         navigate(`/workspace/${newId}`);
       } catch (error) {
-        toast.error("创建工作区失败");
+        toast.error("workspace.create_failed");
         console.error(error);
       }
     }
@@ -68,7 +71,7 @@ export function WorkspaceListPage() {
   if (isLoading)
     return (
       <Flex align="center" justify="center" style={{ height: "100vh" }}>
-        <Text size="4">加载工作区列表中...</Text>
+        <Text size="4">{t("workspace.loadingList")}</Text>
       </Flex>
     );
 
@@ -76,17 +79,17 @@ export function WorkspaceListPage() {
     return (
       <Flex align="center" justify="center" style={{ height: "100vh" }}>
         <Text size="4" color="red">
-          加载工作区列表失败: {error.message}
+          {t("workspace.loadListFailed", { message: error.message })}
         </Text>
         <Button size="3" color="red" onClick={() => refetch()}>
-          重试
+          {t("common.retry")}
         </Button>
       </Flex>
     );
 
   return (
-    <Box className="container mx-auto p-8">
-      <Flex direction="column" gap="6">
+    <Box className="container mx-auto h-screen p-8">
+      <Flex direction="column" gap="6" className="h-full">
         <Flex justify="between" align="center">
           <img src="/light.svg" alt="logo" className="mr-2 h-10 w-10" />
           <Heading size="6" className="mr-auto">
@@ -98,55 +101,53 @@ export function WorkspaceListPage() {
             onClick={handleCreateNew}
             disabled={isSaving}
           >
-            <PlusCircledIcon /> 创建新工作区
+            <PlusCircledIcon /> {t("workspace.createNew")}
           </Button>
         </Flex>
 
         <Text size="2" color="gray">
-          您可以创建多个工作区来处理不同的数据分析任务，每个工作区有独立的文件管理、数据处理规则和数据处理流程。
+          {t("workspace.description")}
         </Text>
 
         {workspaces && workspaces.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {workspaces.map((ws: WorkspaceListItem) => (
-              <Card
-                key={ws.id}
-                className="overflow-hidden border border-gray-200 transition-shadow hover:shadow-md"
-              >
-                <CardHeader className="bg-gray-50">
-                  <CardTitle>{ws.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <Text size="1" color="gray">
-                    ID: {ws.id.substring(0, 8)}...
-                  </Text>
-                </CardContent>
-                <CardFooter className="bg-gray-50">
-                  <Button
-                    variant="soft"
-                    onClick={() => handleNavigate(ws.id)}
-                    className="cursor-pointer"
-                  >
-                    打开工作区
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+          <Flex direction="column" gap="4" className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {workspaces.map((ws: WorkspaceListItem) => (
+                <Card
+                  key={ws.id}
+                  className="overflow-hidden border border-gray-200 transition-shadow hover:shadow-md"
+                >
+                  <CardHeader className="bg-gray-50">
+                    <CardTitle>{ws.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <Text size="1" color="gray">
+                      ID: {ws.id.substring(0, 8)}...
+                    </Text>
+                  </CardContent>
+                  <CardFooter className="bg-gray-50 !flex !items-center !py-2">
+                    <Button
+                      variant="soft"
+                      onClick={() => handleNavigate(ws.id)}
+                      className="cursor-pointer"
+                    >
+                      {t("workspace.open")}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </Flex>
         ) : (
           <Flex
             direction="column"
             align="center"
             justify="center"
             gap="4"
-            style={{
-              height: "300px",
-              border: "2px dashed var(--gray-5)",
-              borderRadius: "8px",
-            }}
+            className="h-[300px] flex-1 rounded-md border border-[var(--gray-5)]"
           >
             <Text size="5" color="gray">
-              暂无工作区
+              {t("workspace.noWorkspaces")}
             </Text>
             <Button
               size="3"
@@ -154,10 +155,13 @@ export function WorkspaceListPage() {
               onClick={handleCreateNew}
               disabled={isSaving}
             >
-              <PlusCircledIcon /> 创建第一个工作区
+              <PlusCircledIcon /> {t("workspace.createFirst")}
             </Button>
           </Flex>
         )}
+        <Flex justify="end">
+          <LanguageSelector />
+        </Flex>
       </Flex>
     </Box>
   );

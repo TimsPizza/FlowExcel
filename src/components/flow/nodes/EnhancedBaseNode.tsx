@@ -14,6 +14,7 @@ import { Badge, Box, Flex, Grid, Select, Text } from "@radix-ui/themes";
 import { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
+import { useTranslation } from "react-i18next";
 
 export interface BadgeConfig {
   color:
@@ -50,6 +51,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
   testable = false,
   badges = [],
 }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [selectedNodeType, setSelectedNodeType] = useState<NodeType | null>(
@@ -154,7 +156,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                 buttonColor="red"
                 content={data.error}
                 label="!"
-                title="错误"
+                title={t("common.error")}
                 buttonVariant="outline"
               />
             )}
@@ -166,7 +168,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
               className="cursor-pointer"
               onClick={() => removeFlowNode(data.id)}
             >
-              删除
+              {t("common.delete")}
             </Button>
             {testable && (
               <TestRunModal
@@ -180,7 +182,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
             )}
             <TextModal
               content={NODE_TYPE_DESCRIPTIONS[data.nodeType as NodeType]}
-              label="帮助"
+              label={t("common.help")}
             />
             <Button
               color="gray"
@@ -190,7 +192,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                 setExpanded(!expanded);
               }}
             >
-              {expanded ? "收起" : "展开"}
+              {expanded ? t("common.collapse") : t("common.expand")}
             </Button>
           </Grid>
         </Flex>
@@ -211,12 +213,12 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                 onClick={() => setShowCreateMenu(true)}
                 className="self-end"
               >
-                <PlusIcon /> 添加后续节点
+                <PlusIcon /> {t("flow.addNextNode")}
               </Button>
             ) : (
               <Flex direction="column" gap="2">
                 <Text size="1" weight="medium">
-                  选择节点类型:
+                  {t("flow.selectNodeType")}:
                 </Text>
                 <Select.Root
                   value={selectedNodeType || ""}
@@ -228,7 +230,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                   <Select.Content>
                     {availableNodeTypes.map((nodeType) => (
                       <Select.Item key={nodeType} value={nodeType}>
-                        {NODE_TYPE_NAMES[nodeType]}
+                        {t(`node.${nodeType}`)}
                       </Select.Item>
                     ))}
                   </Select.Content>
@@ -241,7 +243,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                       selectedNodeType && handleCreateNode(selectedNodeType)
                     }
                   >
-                    创建
+                    {t("common.create")}
                   </Button>
                   <Button
                     size="1"
@@ -251,7 +253,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                       setSelectedNodeType(null);
                     }}
                   >
-                    取消
+                    {t("common.cancel")}
                   </Button>
                 </Flex>
               </Flex>

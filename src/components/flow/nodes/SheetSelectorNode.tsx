@@ -10,8 +10,10 @@ import { Flex, RadioGroup, Select, Text } from "@radix-ui/themes";
 import { useMemo } from "react";
 import { useNodeId } from "reactflow";
 import { useShallow } from "zustand/react/shallow";
+import { useTranslation } from "react-i18next";
 
 export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
+  const { t } = useTranslation();
   const nodeId = useNodeId()!;
   const nodeData = data as SheetSelectorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -57,13 +59,15 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
     try {
       // Validate required fields
       if (!nodeData.targetFileID) {
-        updateSheetSelectorNodeData(nodeId, { error: "请选择目标Excel文件" });
+        updateSheetSelectorNodeData(nodeId, {
+          error: t("flow.validation.sheetSelector.noFile"),
+        });
         return;
       }
 
       if (nodeData.mode === "manual" && !nodeData.manualSheetName) {
         updateSheetSelectorNodeData(nodeId, {
-          error: "请选择手动指定的sheet名称",
+          error: t("flow.validation.sheetSelector.noSheet"),
         });
         return;
       }
@@ -85,19 +89,21 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
               });
             } else {
               updateSheetSelectorNodeData(nodeId, {
-                error: result.error || "预览失败",
+                error: result.error || t("flow.previewFailed"),
               });
             }
           },
           onError: (error) => {
             updateSheetSelectorNodeData(nodeId, {
-              error: `预览失败: ${error.message}`,
+              error: t("flow.previewFailedWithError", { error: error.message }),
             });
           },
         },
       );
     } catch (error) {
-      updateSheetSelectorNodeData(nodeId, { error: "预览运行失败" });
+      updateSheetSelectorNodeData(nodeId, {
+        error: t("flow.previewRunFailed"),
+      });
     }
   };
 
@@ -115,13 +121,13 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
       badges.push({
         color: "blue",
         variant: "soft",
-        label: nodeData.manualSheetName || "未指定",
+        label: nodeData.manualSheetName || t("flow.notSpecified"),
       });
     } else {
       badges.push({
         color: "blue",
         variant: "soft",
-        label: "自动匹配",
+        label: t("flow.autoMatch"),
       });
     }
     return badges;
@@ -139,7 +145,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
       <Flex direction="column" gap="2">
         <Flex align="center" gap="2">
           <Text size="1" weight="bold">
-            目标文件:
+            {t("flow.targetFile")}:
           </Text>
           <Select.Root
             value={nodeData.targetFileID || ""}
@@ -155,7 +161,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
                     </Select.Item>
                   ))
                 ) : (
-                  <Text size="1">暂无文件</Text>
+                  <Text size="1">{t("file.noFiles")}</Text>
                 )}
               </Select.Group>
             </Select.Content>
@@ -164,7 +170,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
         <Flex direction="column" gap="1">
           <Text size="1" weight="bold">
-            Sheet定位模式:
+            {t("flow.sheetMode")}:
           </Text>
           <RadioGroup.Root
             value={nodeData.mode || "auto_by_index"}
@@ -174,9 +180,11 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
           >
             <Flex direction="column" gap="1">
               <RadioGroup.Item value="auto_by_index">
-                自动匹配索引到sheet名
+                {t("flow.autoMatchIndex")}
               </RadioGroup.Item>
-              <RadioGroup.Item value="manual">手动指定sheet名</RadioGroup.Item>
+              <RadioGroup.Item value="manual">
+                {t("flow.manualSheet")}
+              </RadioGroup.Item>
             </Flex>
           </RadioGroup.Root>
         </Flex>
@@ -184,7 +192,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
         {nodeData.mode === "manual" && (
           <Flex align="center" gap="2">
             <Text size="1" weight="bold">
-              Sheet名称:
+              {t("flow.sheetName")}:
             </Text>
             <Select.Root
               size="1"

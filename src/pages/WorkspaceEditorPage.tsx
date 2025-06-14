@@ -1,5 +1,5 @@
 import WorkspaceToolbar from "@/components/workspace/WorkspaceToolbar";
-import useToast from "@/hooks/useToast";
+import useI18nToast from "@/hooks/useI18nToast";
 import {
   useGetAllFileInfo,
   useSaveWorkspaceMutation,
@@ -11,18 +11,20 @@ import {
   workspaceSelector,
 } from "@/stores/useWorkspaceStore";
 import { FileInfo } from "@/types";
-import { Flex } from "@radix-ui/themes";
+import { Flex, Text } from "@radix-ui/themes";
 import isEqual from "lodash/isEqual";
 import React, { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
+import { useTranslation } from "react-i18next";
 
 export default function WorkspaceEditorPage() {
-  const toast = useToast();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const hasLoadedRef = useRef(true);
+  const { t } = useTranslation();
+  const toast = useI18nToast();
 
   useEffect(() => {
     if (hasLoadedRef.current) {
@@ -91,7 +93,7 @@ export default function WorkspaceEditorPage() {
       return;
     }
     if (fileInfoError) {
-      toast.warning("文件过期检测失败，这可能会导致数据错误！");
+      toast.warning("file.expirationCheckFailed");
     }
     const currentFileInfo: { id: string; file_info: FileInfo }[] =
       currentWorkspace.files.map((file) => {
@@ -116,7 +118,7 @@ export default function WorkspaceEditorPage() {
         outdatedFileIds: outdatedFileIds,
       }));
     }
-  }, [currentWorkspace, newestFileInfo, isFileInfoLoading, fileInfoError]);
+  }, [currentWorkspace, newestFileInfo, isFileInfoLoading, fileInfoError, toast]);
 
   useEffect(() => {
     revalidateWorkspaceFiles();
@@ -133,7 +135,7 @@ export default function WorkspaceEditorPage() {
 
   const handleSaveWorkspace = useCallback(async () => {
     if (!currentWorkspace) {
-      toast.error("Cannot save: No workspace loaded.");
+      toast.error("workspace.no_workspace_loaded");
       return;
     }
     if (isSaving) return;
@@ -142,22 +144,37 @@ export default function WorkspaceEditorPage() {
       workspace: currentWorkspace,
     });
     queryClient.invalidateQueries([""]);
-  }, [currentWorkspace, isSaving, saveWorkspace, queryClient]);
+  }, [currentWorkspace, isSaving, saveWorkspace, queryClient, toast]);
 
   if (isWsLoading && !currentWorkspace) {
-    return <div>Loading Workspace...</div>;
+    return (
+      <Flex align="center" justify="center" style={{ height: "100vh" }}>
+        <Text size="5">{t("workspace.loading")}</Text>
+      </Flex>
+    );
   }
 
   if (wsError) {
     return (
-      <div>
-        Error: {wsError instanceof Error ? wsError.message : String(wsError)}
-      </div>
+      <Flex align="center" justify="center" style={{ height: "100vh" }}>
+        <Text size="5" color="red">
+          {t("workspace.load_failed", {
+            message:
+              wsError instanceof Error ? wsError.message : String(wsError),
+          })}
+        </Text>
+      </Flex>
     );
   }
 
   if (!currentWorkspace) {
-    return <div>Workspace not available (ID: {workspaceId}).</div>;
+    return (
+      <Flex align="center" justify="center" style={{ height: "100vh" }}>
+        <Text size="5">
+          {t("workspace.not_available", { id: workspaceId })}
+        </Text>
+      </Flex>
+    );
   }
 
   return (

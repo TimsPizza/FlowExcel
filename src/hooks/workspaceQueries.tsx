@@ -22,6 +22,7 @@ import {
 import { useMutation, useQueries, useQuery, UseQueryResult } from "react-query";
 import { Node as ReactFlowNode } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
+import { useTranslation } from "react-i18next";
 
 /* List workspaces */
 
@@ -73,6 +74,7 @@ async function getWorkspaceByID(workspaceID: string): Promise<WorkspaceConfig> {
 }
 
 export const useWorkspaceQuery = ({ workspaceID }: { workspaceID: string }) => {
+  const { t } = useTranslation();
   const toast = useToast();
   const {
     isLoading,
@@ -82,7 +84,7 @@ export const useWorkspaceQuery = ({ workspaceID }: { workspaceID: string }) => {
     queryKey: ["workspace", workspaceID],
     queryFn: () => getWorkspaceByID(workspaceID),
     onError: (error: Error) => {
-      toast.error(`加载失败: ${error.message}`);
+      toast.error(t("workspace.load_failed", { message: error.message }));
     },
   });
   return {
@@ -160,18 +162,18 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         const indexData = sanitizedNode.data as IndexSourceNodeDataContext;
         sanitizedNode.data = {
           ...indexData,
-          label: indexData.label || "索引源",
+          label: indexData.label || "Index Source",
           testResult: undefined, // 过滤掉 testResult
           // sourceFileID, sheetName, columnNames are optional per definition
           displayName:
-            indexData.displayName || "数据源-" + uuidv4().slice(0, 4),
+            indexData.displayName || "DataSource-" + uuidv4().slice(0, 4),
         };
         break;
       case NodeType.SHEET_SELECTOR:
         const sheetData = sanitizedNode.data as SheetSelectorNodeDataContext;
         sanitizedNode.data = {
           ...sheetData,
-          label: sheetData.label || "Sheet定位",
+          label: sheetData.label || "Sheet Selector",
           mode: sheetData.mode || "auto_by_index", // mode is mandatory
           testResult: undefined, // 过滤掉 testResult
           // targetFileID, manualSheetName are optional
@@ -181,7 +183,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         const filterData = sanitizedNode.data as RowFilterNodeDataContext;
         sanitizedNode.data = {
           ...filterData,
-          label: filterData.label || "行过滤",
+          label: filterData.label || "Row Filter",
           conditions: filterData.conditions || [], // conditions is mandatory
           testResult: undefined, // 过滤掉 testResult
         };
@@ -190,7 +192,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         const lookupData = sanitizedNode.data as RowLookupNodeDataContext;
         sanitizedNode.data = {
           ...lookupData,
-          label: lookupData.label || "行查找/列匹配",
+          label: lookupData.label || "Row Lookup",
           testResult: undefined, // 过滤掉 testResult
           // matchColumn is optional
         };
@@ -199,7 +201,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         const aggData = sanitizedNode.data as AggregatorNodeDataContext;
         sanitizedNode.data = {
           ...aggData,
-          label: aggData.label || "统计",
+          label: aggData.label || "Aggregator",
           method: aggData.method || "sum", // method is mandatory
           testResult: undefined, // 过滤掉 testResult
           // statColumn is optional
@@ -209,7 +211,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
         const outputData = sanitizedNode.data as OutputNodeDataContext;
         sanitizedNode.data = {
           ...outputData,
-          label: outputData.label || "输出",
+          label: outputData.label || "Output",
           outputFormat: outputData.outputFormat || "excel", // outputFormat is optional but good to default
           outputPath: outputData.outputPath || "",
           testResult: undefined, // 过滤掉 testResult
@@ -254,6 +256,7 @@ async function saveWorkspace(
 }
 
 export const useSaveWorkspaceMutation = () => {
+  const { t } = useTranslation();
   const toast = useToast();
   const resetDirty = useWorkspaceStore((state) => state.resetDirty);
   const { mutateAsync, isLoading, error } = useMutation({
@@ -269,11 +272,11 @@ export const useSaveWorkspaceMutation = () => {
       return result;
     },
     onSuccess: () => {
-      toast.success("已保存");
+      toast.success(t("workspace.saved"));
       resetDirty();
     },
     onError: (error: Error) => {
-      toast.error(`保存失败: ${error.message}`);
+      toast.error(t("workspace.save_failed", { message: error.message }));
     },
   });
   return {

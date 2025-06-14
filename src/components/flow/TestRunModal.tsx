@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { SheetInfo } from "@/types";
 import { Box, Dialog, Skeleton, Text } from "@radix-ui/themes";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 interface TestRunModalProps {
   runResult?: SheetInfo[];
@@ -17,6 +18,7 @@ const TestRunModal = ({
   onClose,
   error,
 }: TestRunModalProps) => {
+  const { t } = useTranslation();
   // ensure data integrity to prevent render error
   const sanitizedResult = useMemo(() => {
     if (!runResult) return [];
@@ -41,11 +43,11 @@ const TestRunModal = ({
           variant="soft"
           onClick={() => onTestRun?.()}
         >
-          测试
+          {t("flow.test")}
         </Button>
       </Dialog.Trigger>
       <Dialog.Content className="">
-        <Dialog.Title>测试运行结果</Dialog.Title>
+        <Dialog.Title>{t("flow.testResult")}</Dialog.Title>
         {error && (
           <Box className="text-red-500">
             <Text size="2">{error}</Text>

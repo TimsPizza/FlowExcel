@@ -1,5 +1,5 @@
 import { useNodeColumns } from "@/hooks/useNodeColumns";
-import useToast from "@/hooks/useToast";
+import useI18nToast from "@/hooks/useI18nToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets, isAggregationPreview } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
@@ -8,25 +8,17 @@ import { Flex, Select, Text, TextField } from "@radix-ui/themes";
 import { useCallback, useMemo } from "react";
 import { useNodeId } from "reactflow";
 import { BadgeConfig, EnhancedBaseNode } from "./EnhancedBaseNode";
-
-const AGGREGATION_METHODS = [
-  { value: "sum", label: "求和" },
-  { value: "avg", label: "平均值" },
-  { value: "count", label: "计数" },
-  { value: "min", label: "最小值" },
-  { value: "max", label: "最大值" },
-];
+import { useTranslation } from "react-i18next";
 
 export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
-  const toast = useToast();
+  const { t } = useTranslation();
+  const toast = useI18nToast();
   const nodeId = useNodeId();
   const nodeData = data as AggregatorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
-  // 使用新的预览API作为主要方法
   const previewNodeMutation = usePreviewNodeMutation();
 
-  // 使用真实的列数据
   const {
     columns: availableColumns,
     isLoading: isLoadingColumns,
@@ -54,6 +46,14 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     [nodeId, updateAggregatorNodeDataInStore],
   );
 
+  const AGGREGATION_METHODS = [
+    { value: "sum", label: t("node.aggregatorNode.methods.sum") },
+    { value: "avg", label: t("node.aggregatorNode.methods.avg") },
+    { value: "count", label: t("node.aggregatorNode.methods.count") },
+    { value: "min", label: t("node.aggregatorNode.methods.min") },
+    { value: "max", label: t("node.aggregatorNode.methods.max") },
+  ];
+
   const badges: BadgeConfig[] = useMemo(() => {
     const badges: BadgeConfig[] = [];
     if (nodeData.statColumn) {
@@ -69,13 +69,13 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         color: "blue",
         variant: "soft",
         label:
-          "方法: " +
-          AGGREGATION_METHODS.find((m) => m.value === nodeData.method)?.label,
+          AGGREGATION_METHODS.find((m) => m.value === nodeData.method)?.label ??
+          t("node.aggregatorNode.methodPrefix"),
       });
     }
 
     return badges;
-  }, [nodeData.statColumn, nodeData.method]);
+  }, [nodeData.statColumn, nodeData.method, t, AGGREGATION_METHODS]);
 
   const handleSelectColumn = (column: string) => {
     updateLocalNodeData({
@@ -101,23 +101,25 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     });
   };
 
-  // 新的预览函数，使用新API
   const previewNode = async () => {
     if (!currentWorkspace) {
-      toast.error("未找到当前工作区");
+      toast.error("node.common.noWorkspaceFound");
       return;
     }
 
     if (!nodeData.statColumn) {
       updateLocalNodeData({
-        error: "请选择要统计的列",
+        error: t("node.aggregatorNode.selectStatColumn"),
         testResult: undefined,
       });
       return;
     }
 
     if (!nodeData.method) {
-      updateLocalNodeData({ error: "请选择统计方法", testResult: undefined });
+      updateLocalNodeData({
+        error: t("node.aggregatorNode.selectStatMethod"),
+        testResult: undefined,
+      });
       return;
     }
 
@@ -148,14 +150,16 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
             }
           } else {
             updateLocalNodeData({
-              error: result.error || "预览失败",
+              error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
           updateLocalNodeData({
-            error: `预览失败: ${error.message}`,
+            error: t("node.common.previewFailedWithError", {
+              error: error.message,
+            }),
             testResult: undefined,
           });
         },
@@ -176,19 +180,21 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         {/* 列选择 */}
         <Flex direction="column" gap="1">
           <Text size="1" weight="medium">
-            统计列
+            {t("node.aggregatorNode.statColumn")}
           </Text>
           {isLoadingColumns ? (
             <Text size="1" color="gray">
-              加载列名中...
+              {t("node.aggregatorNode.loadingColumns")}
             </Text>
           ) : columnsError ? (
             <Text size="1" color="red">
-              无法获取列名：{columnsError.message}
+              {t("node.aggregatorNode.columnsError", {
+                message: columnsError.message,
+              })}
             </Text>
           ) : availableColumns.length === 0 ? (
             <Text size="1" color="gray">
-              未找到可用列，请检查上游节点配置
+              {t("node.aggregatorNode.noColumnsFound")}
             </Text>
           ) : (
             <Select.Root
@@ -210,7 +216,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         {/* 统计方法选择 */}
         <Flex direction="column" gap="1">
           <Text size="1" weight="medium">
-            统计方法
+            {t("node.aggregatorNode.statMethod")}
           </Text>
           <Select.Root
             value={nodeData.method || ""}
@@ -230,7 +236,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
         {/* 输出列名 */}
         <Flex direction="column" gap="1">
           <Text size="1" weight="medium">
-            输出列名（可选）
+            {t("node.aggregatorNode.outputColumnName")}
           </Text>
           <TextField.Root
             value={nodeData.outputAs || ""}
