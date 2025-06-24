@@ -319,12 +319,12 @@ class OutputProcessor(AbstractNodeProcessor[OutputInput, OutputResult]):
                     return f"{branch_id.replace('branch_', '').replace('_', '-')}-{display_name}"
 
             # 如果找不到对应的索引源节点，使用默认名称
-            return f"数据源_{branch_id.replace('branch_', '').replace('_', '-')}"
+            return f"s_{branch_id.replace('branch_', '').replace('_', '-')}"
 
         except Exception as e:
             # 发生任何错误时，返回默认名称
             # print(f"Warning: Failed to get source name for branch {branch_id}: {e}")
-            return f"数据源_{branch_id.replace('branch_', '').replace('_', '-')}"
+            return f"s_{branch_id.replace('branch_', '').replace('_', '-')}"
 
     def _write_output_file(self, sheets: List[SheetData], output_file_path: str):
         """

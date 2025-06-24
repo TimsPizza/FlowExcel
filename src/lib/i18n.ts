@@ -4,6 +4,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 
 import en from "@/locales/en.json";
 import zh from "@/locales/zh.json";
+import { useI18nStore } from "@/stores/useI18nStore";
 
 const resources = {
   en: {
@@ -19,7 +20,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: "zh",
+    lng: useI18nStore.getState().getLanguage(),
     fallbackLng: "en",
 
     keySeparator: ".",
@@ -39,10 +40,11 @@ export default i18n;
 // 语言切换工具函数
 export const changeLanguage = (lng: string) => {
   i18n.changeLanguage(lng);
+  useI18nStore.getState().setLanguage(lng);
 };
 
 export const getCurrentLanguage = () => {
-  return i18n.language;
+  return useI18nStore.getState().getLanguage();
 };
 
 export const languageOptions = [

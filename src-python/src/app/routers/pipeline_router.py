@@ -7,7 +7,7 @@ import traceback
 import logging
 
 from app.services.pipeline_service import PipelineService
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, Request
 from app.utils import recursively_serialize_dict
 
 from ..models import (
@@ -15,6 +15,8 @@ from ..models import (
     PipelineRequest,
     TestNodeRequest,
 )
+from app.middleware.i18n_middleware import LocalizedAPIResponse
+from app.decorators.i18n_error_handler import i18n_error_handler
 
 # 设置日志
 logger = logging.getLogger(__name__)
@@ -26,7 +28,8 @@ pipeline_service = PipelineService()
 
 
 @router.post("/execute", response_model=APIResponse)
-async def execute_pipeline_endpoint(request: PipelineRequest):
+@i18n_error_handler
+async def execute_pipeline_endpoint(request: PipelineRequest, headers: dict = Header(...)):
     """
     执行完整的数据处理pipeline（仅支持OUTPUT节点）
 
@@ -37,18 +40,19 @@ async def execute_pipeline_endpoint(request: PipelineRequest):
         APIResponse: 包含执行结果、执行时间、错误信息等
     """
     try:
-
         # 参数验证
         if not request.workspace_id and not request.workspace_config_json:
-            return APIResponse(
-                success=False, error="workspace_id或workspace_config_json至少一个不能为空"
+            # 直接使用翻译键，无需映射
+            language = "zh"  # 默认语言，装饰器会处理实际语言检测
+            return LocalizedAPIResponse.error(
+                "validation.workspace_config_required", language=language
             )
 
         # 执行pipeline
         response_data = pipeline_service.execute_pipeline_from_request(
             workspace_id=request.workspace_id or None,
             workspace_config_json=request.workspace_config_json or None,
-            execution_mode="production", # api端点对应的是生产模式
+            execution_mode="production",  # api端点对应的是生产模式
         )
 
         # 转换为字典格式
@@ -70,29 +74,23 @@ async def execute_pipeline_endpoint(request: PipelineRequest):
         return APIResponse(success=True, data=normalized_data)
 
     except ValueError as e:
-        # 参数验证错误
-        error_msg = f"参数错误: {str(e)}"
-        logger.warning(error_msg)
-        return APIResponse(success=False, error=error_msg)
-
+        # 参数验证错误 - 装饰器会自动处理
+        raise
     except FileNotFoundError as e:
-        # 工作区不存在错误
-        error_msg = f"工作区不存在: {str(e)}"
-        logger.warning(error_msg)
-        return APIResponse(success=False, error=error_msg)
-
+        # 工作区不存在错误 - 装饰器会自动处理
+        raise
     except Exception as e:
-        # 其他错误
-        error_msg = f"执行pipeline时发生错误: {str(e)}"
-        logger.error(error_msg, exc_info=True)
+        # 其他错误 - 装饰器会自动处理
+        logger.error(f"执行pipeline时发生错误: {str(e)}", exc_info=True)
         traceback.print_exc()
-        return APIResponse(success=False, error=error_msg)
+        raise
     finally:
         pipeline_service.context_manager.cleanup_branch_contexts()
 
 
 @router.post("/preview-node", response_model=APIResponse)
-async def preview_node_endpoint(request: TestNodeRequest):
+@i18n_error_handler
+async def preview_node_endpoint(req: TestNodeRequest, request: Request):
     """
     预览单个节点的执行结果（新架构，根据节点类型返回自定义格式）
 
@@ -104,22 +102,28 @@ async def preview_node_endpoint(request: TestNodeRequest):
     """
     try:
         logger.info(
-            f"开始预览节点: workspace_id={request.workspace_id}, node_id={request.node_id}, has_config_json={bool(request.workspace_config_json)}"
+            f"开始预览节点: workspace_id={req.workspace_id}, node_id={req.node_id}, has_config_json={bool(req.workspace_config_json)}"
         )
 
-        # 参数验证
-        if not request.node_id:
-            return APIResponse(success=False, error="node_id不能为空")
-        
-        if not request.workspace_config_json and not request.workspace_id:
-            return APIResponse(success=False, error="必须提供workspace_config_json或workspace_id参数")
+        # 参数验证 - 直接使用翻译键
+        if not req.node_id:
+            language = "zh"  # 默认语言，装饰器会处理实际语言检测
+            return LocalizedAPIResponse.error(
+                "validation.node_id_required", language=language
+            )
+
+        if not req.workspace_config_json and not req.workspace_id:
+            language = "zh"
+            return LocalizedAPIResponse.error(
+                "validation.workspace_config_required", language=language
+            )
 
         # 预览节点
         response_data = pipeline_service.preview_node(
-            node_id=request.node_id,
-            test_mode_max_rows=request.test_mode_max_rows,
-            workspace_id=request.workspace_id,
-            workspace_config_json=request.workspace_config_json,
+            node_id=req.node_id,
+            test_mode_max_rows=req.test_mode_max_rows,
+            workspace_id=req.workspace_id,
+            workspace_config_json=req.workspace_config_json,
         )
 
         # 处理可能包含NaN或无穷大值的数据
@@ -133,29 +137,23 @@ async def preview_node_endpoint(request: TestNodeRequest):
         return APIResponse(success=True, data=normalized_data)
 
     except ValueError as e:
-        # 参数验证错误
-        error_msg = f"参数错误: {str(e)}"
-        logger.warning(error_msg)
-        return APIResponse(success=False, error=error_msg)
-
+        # 参数验证错误 - 装饰器会自动处理
+        raise
     except FileNotFoundError as e:
-        # 工作区不存在错误
-        error_msg = f"工作区不存在: {str(e)}"
-        logger.warning(error_msg)
-        return APIResponse(success=False, error=error_msg)
-
+        # 工作区不存在错误 - 装饰器会自动处理
+        raise
     except Exception as e:
-        # 其他错误
-        error_msg = f"预览节点时发生错误: {str(e)}"
-        logger.error(error_msg, exc_info=True)
+        # 其他错误 - 装饰器会自动处理
+        logger.error(f"预览节点时发生错误: {str(e)}", exc_info=True)
         traceback.print_exc()
-        return APIResponse(success=False, error=error_msg)
+        raise
     finally:
         pipeline_service.context_manager.cleanup_branch_contexts()
 
 
 @router.get("/health", response_model=APIResponse)
-async def pipeline_health_check():
+@i18n_error_handler
+async def pipeline_health_check(request: Request):
     """
     Pipeline系统健康检查
 
@@ -166,29 +164,33 @@ async def pipeline_health_check():
         # 简单的健康检查
         from pipeline import __version__
 
+        # 使用翻译键创建响应
+        language = "zh"  # 默认语言
         health_data = {
             "status": "healthy",
             "service": "pipeline-service",
             "version": __version__,
-            "message": "Pipeline系统运行正常",
+            "message": "Pipeline系统运行正常",  # 这个可以保留中文，因为是系统内部消息
         }
 
         logger.info("Pipeline健康检查: 系统正常")
         return APIResponse(success=True, data=health_data)
 
     except Exception as e:
-        error_msg = f"Pipeline系统健康检查失败: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return APIResponse(success=False, error=error_msg)
+        # 装饰器会自动处理异常和本地化
+        logger.error(f"Pipeline系统健康检查失败: {str(e)}", exc_info=True)
+        raise
 
 
 # ==================== DataFrame转换性能监控API ====================
 
+
 @router.get("/dataframe-conversion-stats", response_model=APIResponse)
-async def get_dataframe_conversion_stats():
+@i18n_error_handler
+async def get_dataframe_conversion_stats(request: Request):
     """
     获取DataFrame转换性能统计
-    
+
     Returns:
         APIResponse: DataFrame转换统计数据
     """
@@ -196,16 +198,16 @@ async def get_dataframe_conversion_stats():
         stats = pipeline_service.get_dataframe_conversion_stats()
         return APIResponse(success=True, data=stats)
     except Exception as e:
-        error_msg = f"获取DataFrame转换统计失败: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return APIResponse(success=False, error=error_msg)
+        logger.error(f"获取DataFrame转换统计失败: {str(e)}", exc_info=True)
+        raise
 
 
 @router.post("/dataframe-conversion-stats/reset", response_model=APIResponse)
-async def reset_dataframe_conversion_stats():
+@i18n_error_handler
+async def reset_dataframe_conversion_stats(request: Request):
     """
     重置DataFrame转换性能统计
-    
+
     Returns:
         APIResponse: 重置结果
     """
@@ -213,23 +215,28 @@ async def reset_dataframe_conversion_stats():
         result = pipeline_service.reset_dataframe_conversion_stats()
         return APIResponse(success=True, data=result)
     except Exception as e:
-        error_msg = f"重置DataFrame转换统计失败: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return APIResponse(success=False, error=error_msg)
+        logger.error(f"重置DataFrame转换统计失败: {str(e)}", exc_info=True)
+        raise
 
 
 @router.post("/dataframe-conversion-stats/print", response_model=APIResponse)
-async def print_dataframe_conversion_stats():
+@i18n_error_handler
+async def print_dataframe_conversion_stats(request: Request):
     """
     打印DataFrame转换性能统计到服务器控制台
-    
+
     Returns:
         APIResponse: 操作结果
     """
     try:
         pipeline_service.print_dataframe_conversion_stats()
-        return APIResponse(success=True, data={"message": "DataFrame转换统计已打印到控制台"})
+        # 使用翻译键返回成功消息
+        language = "zh"
+        return LocalizedAPIResponse.success(
+            data={"message": "统计已打印"},
+            message_key="system.performance.stats_printed",
+            language=language,
+        )
     except Exception as e:
-        error_msg = f"打印DataFrame转换统计失败: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return APIResponse(success=False, error=error_msg)
+        logger.error(f"打印DataFrame转换统计失败: {str(e)}", exc_info=True)
+        raise

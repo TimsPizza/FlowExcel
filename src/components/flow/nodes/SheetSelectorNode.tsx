@@ -72,6 +72,11 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
         return;
       }
 
+      // clear existing test result
+      updateSheetSelectorNodeData(nodeId, {
+        testResult: undefined,
+        error: undefined,
+      });
       previewNodeMutation.mutate(
         {
           nodeId: nodeData.id,

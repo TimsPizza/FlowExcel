@@ -44,7 +44,7 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
       className="h-14 flex-shrink-0 border-b border-gray-300 bg-gray-50 shadow-sm"
     >
       {/* Left side: Workspace Name */}
-      <Flex align="center" gap="3">
+      <Flex align="center" gap="3" className="flex-1">
         {isWsDirty ? (
           <AlertExit
             title={t("workspace.exitTitle")}
@@ -106,29 +106,28 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
               {t("file.needFileManagerAction")}
             </Text>
           </Flex>
-        )}
-      </Flex>
-
-      {/* Right side: Actions */}
-      <Flex align="center" gap="3">
-        <Button
-          variant="solid"
-          color={isDirty ? "amber" : "green"}
-          size="2"
-          onClick={onSave}
-          disabled={isSaving || !isDirty}
-        >
-          {isSaving ? (
-            <UpdateIcon className="mr-0.5 animate-spin" />
-          ) : (
-            <CheckIcon className="mr-0.5" />
-          )}
-          {isDirty
-            ? isSaving
-              ? t("common.saving")
-              : t("common.save")
-            : t("workspace.noChanges")}
-        </Button>
+        )}{" "}
+        {/* Right side: Actions */}
+        <Flex align="center" gap="3" className="ml-auto">
+          <Button
+            variant="solid"
+            color={isDirty ? "amber" : "green"}
+            size="2"
+            onClick={onSave}
+            disabled={isSaving || !isDirty}
+          >
+            {isSaving ? (
+              <UpdateIcon className="mr-0.5 animate-spin" />
+            ) : (
+              <CheckIcon className="mr-0.5" />
+            )}
+            {isDirty
+              ? isSaving
+                ? t("common.saving")
+                : t("common.save")
+              : t("workspace.noChanges")}
+          </Button>
+        </Flex>
       </Flex>
     </Flex>
   );

@@ -12,7 +12,58 @@
     "invalid_node_type": "Invalid node type: {node_type}",
     "connection_error": "Connection error: {error}",
     "timeout": "Operation timeout",
-    "internal_server_error": "Internal server error: {error}"
+    "internal_server_error": "Internal server error: {error}",
+    "invalid_value": "Invalid value: {error}",
+    "key_not_found": "Key not found: {key}",
+    "type_error": "Type error: {error}"
+  },
+  "node_processor": {
+    "common": {
+      "file_not_found": "File {source_file_id} not found in context"
+    },
+    "index_source": {
+      "source_file_required": "sourceFileID is required for index source node",
+      "file_not_found": "File {source_file_id} not found"
+    },
+    "sheet_selector": {
+      "target_file_required": "targetFileID is required for sheet selector node",
+      "unknown_mode": "Unknown mode: {mode}"
+    },
+    "row_filter": {
+      "column_not_found": "Filter column '{column}' not found in DataFrame",
+      "unknown_operator": "Unknown filter operator: {operator}"
+    },
+    "row_lookup": {
+      "lookup_column_required": "lookupColumn is required for row lookup node",
+      "invalid_regex": "Invalid regex pattern '{pattern}': {error}"
+    },
+    "aggregator": {
+      "target_column_required": "targetColumn is required for aggregator node",
+      "operation_required": "operation is required for aggregator node",
+      "invalid_operation": "Invalid aggregation operation: {operation}"
+    },
+    "output": {
+      "write_failed": "Failed to write output file '{path}': {error}"
+    }
+  },
+  "system": {
+    "health": {
+      "healthy": "healthy",
+      "running_normally": "System is running normally",
+      "check_failed": "System health check failed: {error}"
+    },
+    "performance": {
+      "stats_printed": "Performance statistics printed to console",
+      "stats_reset": "Performance statistics reset successfully"
+    }
+  },
+  "preview": {
+    "index_values": "Index Values",
+    "aggregation_results": "Aggregation Results",
+    "sheet_name_default": "Sheet{index}",
+    "columns": {
+      "index_value": "Index Value"
+    }
   },
   "success": {
     "workspace_saved": "Workspace saved successfully",
@@ -36,6 +87,10 @@
     "required_field": "Field {field} is required",
     "invalid_format": "Field {field} has invalid format",
     "out_of_range": "Field {field} is out of range",
-    "duplicate_value": "Field {field} has duplicate value"
+    "duplicate_value": "Field {field} has duplicate value",
+    "workspace_config_required": "Must provide either workspace_config_json or workspace_id parameter",
+    "workspace_config_empty": "Workspace configuration cannot be empty",
+    "output_node_not_found": "OUTPUT node not found in workspace configuration",
+    "node_id_required": "node_id cannot be empty"
   }
 } 

@@ -124,10 +124,7 @@ fn main() {
                     // 延迟一会儿，确保前端已挂载事件监听
                     tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
                     app_handle_clone.emit("backend-ready", payload).unwrap();
-                    start_heartbeat_pinger(app_handle.clone(), 11017);
-                    log::info!(
-                        "Development mode: broadcasted backend-ready on port 11017 (delayed)"
-                    );
+                    log::info!("Development mode: broadcasted backend-ready on port 11017, heartbeat disabled");
                 });
                 return Ok(());
             }
@@ -178,10 +175,11 @@ fn main() {
                 log::info!("Executable: {}", exe_path.display());
                 log::info!("Working directory: {}", working_dir.display());
 
-                // 使用Command::new启动后端（不是sidecar）
+                // 使用Command::new启动后端（不是sidecar，它不支持onedir）
                 let (mut rx, _child) = app_handle
                     .shell()
                     .command(exe_path.to_string_lossy().to_string())
+                    .args(&["--enable-ping"])
                     .current_dir(&working_dir)
                     .spawn()
                     .expect("Failed to spawn backend process");

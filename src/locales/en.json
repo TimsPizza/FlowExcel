@@ -29,7 +29,7 @@
     "create_failed": "Failed to create workspace",
     "loadingList": "Loading workspaces...",
     "loadListFailed": "Failed to load workspaces: {{message}}",
-    "createNew": "Create New Workspace",
+    "createNew": "New Workspace",
     "description": "You can create multiple workspaces to handle different data analysis tasks. Each workspace has independent file management, data processing rules, and data processing flows.",
     "open": "Open Workspace",
     "noWorkspaces": "No workspaces found",
@@ -164,6 +164,7 @@
     "rowFilter": "Row Filter",
     "rowLookup": "Row Lookup",
     "indexSourceNode": {
+      "help": "You want to count which data items? For example, if you want to count a column in a table, select \"Column Name\" and select the corresponding column name (this is the most common case). Otherwise, select \"Sheet Name\"",
       "selectSourceFile": "Please select source file",
       "notSpecified": "Not specified!",
       "columnIndex": "Column Index",
@@ -180,14 +181,22 @@
       "indexColumn": "Index Column:",
       "selectIndexColumn": "Select Index Column"
     },
+    "sheetSelectorNode": {
+      "help": "About how to match the index item to the worksheet, if the index item corresponds to the table name of an excel file, please select automatic matching, otherwise please select manual matching"
+    },
     "rowLookupNode": {
+      "help": "About how to match the index item to the worksheet, if the index item corresponds to the table name of an excel file, please select automatic matching, otherwise please select manual matching",
       "matchColumnPrefix": "Match Column: ",
       "loadingColumns": "Loading columns...",
       "columnsError": "Unable to get columns: {{message}}",
       "matchColumn": "Match Column:",
       "description": "This node will lookup all rows in the table where column \"{{column}}\" matches the index value"
     },
+    "rowFilterNode": {
+      "help": "Filter all rows of the previous level table by certain conditions"
+    },
     "aggregatorNode": {
+      "help": "Aggregate the output table of the previous level by a certain column. Connecting multiple nodes of this type will not affect the aggregation result. When testing, only the result of this node is returned without including the previous aggregation nodes. However, if you have tested all the aggregation nodes and their test results are correct, the final results of all connected nodes will be merged into a table",
       "methods": {
         "sum": "Sum",
         "avg": "Average",
@@ -206,6 +215,7 @@
       "outputColumnName": "Output Column Name (Optional)"
     },
     "outputNode": {
+      "help": "Specify the output file save location. Note that each input connection will be saved as a worksheet",
       "format": "Format: Excel",
       "savePathPrefix": "Save Path: ",
       "notSet": "Not set",

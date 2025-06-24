@@ -12,7 +12,58 @@
     "invalid_node_type": "无效的节点类型: {node_type}",
     "connection_error": "连接错误: {error}",
     "timeout": "操作超时",
-    "internal_server_error": "内部服务器错误: {error}"
+    "internal_server_error": "内部服务器错误: {error}",
+    "invalid_value": "无效的值: {error}",
+    "key_not_found": "找不到键: {key}",
+    "type_error": "类型错误: {error}"
+  },
+  "node_processor": {
+    "common": {
+      "file_not_found": "文件 {source_file_id} 在上下文中未找到"
+    },
+    "index_source": {
+      "source_file_required": "索引源节点需要sourceFileID",
+      "file_not_found": "文件 {source_file_id} 未找到"
+    },
+    "sheet_selector": {
+      "target_file_required": "工作表选择器节点需要targetFileID",
+      "unknown_mode": "未知模式: {mode}"
+    },
+    "row_filter": {
+      "column_not_found": "过滤列 '{column}' 在数据表中未找到",
+      "unknown_operator": "未知过滤操作符: {operator}"
+    },
+    "row_lookup": {
+      "lookup_column_required": "行查找节点需要lookupColumn",
+      "invalid_regex": "无效的正则表达式模式 '{pattern}': {error}"
+    },
+    "aggregator": {
+      "target_column_required": "聚合节点需要targetColumn",
+      "operation_required": "聚合节点需要operation",
+      "invalid_operation": "无效的聚合操作: {operation}"
+    },
+    "output": {
+      "write_failed": "写入输出文件 '{path}' 失败: {error}"
+    }
+  },
+  "system": {
+    "health": {
+      "healthy": "正常",
+      "running_normally": "系统运行正常",
+      "check_failed": "系统健康检查失败: {error}"
+    },
+    "performance": {
+      "stats_printed": "性能统计已打印到控制台",
+      "stats_reset": "性能统计重置成功"
+    }
+  },
+  "preview": {
+    "index_values": "索引值列表",
+    "aggregation_results": "聚合结果",
+    "sheet_name_default": "工作表{index}",
+    "columns": {
+      "index_value": "索引值"
+    }
   },
   "success": {
     "workspace_saved": "工作区保存成功",
@@ -36,6 +87,10 @@
     "required_field": "字段 {field} 是必需的",
     "invalid_format": "字段 {field} 格式无效",
     "out_of_range": "字段 {field} 超出范围",
-    "duplicate_value": "字段 {field} 值重复"
+    "duplicate_value": "字段 {field} 值重复",
+    "workspace_config_required": "必须提供workspace_config_json或workspace_id参数",
+    "workspace_config_empty": "工作区配置不能为空",
+    "output_node_not_found": "工作区配置中没有找到OUTPUT节点",
+    "node_id_required": "node_id不能为空"
   }
 } 

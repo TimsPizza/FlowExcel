@@ -115,6 +115,12 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
       return;
     }
 
+    // clear existing test result
+    updateIndexSourceNodeData(nodeId, {
+      testResult: undefined,
+      error: undefined,
+    });
+
     previewNodeMutation.mutate(
       {
         nodeId: nodeData.id,

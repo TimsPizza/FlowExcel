@@ -164,6 +164,7 @@
     "output": "输出",
     "dataSourcePrefix": "数据源-",
     "indexSourceNode": {
+      "help": "你希望统计哪些数据项？比如，你希望对某张表的某列进行统计，选择“列名”，并选择相应的列名（这是大部分情况），否则选择“工作表名",
       "selectSourceFile": "请选择源文件",
       "notSpecified": "未指定!",
       "columnIndex": "列名索引",
@@ -180,14 +181,22 @@
       "indexColumn": "索引列:",
       "selectIndexColumn": "选择索引列"
     },
+    "sheetSelectorNode": {
+      "help": "关于索引项如何匹配工作表，如果索引项对应某个excel文件的表名，请选择自动匹配，否则请选择手动匹配"
+    },
     "rowLookupNode": {
+      "help": "关于索引项如何匹配工作表，如果索引项对应某个excel文件的表名，请选择自动匹配，否则请选择手动匹配",
       "matchColumnPrefix": "匹配列: ",
       "loadingColumns": "加载列名中...",
       "columnsError": "无法获取列名：{{message}}",
       "matchColumn": "匹配列:",
       "description": "此节点将在表格中查找列 \"{{column}}\" 中与索引值匹配的所有行"
     },
+    "rowFilterNode": {
+      "help": "对上一级的表的所有行进行条件过滤"
+    },
     "aggregatorNode": {
+      "help": "对上一级的输出表的某列进行统计，串联多个该类型节点不会影响统计结果。测试时仅返回该节点的结果而不包括之前的统计节点，不过如果你测试了所有的统计节点且它们测试结果均正确，那么所有串联节点的最终结果会被合并到一张表中",
       "methods": {
         "sum": "求和",
         "avg": "平均值",
@@ -206,6 +215,7 @@
       "outputColumnName": "输出列名（可选）"
     },
     "outputNode": {
+      "help": "指定输出文件保存位置。注意，每个输入连线都会被保存为一张工作表",
       "format": "格式: Excel",
       "savePathPrefix": "保存路径: ",
       "notSet": "未设置",

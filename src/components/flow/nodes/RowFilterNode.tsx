@@ -107,6 +107,11 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       return;
     }
 
+    // clear existing test result
+    updateRowFilterNodeDataInStore(nodeId, {
+      testResult: undefined,
+      error: undefined,
+    });
     previewNodeMutation.mutate(
       {
         nodeId: nodeData.id,

@@ -3,6 +3,7 @@
 提供非侵入式的性能计数功能
 """
 
+import logging
 import time
 import threading
 from typing import Dict, Any, Optional
@@ -516,97 +517,97 @@ class PerformanceAnalyzer:
             }
 
     def print_stats(self):
-        return
-        # 暂时关闭性能统计
         """打印性能统计信息"""
         stats = self.get_stats()
 
-        print("=" * 60)
-        print("性能分析报告")
-        print("=" * 60)
-        print(f"📊 总执行次数: {stats['total_executions']}")
-        print(f"⏱️  总执行时间: {stats['total_time_ms']:.2f}ms")
-        print(f"📈 平均执行时间: {stats['avg_time_per_execution_ms']:.2f}ms")
-        print(f"❌ 错误次数: {stats['total_errors']}")
-        print(f"📉 错误率: {stats['error_rate']:.2%}")
-        print(f"🔄 活跃执行: {stats['active_executions']}")
-        print()
+        logging.info("=" * 60)
+        logging.info("性能分析报告")
+        logging.info("=" * 60)
+        logging.info(f"📊 总执行次数: {stats['total_executions']}")
+        logging.info(f"⏱️  总执行时间: {stats['total_time_ms']:.2f}ms")
+        logging.info(f"📈 平均执行时间: {stats['avg_time_per_execution_ms']:.2f}ms")
+        logging.info(f"❌ 错误次数: {stats['total_errors']}")
+        logging.info(f"📉 错误率: {stats['error_rate']:.2%}")
+        logging.info(f"🔄 活跃执行: {stats['active_executions']}")
 
         # DataFrame转换统计
         df_stats = stats["dataframe_conversion_stats"]
         if df_stats["to_pandas_count"] > 0 or df_stats["from_pandas_count"] > 0:
-            print("DataFrame转换统计:")
-            print("-" * 30)
-            print(f"🔄 to_pandas()调用: {df_stats['to_pandas_count']}")
-            print(f"⏱️  to_pandas()总时间: {df_stats['to_pandas_total_time_ms']:.2f}ms")
-            print(f"📊 to_pandas()平均时间: {df_stats['to_pandas_avg_time_ms']:.2f}ms")
-            print(f"📋 to_pandas()总行数: {df_stats['to_pandas_total_rows']}")
-            print(f"🔄 from_pandas()调用: {df_stats['from_pandas_count']}")
-            print(
+            logging.info("DataFrame转换统计:")
+            logging.info("-" * 30)
+            logging.info(f"🔄 to_pandas()调用: {df_stats['to_pandas_count']}")
+            logging.info(
+                f"⏱️  to_pandas()总时间: {df_stats['to_pandas_total_time_ms']:.2f}ms"
+            )
+            logging.info(
+                f"📊 to_pandas()平均时间: {df_stats['to_pandas_avg_time_ms']:.2f}ms"
+            )
+            logging.info(f"📋 to_pandas()总行数: {df_stats['to_pandas_total_rows']}")
+            logging.info(f"🔄 from_pandas()调用: {df_stats['from_pandas_count']}")
+            logging.info(
                 f"⏱️  from_pandas()总时间: {df_stats['from_pandas_total_time_ms']:.2f}ms"
             )
-            print(
+            logging.info(
                 f"📊 from_pandas()平均时间: {df_stats['from_pandas_avg_time_ms']:.2f}ms"
             )
-            print(f"📋 from_pandas()总行数: {df_stats['from_pandas_total_rows']}")
-            print()
+            logging.info(
+                f"📋 from_pandas()总行数: {df_stats['from_pandas_total_rows']}"
+            )
 
         # Excel IO统计
         excel_stats = stats["excel_io_stats"]
         if excel_stats["read_count"] > 0:
-            print("Excel文件IO统计(批量预加载之外):")
-            print("-" * 30)
-            print(f"📖 文件读取次数: {excel_stats['read_count']}")
-            print(f"⏱️  读取总时间: {excel_stats['read_total_time_ms']:.2f}ms")
-            print(f"📊 平均读取时间: {excel_stats['read_avg_time_ms']:.2f}ms")
-            print(f"📋 读取总行数: {excel_stats['read_total_rows']}")
-            print(f"💾 读取总大小: {excel_stats['read_total_size_bytes']} bytes")
-            print()
+            logging.info("Excel文件IO统计(批量预加载之外):")
+            logging.info("-" * 30)
+            logging.info(f"📖 文件读取次数: {excel_stats['read_count']}")
+            logging.info(f"⏱️  读取总时间: {excel_stats['read_total_time_ms']:.2f}ms")
+            logging.info(f"📊 平均读取时间: {excel_stats['read_avg_time_ms']:.2f}ms")
+            logging.info(f"📋 读取总行数: {excel_stats['read_total_rows']}")
+            logging.info(f"💾 读取总大小: {excel_stats['read_total_size_bytes']} bytes")
 
         # 缓存统计
         cache_stats = stats["cache_stats"]
         if cache_stats["total_requests"] > 0:
-            print("缓存性能统计:")
-            print("-" * 30)
-            print(f"✅ 缓存命中: {cache_stats['hit_count']}")
-            print(f"❌ 缓存未命中: {cache_stats['miss_count']}")
-            print(f"📊 总请求数: {cache_stats['total_requests']}")
-            print(f"📈 命中率: {cache_stats['hit_rate']:.2%}")
-            print(f"📉 未命中率: {cache_stats['miss_rate']:.2%}")
-            print()
+            logging.info("缓存性能统计:")
+            logging.info("-" * 30)
+            logging.info(f"✅ 缓存命中: {cache_stats['hit_count']}")
+            logging.info(f"❌ 缓存未命中: {cache_stats['miss_count']}")
+            logging.info(f"📊 总请求数: {cache_stats['total_requests']}")
+            logging.info(f"📈 命中率: {cache_stats['hit_rate']:.2%}")
+            logging.info(f"📉 未命中率: {cache_stats['miss_rate']:.2%}")
 
         # 批量预加载统计
         batch_stats = stats["batch_preload_stats"]
         if batch_stats is not None:
-            print("批量预加载统计:")
-            print("-" * 30)
-            print(f"🚀 预加载会话: {batch_stats['session_count']}")
-            print(f"📁 总文件数: {batch_stats['total_files']}")
-            print(f"📄 总Sheet数: {batch_stats['total_sheets']}")
-            print(f"✅ 成功加载: {batch_stats['successful_sheets']}")
-            print(f"❌ 加载失败: {batch_stats['failed_sheets']}")
-            print(f"⏱️  预加载总时间: {batch_stats['total_time_ms']:.2f}ms")
-            print(f"📋 预加载总行数: {batch_stats['total_rows']}")
-            print(f"📊 平均会话时间: {batch_stats['avg_time_per_session_ms']:.2f}ms")
-            print(f"📈 成功率: {batch_stats['success_rate']:.2%}")
-            print(f"📊 总IO减少量: {batch_stats['total_io_reduction']}")
-            print()
+            logging.info("批量预加载统计:")
+            logging.info("-" * 30)
+            logging.info(f"🚀 预加载会话: {batch_stats['session_count']}")
+            logging.info(f"📁 总文件数: {batch_stats['total_files']}")
+            logging.info(f"📄 总Sheet数: {batch_stats['total_sheets']}")
+            logging.info(f"✅ 成功加载: {batch_stats['successful_sheets']}")
+            logging.info(f"❌ 加载失败: {batch_stats['failed_sheets']}")
+            logging.info(f"⏱️  预加载总时间: {batch_stats['total_time_ms']:.2f}ms")
+            logging.info(f"📋 预加载总行数: {batch_stats['total_rows']}")
+            logging.info(
+                f"📊 平均会话时间: {batch_stats['avg_time_per_session_ms']:.2f}ms"
+            )
+            logging.info(f"📈 成功率: {batch_stats['success_rate']:.2%}")
+            logging.info(f"📊 总IO减少量: {batch_stats['total_io_reduction']}")
 
         if stats["node_stats"]:
-            print("各节点详细统计:")
-            print("-" * 60)
+            logging.info("各节点详细统计:")
+            logging.info("-" * 60)
             for node_id, node_stats in stats["node_stats"].items():
-                print(f"🔹 {node_stats['node_type']} ({node_id}):")
-                print(f"   执行次数: {node_stats['execution_count']}")
-                print(f"   平均时间: {node_stats['avg_time_ms']:.2f}ms")
-                print(
+                logging.info(f"🔹 {node_stats['node_type']} ({node_id}):")
+                logging.info(f"   执行次数: {node_stats['execution_count']}")
+                logging.info(f"   平均时间: {node_stats['avg_time_ms']:.2f}ms")
+                logging.info(
                     f"   时间范围: {node_stats['min_time_ms']:.2f}ms - {node_stats['max_time_ms']:.2f}ms"
                 )
-                print(
+                logging.info(
                     f"   错误次数: {node_stats['error_count']} ({node_stats['error_rate']:.1%})"
                 )
-                print()
-        print("=" * 60)
+        logging.info("=" * 60)
 
     def reset(self):
         """重置所有性能数据"""
@@ -628,7 +629,7 @@ class PerformanceAnalyzer:
             self._cache_stats = CacheStats()
             self._batch_preload_stats = BatchPreloadStats()
 
-        print("PERF: 性能统计已重置")
+        logging.info("PERF: 性能统计已重置")
 
     def enable(self):
         """启用性能监控"""

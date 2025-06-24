@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { AlertDialog as AlertDialog_, Flex, Text } from "@radix-ui/themes";
+import { t } from "i18next";
 
 interface AlertExitProps {
   title: string;
@@ -36,12 +37,12 @@ const AlertExit = ({
         <Flex gap="3" mt="4" justify="end">
           <AlertDialog_.Cancel>
             <Button variant="soft" color="gray" onClick={() => onCancel?.()}>
-              {`取消`}
+              {t("common.cancel")}
             </Button>
           </AlertDialog_.Cancel>
           <AlertDialog_.Action>
             <Button variant="solid" color="red" onClick={() => onConfirm?.()}>
-              {`确定`}
+              {t("common.confirm")}
             </Button>
           </AlertDialog_.Action>
         </Flex>

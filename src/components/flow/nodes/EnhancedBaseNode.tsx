@@ -15,6 +15,7 @@ import { useCallback, useState } from "react";
 import { Handle, Position, useReactFlow } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 export interface BadgeConfig {
   color:
@@ -181,7 +182,9 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
               />
             )}
             <TextModal
-              content={NODE_TYPE_DESCRIPTIONS[data.nodeType as NodeType]}
+              content={i18n.t(
+                NODE_TYPE_DESCRIPTIONS[data.nodeType as NodeType],
+              )}
               label={t("common.help")}
             />
             <Button

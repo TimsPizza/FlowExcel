@@ -88,6 +88,12 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
       return;
     }
 
+    // clear existing test result
+    updateLocalNodeData({
+      testResult: undefined,
+      error: undefined,
+    });
+
     previewNodeMutation.mutate(
       {
         nodeId: nodeData.id,

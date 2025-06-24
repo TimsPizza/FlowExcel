@@ -61,7 +61,11 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
       toast.error("node.common.noWorkspaceFound");
       return;
     }
-
+    // clear existing test result
+    updateLocalNodeData({
+      testResult: undefined,
+      error: undefined,
+    });
     previewNodeMutation.mutate(
       {
         nodeId: nodeData.id,

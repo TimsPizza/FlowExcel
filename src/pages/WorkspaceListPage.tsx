@@ -97,7 +97,8 @@ export function WorkspaceListPage() {
           </Heading>
           <Button
             size="3"
-            color="green"
+            color="blue"
+            variant="soft"
             onClick={handleCreateNew}
             disabled={isSaving}
           >

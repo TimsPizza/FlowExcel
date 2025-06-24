@@ -4,6 +4,7 @@
 专为性能优化设计，支持进度监控和错误处理
 """
 
+import logging
 import pandas as pd
 import time
 import os
@@ -259,21 +260,21 @@ class BatchPreloader:
         Args:
             summary: 批量预加载摘要
         """
-        print("=" * 50)
-        print("📦 批量预加载报告")
-        print("=" * 50)
-        print(f"📊 总Sheet数: {summary.total_sheets}")
-        print(f"✅ 成功加载: {summary.successful_sheets}")
-        print(f"❌ 加载失败: {summary.failed_sheets}")
-        print(f"⏱️ 总加载时间: {summary.total_time_ms:.2f}ms")
-        print(f"📋 总行数: {summary.total_rows}")
-        print(f"💾 估算大小: {summary.total_files_size_bytes} bytes")
-        print(f"🚀 减少IO次数: {summary.io_reduction_count}")
+        logging.info("=" * 50)
+        logging.info("📦 批量预加载报告")
+        logging.info("=" * 50)
+        logging.info(f"📊 总Sheet数: {summary.total_sheets}")
+        logging.info(f"✅ 成功加载: {summary.successful_sheets}")
+        logging.info(f"❌ 加载失败: {summary.failed_sheets}")
+        logging.info(f"⏱️ 总加载时间: {summary.total_time_ms:.2f}ms")
+        logging.info(f"📋 总行数: {summary.total_rows}")
+        logging.info(f"💾 估算大小: {summary.total_files_size_bytes} bytes")
+        logging.info(f"🚀 减少IO次数: {summary.io_reduction_count}")
 
         if summary.total_sheets > 0:
             success_rate = summary.successful_sheets / summary.total_sheets * 100
             avg_time = summary.total_time_ms / summary.total_sheets
-            print(f"📈 成功率: {success_rate:.1f}%")
-            print(f"📊 平均加载时间: {avg_time:.2f}ms/sheet")
+            logging.info(f"📈 成功率: {success_rate:.1f}%")
+            logging.info(f"📊 平均加载时间: {avg_time:.2f}ms/sheet")
 
-        print("=" * 50)
+        logging.info("=" * 50)

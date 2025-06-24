@@ -41,18 +41,14 @@ export const NODE_CONNECTION_RULES: Record<NodeType, NodeType[]> = {
  * 节点类型描述
  */
 export const NODE_TYPE_DESCRIPTIONS: Record<NodeType, string> = {
-  [NodeType.INDEX_SOURCE]:
-    "你希望统计哪些数据项？比如，你希望对某张表的某列进行统计，选择“列名”，并选择相应的列名（这是大部分情况），否则选择“工作表名”",
-  [NodeType.SHEET_SELECTOR]:
-    "关于索引项如何匹配工作表，如果索引项对应某个excel文件的表名，请选择自动匹配，否则请选择手动匹配",
-  [NodeType.ROW_FILTER]: "对上一级的表的所有行进行条件过滤",
-  [NodeType.ROW_LOOKUP]:
-    "筛选每个索引项对应的所有行，如果没有这个节点，所有的行都将被传递给下一层 - 你不会想统计无关数据",
-  [NodeType.AGGREGATOR]:
-    "对上一级的输出表的某列进行统计，串联多个该类型节点不会影响统计结果。测试时仅返回该节点的结果而不包括之前的统计节点，不过如果你测试了所有的统计节点且它们测试结果均正确，那么所有串联节点的最终结果会被合并到一张表中",
-  [NodeType.OUTPUT]:
-    "指定输出文件保存位置。注意，每个输入连线都会被保存为一张工作表",
+  [NodeType.INDEX_SOURCE]: "node.indexSourceNode.help",
+  [NodeType.SHEET_SELECTOR]: "node.sheetSelectorNode.help",
+  [NodeType.ROW_FILTER]: "node.rowFilterNode.help",
+  [NodeType.ROW_LOOKUP]: "node.rowLookupNode.help",
+  [NodeType.AGGREGATOR]: "node.aggregatorNode.help",
+  [NodeType.OUTPUT]: "node.outputNode.help",
 };
+
 
 export const NODE_TYPE_NAMES: Record<NodeType, string> = {
   [NodeType.INDEX_SOURCE]: "索引源",
@@ -90,9 +86,9 @@ export function isValidConnection(
   if (!allowedTargets.includes(targetType)) {
     return {
       isValid: false,
-      reason: i18n.t("flow.validation.invalidConnection", { 
-        source: i18n.t(`node.${sourceType}`), 
-        target: i18n.t(`node.${targetType}`) 
+      reason: i18n.t("flow.validation.invalidConnection", {
+        source: i18n.t(`node.${sourceType}`),
+        target: i18n.t(`node.${targetType}`),
       }),
     };
   }
@@ -103,7 +99,10 @@ export function isValidConnection(
       edge.source === connection.source && edge.target === connection.target,
   );
   if (existingConnection) {
-    return { isValid: false, reason: i18n.t("flow.validation.connectionExists") };
+    return {
+      isValid: false,
+      reason: i18n.t("flow.validation.connectionExists"),
+    };
   }
 
   // 检查单入节点限制
@@ -120,8 +119,8 @@ export function isValidConnection(
     if (existingInputs.length > 0) {
       return {
         isValid: false,
-        reason: i18n.t("flow.validation.singleInputOnly", { 
-          nodeType: i18n.t(`node.${targetType}`) 
+        reason: i18n.t("flow.validation.singleInputOnly", {
+          nodeType: i18n.t(`node.${targetType}`),
         }),
       };
     }
@@ -173,40 +172,40 @@ export function getAvailableNextNodeTypes(
 export function detectCycle(nodes: Node[], edges: Edge[]): boolean {
   // 节点访问状态: 0-未访问, 1-正在访问, 2-已访问完成
   const visitState = new Map<string, number>();
-  
+
   // 构建邻接表
   const adjacencyList = new Map<string, string[]>();
-  
+
   // 初始化所有节点
-  nodes.forEach(node => {
+  nodes.forEach((node) => {
     visitState.set(node.id, 0);
     adjacencyList.set(node.id, []);
   });
-  
+
   // 构建邻接表
-  edges.forEach(edge => {
+  edges.forEach((edge) => {
     const neighbors = adjacencyList.get(edge.source) || [];
     neighbors.push(edge.target);
     adjacencyList.set(edge.source, neighbors);
   });
-  
+
   // DFS检测环路
   function dfs(nodeId: string): boolean {
     const state = visitState.get(nodeId);
-    
+
     // 如果正在访问，说明找到了环路
     if (state === 1) {
       return true;
     }
-    
+
     // 如果已访问完成，跳过
     if (state === 2) {
       return false;
     }
-    
+
     // 标记为正在访问
     visitState.set(nodeId, 1);
-    
+
     // 递归访问所有邻居节点
     const neighbors = adjacencyList.get(nodeId) || [];
     for (const neighbor of neighbors) {
@@ -214,12 +213,12 @@ export function detectCycle(nodes: Node[], edges: Edge[]): boolean {
         return true;
       }
     }
-    
+
     // 标记为已访问完成
     visitState.set(nodeId, 2);
     return false;
   }
-  
+
   // 对所有未访问的节点进行DFS
   for (const node of nodes) {
     if (visitState.get(node.id) === 0) {
@@ -228,7 +227,7 @@ export function detectCycle(nodes: Node[], edges: Edge[]): boolean {
       }
     }
   }
-  
+
   return false;
 }
 
@@ -243,20 +242,22 @@ export function wouldCreateCycle(
   if (!connection.source || !connection.target) {
     return false;
   }
-  
+
   // 创建临时边集合，包含新连接
-  const tempEdges = [...edges, {
-    id: `temp-${connection.source}-${connection.target}`,
-    source: connection.source,
-    target: connection.target,
-    sourceHandle: connection.sourceHandle || null,
-    targetHandle: connection.targetHandle || null,
-  }];
-  
+  const tempEdges = [
+    ...edges,
+    {
+      id: `temp-${connection.source}-${connection.target}`,
+      source: connection.source,
+      target: connection.target,
+      sourceHandle: connection.sourceHandle || null,
+      targetHandle: connection.targetHandle || null,
+    },
+  ];
+
   // 检测是否存在环路
   return detectCycle(nodes, tempEdges);
 }
-
 
 /**
  * 检查流程的完整性
@@ -284,7 +285,7 @@ export function validateFlow(
   const outputNodes = nodes.filter((n) => n.data.nodeType === NodeType.OUTPUT);
   if (outputNodes.length === 0) {
     errors.push(i18n.t("flow.validation.needOutput"));
-  }else if (outputNodes.length > 1) {
+  } else if (outputNodes.length > 1) {
     errors.push(i18n.t("flow.validation.singleOutputOnly"));
   }
 
@@ -294,11 +295,15 @@ export function validateFlow(
     const hasOutgoing = edges.some((edge) => edge.source === node.id);
 
     if (node.data.nodeType !== NodeType.INDEX_SOURCE && !hasIncoming) {
-      warnings.push(i18n.t("flow.validation.noInput", { label: node.data.label }));
+      warnings.push(
+        i18n.t("flow.validation.noInput", { label: node.data.label }),
+      );
     }
 
     if (node.data.nodeType !== NodeType.OUTPUT && !hasOutgoing) {
-      warnings.push(i18n.t("flow.validation.noOutput", { label: node.data.label }));
+      warnings.push(
+        i18n.t("flow.validation.noOutput", { label: node.data.label }),
+      );
     }
   });
 
@@ -321,7 +326,11 @@ export function validateFlow(
       edges.filter((e) => e.id !== edge.id),
     );
     if (!validation.isValid) {
-      errors.push(i18n.t("flow.validation.invalidConnectionDetail", { reason: validation.reason }));
+      errors.push(
+        i18n.t("flow.validation.invalidConnectionDetail", {
+          reason: validation.reason,
+        }),
+      );
     }
   });
 
@@ -455,7 +464,7 @@ export const getInitialNodeData = (
       return {
         id: nodeId,
         nodeType: type,
-        label: NODE_TYPE_DESCRIPTIONS[type],
+        label: i18n.t(NODE_TYPE_DESCRIPTIONS[type]),
         testResult: undefined,
         error: undefined,
       } as FlowNodeData;

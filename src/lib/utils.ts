@@ -3,6 +3,14 @@ import { FileMeta } from "@/types";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import type {
+  PreviewNodeResult,
+  IndexSourcePreviewResult,
+  DataFramePreviewResult,
+  AggregationPreviewResult,
+  SheetInfo,
+} from "@/types";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -13,14 +21,7 @@ export const getFileById = (fileId: string): FileMeta | undefined => {
   return state.currentWorkspace?.files.find((f) => f.id === fileId);
 };
 
-// New: Preview result utilities
-import type {
-  PreviewNodeResult,
-  IndexSourcePreviewResult,
-  DataFramePreviewResult,
-  AggregationPreviewResult,
-  SheetInfo,
-} from "@/types";
+// Preview result utilities
 
 /**
  * Type guards for preview results
