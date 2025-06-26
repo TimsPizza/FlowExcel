@@ -25,14 +25,22 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
 
   const handleSelectFile = async (fileId: string) => {
     try {
-      updateSheetSelectorNodeData(nodeId, {
-        targetFileID: fileId,
-        error: undefined,
-      });
+      updateSheetSelectorNodeData(
+        nodeId,
+        {
+          targetFileID: fileId,
+          error: undefined,
+        },
+        true,
+      );
 
       // Reset manual sheet name if file changed
       if (nodeData.mode === "manual" && nodeData.manualSheetName) {
-        updateSheetSelectorNodeData(nodeId, { manualSheetName: undefined });
+        updateSheetSelectorNodeData(
+          nodeId,
+          { manualSheetName: undefined },
+          true,
+        );
       }
     } catch (error) {
       console.error(error);
@@ -40,18 +48,26 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
   };
 
   const handleSheetModeChange = (mode: "auto_by_index" | "manual") => {
-    updateSheetSelectorNodeData(nodeId, {
-      mode,
-      manualSheetName: undefined, // Reset when changing mode
-      error: undefined,
-    });
+    updateSheetSelectorNodeData(
+      nodeId,
+      {
+        mode,
+        manualSheetName: undefined, // Reset when changing mode
+        error: undefined,
+      },
+      true,
+    );
   };
 
   const handleSelectSheet = (sheetName: string) => {
-    updateSheetSelectorNodeData(nodeId, {
-      manualSheetName: sheetName,
-      error: undefined,
-    });
+    updateSheetSelectorNodeData(
+      nodeId,
+      {
+        manualSheetName: sheetName,
+        error: undefined,
+      },
+      true,
+    );
   };
 
   const previewNode = async () => {

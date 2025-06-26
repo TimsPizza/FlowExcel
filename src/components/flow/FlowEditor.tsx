@@ -321,7 +321,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   ]);
 
   return (
-    <div style={{ width: "100%", height: "100%" }} ref={reactFlowWrapper}>
+    <div className="h-full w-full" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -361,7 +361,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                           setSelectedNodeType(value as NodeType)
                         }
                       >
-                        <Select.Trigger style={{ flex: 1 }} />
+                        <Select.Trigger className="flex-1" />
                         <Select.Content>
                           <Select.Group>
                             {NODE_TYPES.map((nodeType) => (
@@ -398,7 +398,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                           setLayoutDirection(value as "TB" | "LR")
                         }
                       >
-                        <Select.Trigger style={{ flex: 1 }} />
+                        <Select.Trigger className="flex-1" />
                         <Select.Content>
                           <Select.Item value="LR">
                             {t("flow.horizontal")}

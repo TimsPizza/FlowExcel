@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   const { t } = useTranslation();
   const toast = useI18nToast();
-  const nodeId = useNodeId();
+  const nodeId = useNodeId()!;
   const nodeData = data as AggregatorNodeDataContext;
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
@@ -25,25 +25,8 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     error: columnsError,
   } = useNodeColumns();
 
-  const updateAggregatorNodeDataInStore = useWorkspaceStore(
+  const updateAggregatorNodeData = useWorkspaceStore(
     (state) => state.updateNodeData,
-  );
-
-  const updateLocalNodeData = useCallback(
-    (updates: Partial<AggregatorNodeDataContext>) => {
-      if (nodeId && updateAggregatorNodeDataInStore) {
-        updateAggregatorNodeDataInStore(nodeId, updates);
-      } else {
-        console.warn(
-          "AggregatorNode: nodeId or updateFunction in store is not available.",
-          {
-            nodeId,
-            hasUpdater: !!updateAggregatorNodeDataInStore,
-          },
-        );
-      }
-    },
-    [nodeId, updateAggregatorNodeDataInStore],
   );
 
   const AGGREGATION_METHODS = [
@@ -78,27 +61,27 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
   }, [nodeData.statColumn, nodeData.method, t, AGGREGATION_METHODS]);
 
   const handleSelectColumn = (column: string) => {
-    updateLocalNodeData({
+    updateAggregatorNodeData(nodeId, {
       statColumn: column,
       error: undefined,
       testResult: undefined,
-    });
+    },true);
   };
 
   const handleSelectMethod = (method: string) => {
-    updateLocalNodeData({
+    updateAggregatorNodeData(nodeId, {
       method: method as "sum" | "avg" | "count" | "min" | "max",
       error: undefined,
       testResult: undefined,
-    });
+    },true);
   };
 
   const handleOutputAsChange = (value: string) => {
-    updateLocalNodeData({
+    updateAggregatorNodeData(nodeId, {
       outputAs: value,
       error: undefined,
       testResult: undefined,
-    });
+    },true);
   };
 
   const previewNode = async () => {
@@ -108,7 +91,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
 
     if (!nodeData.statColumn) {
-      updateLocalNodeData({
+      updateAggregatorNodeData(nodeId, {
         error: t("node.aggregatorNode.selectStatColumn"),
         testResult: undefined,
       });
@@ -116,7 +99,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
 
     if (!nodeData.method) {
-      updateLocalNodeData({
+      updateAggregatorNodeData(nodeId, {
         error: t("node.aggregatorNode.selectStatMethod"),
         testResult: undefined,
       });
@@ -136,27 +119,27 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
               // 新API返回的聚合结果，直接使用预览数据
               const sheets = convertPreviewToSheets(result);
 
-              updateLocalNodeData({
+              updateAggregatorNodeData(nodeId, {
                 testResult: sheets,
                 error: undefined,
               });
             } else {
               // 通用处理，转换为SheetInfo格式
               const sheets = convertPreviewToSheets(result);
-              updateLocalNodeData({
+              updateAggregatorNodeData(nodeId, {
                 testResult: sheets,
                 error: undefined,
               });
             }
           } else {
-            updateLocalNodeData({
+            updateAggregatorNodeData(nodeId, {
               error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
-          updateLocalNodeData({
+          updateAggregatorNodeData(nodeId, {
             error: t("node.common.previewFailedWithError", {
               error: error.message,
             }),

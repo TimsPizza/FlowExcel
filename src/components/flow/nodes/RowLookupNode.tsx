@@ -2,16 +2,16 @@ import {
   BadgeConfig,
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
-import { useNodeColumns } from "@/hooks/useNodeColumns";
 import useI18nToast from "@/hooks/useI18nToast";
+import { useNodeColumns } from "@/hooks/useNodeColumns";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, RowLookupNodeDataContext } from "@/types/nodes";
 import { Flex, ScrollArea, Select, Text } from "@radix-ui/themes";
-import { useCallback, useMemo } from "react";
-import { useNodeId } from "reactflow";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useNodeId } from "reactflow";
 
 export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
   const { t } = useTranslation();
@@ -27,33 +27,20 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
     error: columnsError,
   } = useNodeColumns();
 
-  const updateRowLookupNodeDataInStore = useWorkspaceStore(
+  const updateRowLookupNodeData = useWorkspaceStore(
     (state) => state.updateNodeData,
   );
 
-  const updateLocalNodeData = useCallback(
-    (updates: Partial<RowLookupNodeDataContext>) => {
-      if (nodeId && updateRowLookupNodeDataInStore) {
-        updateRowLookupNodeDataInStore(nodeId, updates);
-      } else {
-        console.warn(
-          "RowLookupNode: nodeId or updateFunction in store is not available.",
-          {
-            nodeId,
-            hasUpdater: !!updateRowLookupNodeDataInStore,
-          },
-        );
-      }
-    },
-    [nodeId, updateRowLookupNodeDataInStore],
-  );
-
   const handleSelectMatchColumn = (column: string) => {
-    updateLocalNodeData({
-      matchColumn: column,
-      error: undefined,
-      testResult: undefined,
-    });
+    updateRowLookupNodeData(
+      nodeId,
+      {
+        matchColumn: column,
+        error: undefined,
+        testResult: undefined,
+      },
+      true,
+    );
   };
 
   const previewNode = async () => {
@@ -62,10 +49,14 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
       return;
     }
     // clear existing test result
-    updateLocalNodeData({
-      testResult: undefined,
-      error: undefined,
-    });
+    updateRowLookupNodeData(
+      nodeId,
+      {
+        testResult: undefined,
+        error: undefined,
+      },
+      true,
+    );
     previewNodeMutation.mutate(
       {
         nodeId: nodeData.id,
@@ -77,19 +68,19 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
           if (result.success) {
             const sheets = convertPreviewToSheets(result);
 
-            updateLocalNodeData({
+            updateRowLookupNodeData(nodeId, {
               testResult: sheets,
               error: undefined,
             });
           } else {
-            updateLocalNodeData({
+            updateRowLookupNodeData(nodeId, {
               error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
-          updateLocalNodeData({
+          updateRowLookupNodeData(nodeId, {
             error: t("node.common.previewFailedWithError", {
               error: error.message,
             }),

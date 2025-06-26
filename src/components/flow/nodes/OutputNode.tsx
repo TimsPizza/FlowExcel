@@ -2,6 +2,7 @@ import {
   BadgeConfig,
   EnhancedBaseNode,
 } from "@/components/flow/nodes/EnhancedBaseNode";
+import { Button } from "@/components/ui/button";
 import useI18nToast from "@/hooks/useI18nToast";
 import { usePreviewNodeMutation } from "@/hooks/workspaceQueries";
 import { convertPreviewToSheets } from "@/lib/utils";
@@ -9,10 +10,9 @@ import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeProps, OutputNodeDataContext } from "@/types/nodes";
 import { FileIcon } from "@radix-ui/react-icons";
 import { Flex, Text, TextField } from "@radix-ui/themes";
-import { useCallback, useMemo } from "react";
-import { useNodeId } from "reactflow";
-import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useNodeId } from "reactflow";
 
 import { useShallow } from "zustand/react/shallow";
 
@@ -30,6 +30,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
   );
 
   // 获取连接到当前节点的边数
+  // NOTE: snake case代表从store中获取的属性名，是后端真实字段名
   const { flow_edges } = useWorkspaceStore(
     useShallow((state) => ({
       flow_edges: state.currentWorkspace?.flow_edges || [],
@@ -39,29 +40,16 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
     (edge) => edge.target === nodeId,
   ).length;
 
-  const updateLocalNodeData = useCallback(
-    (updates: Partial<OutputNodeDataContext>) => {
-      if (nodeId && updateOutputNodeDataInStore) {
-        updateOutputNodeDataInStore(nodeId, updates);
-      } else {
-        console.warn(
-          "OutputNode: nodeId or updateFunction in store is not available.",
-          {
-            nodeId,
-            hasUpdater: !!updateOutputNodeDataInStore,
-          },
-        );
-      }
-    },
-    [nodeId, updateOutputNodeDataInStore],
-  );
-
   const handleOutputPathChange = (path: string) => {
-    updateLocalNodeData({
-      outputPath: path,
-      error: undefined,
-      testResult: undefined,
-    });
+    updateOutputNodeDataInStore(
+      nodeId,
+      {
+        outputPath: path,
+        error: undefined,
+        testResult: undefined,
+      },
+      true,
+    );
   };
 
   const handleSelectOutputPath = async () => {
@@ -89,7 +77,7 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
 
     // clear existing test result
-    updateLocalNodeData({
+    updateOutputNodeDataInStore(nodeId, {
       testResult: undefined,
       error: undefined,
     });
@@ -106,19 +94,19 @@ export const OutputNode: React.FC<FlowNodeProps> = ({ data }) => {
             // 转换预览结果为SheetInfo格式
             const sheets = convertPreviewToSheets(result);
 
-            updateLocalNodeData({
+            updateOutputNodeDataInStore(nodeId, {
               testResult: sheets,
               error: undefined,
             });
           } else {
-            updateLocalNodeData({
+            updateOutputNodeDataInStore(nodeId, {
               error: result.error || t("node.common.previewFailed"),
               testResult: undefined,
             });
           }
         },
         onError: (error: Error) => {
-          updateLocalNodeData({
+          updateOutputNodeDataInStore(nodeId, {
             error: t("node.common.previewFailedWithError", {
               error: error.message,
             }),

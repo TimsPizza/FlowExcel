@@ -201,7 +201,7 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
   updateNodeData: (
     nodeId,
     dataToUpdate: Partial<FlowNodeData>,
-    markDirty: boolean = true,
+    markDirty: boolean = false,
   ) => {
     console.log("zustand update node data", nodeId, dataToUpdate);
     set((state) => {

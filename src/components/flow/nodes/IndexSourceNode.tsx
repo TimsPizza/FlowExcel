@@ -45,64 +45,92 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
   );
 
   const handleSelectFile = async (fileId: string) => {
-    updateIndexSourceNodeData(nodeId, {
-      sourceFileID: fileId,
-      sheetName: undefined,
-      columnName: "",
-      testResult: undefined,
-      error: undefined,
-    });
+    updateIndexSourceNodeData(
+      nodeId,
+      {
+        sourceFileID: fileId,
+        sheetName: undefined,
+        columnName: "",
+        testResult: undefined,
+        error: undefined,
+      },
+      true,
+    );
   };
 
   const handleModeChange = (newMode: "sheet" | "column") => {
     setIndexMode(newMode);
     if (newMode === "sheet") {
-      updateIndexSourceNodeData(nodeId, {
-        bySheetName: true,
-        byColumn: false,
-        columnName: "",
-        error: undefined,
-        testResult: undefined,
-      });
+      updateIndexSourceNodeData(
+        nodeId,
+        {
+          bySheetName: true,
+          byColumn: false,
+          columnName: "",
+          error: undefined,
+          testResult: undefined,
+        },
+        true,
+      );
     } else {
-      updateIndexSourceNodeData(nodeId, {
-        bySheetName: false,
-        byColumn: true,
-        error: undefined,
-        testResult: undefined,
-      });
+      updateIndexSourceNodeData(
+        nodeId,
+        {
+          bySheetName: false,
+          byColumn: true,
+          error: undefined,
+          testResult: undefined,
+        },
+        true,
+      );
     }
   };
 
   const handleSheetChange = (newSheetName: string) => {
     if (indexMode === "column") {
-      updateIndexSourceNodeData(nodeId, {
-        sheetName: newSheetName,
-        columnName: "",
-        error: undefined,
-        testResult: undefined,
-      });
+      updateIndexSourceNodeData(
+        nodeId,
+        {
+          sheetName: newSheetName,
+          columnName: "",
+          error: undefined,
+          testResult: undefined,
+        },
+        true,
+      );
     } else {
-      updateIndexSourceNodeData(nodeId, {
-        sheetName: newSheetName,
-        error: undefined,
-        testResult: undefined,
-      });
+      updateIndexSourceNodeData(
+        nodeId,
+        {
+          sheetName: newSheetName,
+          error: undefined,
+          testResult: undefined,
+        },
+        true,
+      );
     }
   };
 
   const handleColumnNameChange = (newColumnName: string) => {
-    updateIndexSourceNodeData(nodeId, {
-      columnName: newColumnName,
-      error: undefined,
-      testResult: undefined,
-    });
+    updateIndexSourceNodeData(
+      nodeId,
+      {
+        columnName: newColumnName,
+        error: undefined,
+        testResult: undefined,
+      },
+      true,
+    );
   };
 
   const handleDisplayNameChange = (newDisplayName: string) => {
-    updateIndexSourceNodeData(nodeId, {
-      displayName: newDisplayName,
-    });
+    updateIndexSourceNodeData(
+      nodeId,
+      {
+        displayName: newDisplayName,
+      },
+      true,
+    );
   };
 
   const previewNode = async () => {
@@ -111,7 +139,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
     }
 
     if (!nodeData.sourceFileID) {
-      updateIndexSourceNodeData(nodeId, { error: t("node.indexSourceNode.selectSourceFile") });
+      updateIndexSourceNodeData(nodeId, {
+        error: t("node.indexSourceNode.selectSourceFile"),
+      });
       return;
     }
 
@@ -147,7 +177,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
         },
         onError: (error: Error) => {
           updateIndexSourceNodeData(nodeId, {
-            error: t("node.common.previewFailedWithError", { error: error.message }),
+            error: t("node.common.previewFailedWithError", {
+              error: error.message,
+            }),
             testResult: undefined,
           });
         },
@@ -234,7 +266,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
               value={nodeData.sourceFileID || ""}
               onValueChange={handleSelectFile}
             >
-              <Select.Trigger placeholder={t("node.indexSourceNode.selectFile")} />
+              <Select.Trigger
+                placeholder={t("node.indexSourceNode.selectFile")}
+              />
               <Select.Content>
                 <Select.Group>
                   {files && files.length > 0 ? (
@@ -263,8 +297,12 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
               size="1"
             >
               <Flex gap="2">
-                <RadioGroup.Item value="sheet">{t("node.indexSourceNode.sheetName")}</RadioGroup.Item>
-                <RadioGroup.Item value="column">{t("node.indexSourceNode.columnName")}</RadioGroup.Item>
+                <RadioGroup.Item value="sheet">
+                  {t("node.indexSourceNode.sheetName")}
+                </RadioGroup.Item>
+                <RadioGroup.Item value="column">
+                  {t("node.indexSourceNode.columnName")}
+                </RadioGroup.Item>
               </Flex>
             </RadioGroup.Root>
           </Flex>
@@ -281,7 +319,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   onValueChange={handleSheetChange}
                   disabled={!nodeData.sourceFileID}
                 >
-                  <Select.Trigger placeholder={t("node.indexSourceNode.selectSheet")} />
+                  <Select.Trigger
+                    placeholder={t("node.indexSourceNode.selectSheet")}
+                  />
                   <Select.Content>
                     <Select.Group>
                       {nodeData.sourceFileID &&
@@ -310,7 +350,9 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   onValueChange={handleColumnNameChange}
                   disabled={!nodeData.sourceFileID || !nodeData.sheetName}
                 >
-                  <Select.Trigger placeholder={t("node.indexSourceNode.selectIndexColumn")} />
+                  <Select.Trigger
+                    placeholder={t("node.indexSourceNode.selectIndexColumn")}
+                  />
                   <Select.Content>
                     <Select.Group>
                       {headerRow?.column_names?.map((column: string) => (

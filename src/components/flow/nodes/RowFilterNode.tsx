@@ -61,7 +61,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       conditions: updatedConditions as any,
       error: undefined,
       testResult: undefined,
-    });
+    },true);
   };
 
   const addCondition = () => {
@@ -75,7 +75,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       conditions: [...(nodeData.conditions || []), newCondition],
       error: undefined,
       testResult: undefined,
-    });
+    },true);
   };
 
   const removeCondition = (index: number) => {
@@ -85,7 +85,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       conditions: updatedConditions,
       error: undefined,
       testResult: undefined,
-    });
+    },true);
   };
 
   const handleCondValueChange = (index: number, field: string, value: any) => {
