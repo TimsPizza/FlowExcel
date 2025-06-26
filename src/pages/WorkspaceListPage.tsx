@@ -151,7 +151,7 @@ export function WorkspaceListPage() {
               {t("workspace.noWorkspaces")}
             </Text>
             <Button
-              size="3"
+              size="1"
               color="green"
               onClick={handleCreateNew}
               disabled={isSaving}

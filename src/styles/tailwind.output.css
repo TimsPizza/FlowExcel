@@ -652,6 +652,10 @@ video {
   margin-left: 0.5rem;
 }
 
+.ml-auto {
+  margin-left: auto;
+}
+
 .mr-0\.5 {
   margin-right: 0.125rem;
 }
@@ -674,10 +678,6 @@ video {
 
 .mt-4 {
   margin-top: 1rem;
-}
-
-.ml-auto {
-  margin-left: auto;
 }
 
 .\!flex {
@@ -1329,6 +1329,10 @@ video {
 .react-flow__node {
   min-width: 15rem !important;
   background: white !important;
+}
+
+.hover\:max-w-full:hover {
+  max-width: 100%;
 }
 
 .hover\:bg-gray-100:hover {

@@ -27,6 +27,8 @@ class I18nMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # 如果是JSON响应，处理错误消息的本地化
+        # TODO: 这里暂时不会被命中，需要更多测试，但是似乎目前一切正常
+        # NOTE: i18n_error_handler装饰器干了一些相同的活，这个中间件还有必要吗？
         if isinstance(response, JSONResponse):
             response = await self._localize_json_response(response, language)
 

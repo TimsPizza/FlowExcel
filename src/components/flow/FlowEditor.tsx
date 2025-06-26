@@ -173,12 +173,15 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
         }, 100);
 
         toast.success(
-          t("flow.auto_layout_success", { 
-            direction: direction === "TB" ? t("flow.vertical") : t("flow.horizontal") 
+          t("flow.auto_layout_success", {
+            direction:
+              direction === "TB" ? t("flow.vertical") : t("flow.horizontal"),
           }),
         );
       } catch (error) {
-        toast.error(t("flow.auto_layout_failed", { error: (error as Error).message }));
+        toast.error(
+          t("flow.auto_layout_failed", { error: (error as Error).message }),
+        );
         console.error("自动排版失败:", error);
       }
     },
@@ -263,7 +266,11 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     const flowValidation = validateFlow(nodes, edges);
 
     if (!flowValidation.isValid) {
-      toast.error(t("flow.validation_failed", { errors: flowValidation.errors.join(", ") }));
+      toast.error(
+        t("flow.validation_failed", {
+          errors: flowValidation.errors.join(", "),
+        }),
+      );
       return;
     }
 
@@ -285,16 +292,16 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
 
           if (!pipelineResult || !pipelineResult.result.success) {
             toast.error(
-              t("flow.execute_failed", { 
-          error: pipelineResult?.result?.error || t("error.unknown") 
-        }),
+              t("flow.execute_failed", {
+                error: pipelineResult?.result?.error || t("error.unknown"),
+              }),
             );
             return;
           }
 
           toast.success(
-            t("flow.execute_success", { 
-              time: pipelineResult.execution_time?.toFixed(2) 
+            t("flow.execute_success", {
+              time: pipelineResult.execution_time?.toFixed(2),
             }),
           );
         },
@@ -393,8 +400,12 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                       >
                         <Select.Trigger style={{ flex: 1 }} />
                         <Select.Content>
-                                                  <Select.Item value="LR">{t("flow.horizontal")}</Select.Item>
-                        <Select.Item value="TB">{t("flow.vertical")}</Select.Item>
+                          <Select.Item value="LR">
+                            {t("flow.horizontal")}
+                          </Select.Item>
+                          <Select.Item value="TB">
+                            {t("flow.vertical")}
+                          </Select.Item>
                         </Select.Content>
                       </Select.Root>
                       <Popover.Close>
@@ -421,7 +432,9 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
               size="2"
             >
               <PlayIcon />
-              {executePipelineMutation.isLoading ? t("flow.executing") : t("flow.execute")}
+              {executePipelineMutation.isLoading
+                ? t("flow.executing")
+                : t("flow.execute")}
             </Button>
           </Flex>
         </Panel>

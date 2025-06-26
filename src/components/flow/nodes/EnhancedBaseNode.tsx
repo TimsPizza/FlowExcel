@@ -146,7 +146,7 @@ export const EnhancedBaseNode: React.FC<EnhancedBaseNodeProps> = ({
                 key={badge.label}
                 color={badge.color}
                 variant={badge.variant}
-                className="max-w-20 overflow-clip text-ellipsis whitespace-nowrap text-xs"
+                className="max-w-20 cursor-default overflow-clip text-ellipsis whitespace-nowrap text-xs hover:max-w-full"
               >
                 {badge.label}
               </Badge>

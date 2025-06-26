@@ -16,7 +16,7 @@ def i18n_error_handler(func: Callable) -> Callable:
     """
     国际化错误处理装饰器
     
-    使用中间件已经提取好的语言信息，自动处理各种异常类型
+    使用中间件已经提取好的语言信息，自动处理各种pipeline运行时异常类型
     """
     @wraps(func)
     async def wrapper(*args, **kwargs):
@@ -44,6 +44,11 @@ def i18n_error_handler(func: Callable) -> Callable:
             return LocalizedAPIResponse.error(
                 e.message_key, language=language, **e.params
             )
+        except json.JSONDecodeError as e:
+            # JSON解析错误
+            return LocalizedAPIResponse.error(
+                "error.invalid_json", language=language, error=str(e)
+            )
         except ValueError as e:
             # 值错误
             return LocalizedAPIResponse.error(
@@ -58,11 +63,6 @@ def i18n_error_handler(func: Callable) -> Callable:
             # 权限错误
             return LocalizedAPIResponse.error(
                 "error.permission_denied", language=language, file_path=str(e)
-            )
-        except json.JSONDecodeError as e:
-            # JSON解析错误
-            return LocalizedAPIResponse.error(
-                "error.invalid_json", language=language, error=str(e)
             )
         except KeyError as e:
             # 键不存在错误
