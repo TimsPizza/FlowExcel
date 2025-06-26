@@ -1,15 +1,11 @@
-import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { CheckIcon, PlusIcon, UpdateIcon } from "@radix-ui/react-icons";
-import { Flex, Text, TextField } from "@radix-ui/themes";
-import { Button } from "@/components/ui/button";
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import AlertExit from "@/components/flow/AlertExit";
-import { useSaveWorkspaceMutation } from "@/hooks/workspaceQueries";
-import { ChevronLeftIcon } from "@radix-ui/react-icons";
+import { Button } from "@/components/ui/button";
+import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
+import { ArrowLeftIcon, CheckIcon, PlusIcon, UpdateIcon } from "@radix-ui/react-icons";
+import { Flex, Text, TextField } from "@radix-ui/themes";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import { Heading } from "@radix-ui/themes";
+import { useNavigate } from "react-router-dom";
 
 interface WorkspaceToolbarProps {
   workspaceName: string;

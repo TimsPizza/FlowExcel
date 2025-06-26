@@ -539,3 +539,24 @@ export const useGetAllFileInfo = (workspaceConfig?: WorkspaceConfig) => {
     fileInfoError: error as Error,
   };
 };
+
+const deleteWorkspace = async (workspaceId: string) => {
+  const result = await apiClient.deleteWorkspace(workspaceId);
+  return result;
+};
+
+export const useDeleteWorkspaceMutation = () => {
+  const { mutateAsync, isLoading, error } = useMutation<
+    { workspaceId: string },
+    Error,
+    string
+  >({
+    mutationKey: ["deleteWorkspace"],
+    mutationFn: deleteWorkspace,
+  });
+  return {
+    deleteWorkspace: mutateAsync,
+    isDeleting: isLoading,
+    deleteError: error,
+  };
+};

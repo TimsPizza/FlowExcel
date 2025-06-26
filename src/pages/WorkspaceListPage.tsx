@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import useI18nToast from "@/hooks/useI18nToast";
 import {
+  useDeleteWorkspaceMutation,
   useSaveWorkspaceMutation,
   useWorkspaceListQuery,
 } from "@/hooks/workspaceQueries";
@@ -19,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import LanguageSelector from "@/components/ui/LanguageSelector";
 import { useTranslation } from "react-i18next";
+import AlertDelete from "@/components/workspace/AlertDelete";
 
 type WorkspaceListItem = {
   id: string;
@@ -39,6 +41,20 @@ export function WorkspaceListPage() {
 
   const { workspaces, isLoading, error, refetch } = useWorkspaceListQuery();
   const { saveWorkspace, isSaving } = useSaveWorkspaceMutation();
+  const { deleteWorkspace, isDeleting } = useDeleteWorkspaceMutation();
+
+  const handleDelete = async (id: string) => {
+    if (isDeleting) return;
+    try {
+      await deleteWorkspace(id);
+      queryClient.invalidateQueries(["workspaces"]);
+    } catch (error) {
+      toast.error("workspace.delete_failed");
+      console.error(error);
+    } finally {
+      refetch();
+    }
+  };
 
   const handleCreateNew = async () => {
     if (isSaving) return;
@@ -126,7 +142,7 @@ export function WorkspaceListPage() {
                       ID: {ws.id.substring(0, 8)}...
                     </Text>
                   </CardContent>
-                  <CardFooter className="bg-gray-50 !flex !items-center !py-2">
+                  <CardFooter className="!flex !items-center gap-2 bg-gray-50 !py-2">
                     <Button
                       variant="soft"
                       onClick={() => handleNavigate(ws.id)}
@@ -134,6 +150,12 @@ export function WorkspaceListPage() {
                     >
                       {t("workspace.open")}
                     </Button>
+
+                    <AlertDelete
+                      title={t("common.delete")}
+                      description={t("workspace.deleteDescription")}
+                      onConfirm={() => handleDelete(ws.id)}
+                    />
                   </CardFooter>
                 </Card>
               ))}

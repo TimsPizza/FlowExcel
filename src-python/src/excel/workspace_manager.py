@@ -121,7 +121,7 @@ class WorkspaceManager:
             raise FileNotFoundError(f"Workspace file for ID '{workspace_id}' not found")
 
         try:
-            file_path.unlink()
+            os.remove(file_path)
             return True
         except Exception as e:
             raise Exception(f"Failed to delete workspace: {str(e)}")

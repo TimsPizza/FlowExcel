@@ -31,7 +31,7 @@
     "loadListFailed": "加载工作区列表失败: {{message}}",
     "createNew": "创建新工作区",
     "description": "您可以创建多个工作区来处理不同的数据分析任务，每个工作区有独立的文件管理、数据处理规则和数据处理流程。",
-    "open": "打开工作区",
+    "open": "打开",
     "noWorkspaces": "暂无工作区",
     "createFirst": "创建第一个工作区",
     "back": "返回",
@@ -53,7 +53,10 @@
     "fileManager": "文件管理",
     "flowEditor": "流程编辑",
     "exitTitle": "返回",
-    "exitDescription": "离开工作区后，您将丢失所有未保存的更改。"
+    "exitDescription": "离开工作区后，您将丢失所有未保存的更改。",
+    "deleteDescription": "确定要删除这个工作区吗？该操作不可撤销！",
+    "delete_success": "工作区删除成功",
+    "delete_failed": "删除工作区失败"
   },
   "flow": {
     "execute": "执行流程",
