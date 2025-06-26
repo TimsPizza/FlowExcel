@@ -351,5 +351,13 @@
     "restartApp": "Please restart the application",
     "starting": "Starting Backend Service",
     "initializing": "Please wait, backend service is initializing..."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Please try again or return to the homepage.",
+    "goHome": "Go Home",
+    "contact": "If this problem persists, please contact support.",
+    "developmentError": "Development Error Details",
+    "stackTrace": "Stack trace"
   }
 }

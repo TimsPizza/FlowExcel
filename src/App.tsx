@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { ReactFlowProvider } from "reactflow";
 import { BackendStatus } from "./components/BackendStatus";
+import { ErrorBoundary } from "@/routes/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,15 +20,17 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <Theme appearance="inherit">
-      <QueryClientProvider client={queryClient}>
-        <BackendStatus>
-          <ReactFlowProvider>
-            <RouterProvider router={router} />
-            <ToastContainer />
-          </ReactFlowProvider>
-        </BackendStatus>
-      </QueryClientProvider>
-    </Theme>
+    <ErrorBoundary>
+      <Theme appearance="inherit">
+        <QueryClientProvider client={queryClient}>
+          <BackendStatus>
+            <ReactFlowProvider>
+              <RouterProvider router={router} />
+              <ToastContainer />
+            </ReactFlowProvider>
+          </BackendStatus>
+        </QueryClientProvider>
+      </Theme>
+    </ErrorBoundary>
   );
 }

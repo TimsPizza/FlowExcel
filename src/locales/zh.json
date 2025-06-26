@@ -352,5 +352,13 @@
     "restartApp": "请重新启动应用程序",
     "starting": "正在启动后端服务",
     "initializing": "请稍候，后端服务正在初始化..."
+  },
+  "errorBoundary": {
+    "title": "出现了问题",
+    "description": "发生了一个意外错误。请重试或返回首页。",
+    "goHome": "返回首页",
+    "contact": "如果此问题持续出现，请联系技术支持。",
+    "developmentError": "开发环境错误详情",
+    "stackTrace": "错误堆栈"
   }
 }
