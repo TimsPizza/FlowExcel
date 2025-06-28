@@ -9,5 +9,5 @@ wheels/
 # Virtual environments
 .venv
 
-src/workspace/*
+# src/workspace/*
 *.spec

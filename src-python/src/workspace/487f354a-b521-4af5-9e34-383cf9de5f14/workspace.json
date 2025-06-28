@@ -1,0 +1,426 @@
+{
+  "id": "487f354a-b521-4af5-9e34-383cf9de5f14",
+  "name": "example",
+  "files": [
+    {
+      "id": "e31d293a-2247-4ea3-a9b8-895d7714a9a3",
+      "name": "inventory_details.xlsx",
+      "path": "/Users/timspizza/code/tauri-excel/src-python/src/workspace/487f354a-b521-4af5-9e34-383cf9de5f14/files/inventory_details.xlsx",
+      "sheet_metas": [
+        {
+          "sheet_name": "Sheet1",
+          "header_row": 3
+        }
+      ],
+      "file_info": {
+        "last_modified": "1751153417.2255352",
+        "file_size": 75558,
+        "file_hash": "44231e48099d1214e7ba12262f9e7075"
+      }
+    },
+    {
+      "id": "d5cbfcaf-2534-453b-bd7e-565a2c48c5a5",
+      "name": "monthly_sales.xlsx",
+      "path": "/Users/timspizza/code/tauri-excel/src-python/src/workspace/487f354a-b521-4af5-9e34-383cf9de5f14/files/monthly_sales.xlsx",
+      "sheet_metas": [
+        {
+          "sheet_name": "Sheet1",
+          "header_row": 2
+        }
+      ],
+      "file_info": {
+        "last_modified": "1751153417.226939",
+        "file_size": 43188,
+        "file_hash": "d766478a464af44036cd1e7ca84c4bf8"
+      }
+    },
+    {
+      "id": "b5a1eaa8-20b0-4dfb-a84b-952d77279f66",
+      "name": "quarterly_expenses.xlsx",
+      "path": "/Users/timspizza/code/tauri-excel/src-python/src/workspace/487f354a-b521-4af5-9e34-383cf9de5f14/files/quarterly_expenses.xlsx",
+      "sheet_metas": [
+        {
+          "sheet_name": "Sheet1",
+          "header_row": 5
+        }
+      ],
+      "file_info": {
+        "last_modified": "1751153417.2272477",
+        "file_size": 28340,
+        "file_hash": "e1485164088d26c2cb81415b58389e11"
+      }
+    },
+    {
+      "id": "f5ce0879-5d0a-477c-8fd5-3f3634e010a4",
+      "name": "inbound_stock.xlsx",
+      "path": "/Users/timspizza/code/tauri-excel/src-python/src/workspace/487f354a-b521-4af5-9e34-383cf9de5f14/files/inbound_stock.xlsx",
+      "sheet_metas": [
+        {
+          "sheet_name": "Sheet1",
+          "header_row": 4
+        }
+      ],
+      "file_info": {
+        "last_modified": "1751153417.2266023",
+        "file_size": 70161,
+        "file_hash": "2ec2b6924b8ce4779ea555cc10a470f8"
+      }
+    },
+    {
+      "id": "91fa8dfc-f4ff-4217-a52d-dcbf3f0801ba",
+      "name": "inbound_by_product.xlsx",
+      "path": "/Users/timspizza/code/tauri-excel/src-python/src/workspace/487f354a-b521-4af5-9e34-383cf9de5f14/files/inbound_by_product.xlsx",
+      "sheet_metas": [
+        {
+          "sheet_name": "Gadget X",
+          "header_row": 0
+        },
+        {
+          "sheet_name": "Gadget Y",
+          "header_row": 0
+        },
+        {
+          "sheet_name": "Widget A",
+          "header_row": 0
+        },
+        {
+          "sheet_name": "Widget B",
+          "header_row": 0
+        },
+        {
+          "sheet_name": "Widget C",
+          "header_row": 0
+        }
+      ],
+      "file_info": {
+        "last_modified": "1751153417.226125",
+        "file_size": 72491,
+        "file_hash": "09f288b929ee9e8016e539ec6b6c7843"
+      }
+    }
+  ],
+  "flow_nodes": [
+    {
+      "id": "9215506c-b770-4abe-9a1c-ae0e9ea9e17c",
+      "type": "indexSource",
+      "position": {
+        "x": 50,
+        "y": 50
+      },
+      "data": {
+        "id": "9215506c-b770-4abe-9a1c-ae0e9ea9e17c",
+        "nodeType": "indexSource",
+        "label": "索引源",
+        "displayName": "产品",
+        "sourceFileID": "e31d293a-2247-4ea3-a9b8-895d7714a9a3",
+        "bySheetName": false,
+        "sheetName": "Sheet1",
+        "byColumn": true,
+        "columnName": "Product Name"
+      }
+    },
+    {
+      "id": "a4fa7ce1-5106-4664-babe-dd9c42fa636f",
+      "type": "sheetSelector",
+      "position": {
+        "x": 400,
+        "y": 50
+      },
+      "data": {
+        "id": "a4fa7ce1-5106-4664-babe-dd9c42fa636f",
+        "nodeType": "sheetSelector",
+        "label": "工作表定位",
+        "targetFileID": "d5cbfcaf-2534-453b-bd7e-565a2c48c5a5",
+        "mode": "manual",
+        "manualSheetName": "Sheet1"
+      }
+    },
+    {
+      "id": "c52336a1-3e2e-429b-be1e-fdd244515ead",
+      "type": "rowLookup",
+      "position": {
+        "x": 750,
+        "y": 50
+      },
+      "data": {
+        "id": "c52336a1-3e2e-429b-be1e-fdd244515ead",
+        "nodeType": "rowLookup",
+        "label": "行查找/列匹配",
+        "matchColumn": "Product Name"
+      }
+    },
+    {
+      "id": "75c0af7b-b30f-4026-a316-abe2ef2c045b",
+      "type": "aggregator",
+      "position": {
+        "x": 1100,
+        "y": 50
+      },
+      "data": {
+        "id": "75c0af7b-b30f-4026-a316-abe2ef2c045b",
+        "nodeType": "aggregator",
+        "label": "统计/聚合",
+        "statColumn": "Units Sold",
+        "method": "sum",
+        "outputAs": "总销售量"
+      }
+    },
+    {
+      "id": "66696467-d909-471b-a340-119192a33857",
+      "type": "aggregator",
+      "position": {
+        "x": 1450,
+        "y": 250
+      },
+      "data": {
+        "id": "66696467-d909-471b-a340-119192a33857",
+        "nodeType": "aggregator",
+        "label": "统计/聚合",
+        "method": "sum",
+        "outputAs": "均价",
+        "statColumn": "Unit Price"
+      }
+    },
+    {
+      "id": "0fa18c41-d2d9-4c8d-9040-249a406b6aff",
+      "type": "aggregator",
+      "position": {
+        "x": 1450,
+        "y": 50
+      },
+      "data": {
+        "id": "0fa18c41-d2d9-4c8d-9040-249a406b6aff",
+        "nodeType": "aggregator",
+        "label": "统计/聚合",
+        "method": "sum",
+        "outputAs": "总销售额",
+        "statColumn": "Sales Amount"
+      }
+    },
+    {
+      "id": "47b02aff-65da-4cca-861a-106c5c537d2b",
+      "type": "output",
+      "position": {
+        "x": 1800,
+        "y": 250
+      },
+      "data": {
+        "id": "47b02aff-65da-4cca-861a-106c5c537d2b",
+        "nodeType": "output",
+        "label": "输出",
+        "outputFormat": "table",
+        "outputPath": "/Users/timspizza/Desktop/output.xlsx"
+      }
+    },
+    {
+      "id": "6f78a26b-691a-4426-91b0-33ef4eacce83",
+      "type": "sheetSelector",
+      "position": {
+        "x": 750,
+        "y": 450
+      },
+      "data": {
+        "id": "6f78a26b-691a-4426-91b0-33ef4eacce83",
+        "nodeType": "sheetSelector",
+        "label": "工作表定位",
+        "targetFileID": "e31d293a-2247-4ea3-a9b8-895d7714a9a3",
+        "mode": "manual",
+        "manualSheetName": "Sheet1"
+      }
+    },
+    {
+      "id": "8f15001e-c4cf-4dda-9bac-0838759d9c26",
+      "type": "rowLookup",
+      "position": {
+        "x": 1100,
+        "y": 450
+      },
+      "data": {
+        "id": "8f15001e-c4cf-4dda-9bac-0838759d9c26",
+        "nodeType": "rowLookup",
+        "label": "行查找/列匹配",
+        "matchColumn": "Product Name"
+      }
+    },
+    {
+      "id": "1b0fbc05-e1e0-4c04-aaff-2d579add7baa",
+      "type": "aggregator",
+      "position": {
+        "x": 1450,
+        "y": 450
+      },
+      "data": {
+        "id": "1b0fbc05-e1e0-4c04-aaff-2d579add7baa",
+        "nodeType": "aggregator",
+        "label": "统计/聚合",
+        "statColumn": "Quantity On Hand",
+        "method": "sum",
+        "outputAs": "现有数量"
+      }
+    },
+    {
+      "id": "c531add7-bf6e-4d52-8d62-abbbed0231ff",
+      "type": "sheetSelector",
+      "position": {
+        "x": 1100,
+        "y": 650
+      },
+      "data": {
+        "id": "c531add7-bf6e-4d52-8d62-abbbed0231ff",
+        "nodeType": "sheetSelector",
+        "label": "工作表定位",
+        "targetFileID": "91fa8dfc-f4ff-4217-a52d-dcbf3f0801ba",
+        "mode": "auto_by_index"
+      }
+    },
+    {
+      "id": "79cb217e-0c88-4b78-b342-e4d0d5713bca",
+      "type": "aggregator",
+      "position": {
+        "x": 1450,
+        "y": 650
+      },
+      "data": {
+        "id": "79cb217e-0c88-4b78-b342-e4d0d5713bca",
+        "nodeType": "aggregator",
+        "label": "统计/聚合",
+        "statColumn": "Quantity Received",
+        "method": "sum",
+        "outputAs": "总进货数量"
+      }
+    }
+  ],
+  "flow_edges": [
+    {
+      "source": "9215506c-b770-4abe-9a1c-ae0e9ea9e17c",
+      "target": "a4fa7ce1-5106-4664-babe-dd9c42fa636f",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-9215506c-b770-4abe-9a1c-ae0e9ea9e17c-a4fa7ce1-5106-4664-babe-dd9c42fa636f-1751143073361"
+    },
+    {
+      "source": "a4fa7ce1-5106-4664-babe-dd9c42fa636f",
+      "target": "c52336a1-3e2e-429b-be1e-fdd244515ead",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-a4fa7ce1-5106-4664-babe-dd9c42fa636f-c52336a1-3e2e-429b-be1e-fdd244515ead-1751143083460"
+    },
+    {
+      "source": "c52336a1-3e2e-429b-be1e-fdd244515ead",
+      "target": "75c0af7b-b30f-4026-a316-abe2ef2c045b",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-c52336a1-3e2e-429b-be1e-fdd244515ead-75c0af7b-b30f-4026-a316-abe2ef2c045b-1751143199425"
+    },
+    {
+      "source": "c52336a1-3e2e-429b-be1e-fdd244515ead",
+      "target": "66696467-d909-471b-a340-119192a33857",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-c52336a1-3e2e-429b-be1e-fdd244515ead-66696467-d909-471b-a340-119192a33857-1751143296558"
+    },
+    {
+      "source": "75c0af7b-b30f-4026-a316-abe2ef2c045b",
+      "target": "0fa18c41-d2d9-4c8d-9040-249a406b6aff",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-75c0af7b-b30f-4026-a316-abe2ef2c045b-0fa18c41-d2d9-4c8d-9040-249a406b6aff-1751143302857"
+    },
+    {
+      "source": "0fa18c41-d2d9-4c8d-9040-249a406b6aff",
+      "target": "47b02aff-65da-4cca-861a-106c5c537d2b",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-0fa18c41-d2d9-4c8d-9040-249a406b6aff-47b02aff-65da-4cca-861a-106c5c537d2b-1751145077803"
+    },
+    {
+      "animated": true,
+      "style": {
+        "strokeWidth": 2,
+        "stroke": "#3b82f6"
+      },
+      "markerEnd": {
+        "type": "arrow",
+        "width": 12,
+        "height": 12,
+        "color": "#3b82f6"
+      },
+      "source": "66696467-d909-471b-a340-119192a33857",
+      "sourceHandle": null,
+      "target": "47b02aff-65da-4cca-861a-106c5c537d2b",
+      "targetHandle": null,
+      "id": "edge-66696467-d909-471b-a340-119192a33857-47b02aff-65da-4cca-861a-106c5c537d2b-1751145080774"
+    },
+    {
+      "source": "9215506c-b770-4abe-9a1c-ae0e9ea9e17c",
+      "target": "6f78a26b-691a-4426-91b0-33ef4eacce83",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-9215506c-b770-4abe-9a1c-ae0e9ea9e17c-6f78a26b-691a-4426-91b0-33ef4eacce83-1751145668970"
+    },
+    {
+      "source": "6f78a26b-691a-4426-91b0-33ef4eacce83",
+      "target": "8f15001e-c4cf-4dda-9bac-0838759d9c26",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-6f78a26b-691a-4426-91b0-33ef4eacce83-8f15001e-c4cf-4dda-9bac-0838759d9c26-1751145812982"
+    },
+    {
+      "source": "8f15001e-c4cf-4dda-9bac-0838759d9c26",
+      "target": "1b0fbc05-e1e0-4c04-aaff-2d579add7baa",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-8f15001e-c4cf-4dda-9bac-0838759d9c26-1b0fbc05-e1e0-4c04-aaff-2d579add7baa-1751145821685"
+    },
+    {
+      "animated": true,
+      "style": {
+        "strokeWidth": 2,
+        "stroke": "#3b82f6"
+      },
+      "markerEnd": {
+        "type": "arrow",
+        "width": 12,
+        "height": 12,
+        "color": "#3b82f6"
+      },
+      "source": "1b0fbc05-e1e0-4c04-aaff-2d579add7baa",
+      "sourceHandle": null,
+      "target": "47b02aff-65da-4cca-861a-106c5c537d2b",
+      "targetHandle": null,
+      "id": "edge-1b0fbc05-e1e0-4c04-aaff-2d579add7baa-47b02aff-65da-4cca-861a-106c5c537d2b-1751145909128"
+    },
+    {
+      "source": "9215506c-b770-4abe-9a1c-ae0e9ea9e17c",
+      "target": "c531add7-bf6e-4d52-8d62-abbbed0231ff",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-9215506c-b770-4abe-9a1c-ae0e9ea9e17c-c531add7-bf6e-4d52-8d62-abbbed0231ff-1751146111683"
+    },
+    {
+      "source": "c531add7-bf6e-4d52-8d62-abbbed0231ff",
+      "target": "79cb217e-0c88-4b78-b342-e4d0d5713bca",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "id": "edge-c531add7-bf6e-4d52-8d62-abbbed0231ff-79cb217e-0c88-4b78-b342-e4d0d5713bca-1751146129599"
+    },
+    {
+      "animated": true,
+      "style": {
+        "strokeWidth": 2,
+        "stroke": "#3b82f6"
+      },
+      "markerEnd": {
+        "type": "arrow",
+        "width": 12,
+        "height": 12,
+        "color": "#3b82f6"
+      },
+      "source": "79cb217e-0c88-4b78-b342-e4d0d5713bca",
+      "sourceHandle": null,
+      "target": "47b02aff-65da-4cca-861a-106c5c537d2b",
+      "targetHandle": null,
+      "id": "edge-79cb217e-0c88-4b78-b342-e4d0d5713bca-47b02aff-65da-4cca-861a-106c5c537d2b-1751146174511"
+    }
+  ]
+}
