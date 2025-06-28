@@ -406,6 +406,56 @@ class ApiClient {
     }
     return response.data.data;
   }
+
+  // Get workspace files directory path (for opening in explorer)
+  async getWorkspaceFilesPath(workspaceId: string): Promise<{files_path: string}> {
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      `/workspace/files-path`,
+      {
+        workspace_id: workspaceId,
+      },
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || "api.get_workspace_files_path_failed");
+    }
+
+    return response.data.data;
+  }
+
+  // Export workspace as ZIP file
+  async exportWorkspace(workspaceId: string, exportPath: string): Promise<{exported: boolean}> {
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      `/workspace/export`,
+      {
+        workspace_id: workspaceId,
+        export_path: exportPath,
+      },
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || "api.export_workspace_failed");
+    }
+
+    return response.data.data;
+  }
+
+  // Import workspace from ZIP file
+  async importWorkspace(zipPath: string, newWorkspaceId?: string): Promise<{workspace_id: string}> {
+    const response: AxiosResponse<APIResponse> = await this.client.post(
+      `/workspace/import`,
+      {
+        zip_path: zipPath,
+        new_workspace_id: newWorkspaceId,
+      },
+    );
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || "api.import_workspace_failed");
+    }
+
+    return response.data.data;
+  }
 }
 
 // Create a singleton instance

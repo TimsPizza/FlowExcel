@@ -12,6 +12,9 @@ from app.models import (
     SaveWorkspaceRequest,
     FileInfoRequest,
     FileInfoResponse,
+    ExportWorkspaceRequest,
+    ImportWorkspaceRequest,
+    GetWorkspaceFilesPathRequest,
 )
 from app.services.workspace_service import WorkspaceService
 from app.utils import recursively_serialize_dict
@@ -98,5 +101,59 @@ async def get_file_info(request: Request, file_request: FileInfoRequest):
         # 装饰器会自动使用 error.file_not_found
         raise
     except Exception as e:
+        # 装饰器会自动处理异常和本地化
+        raise
+
+
+@router.post("/export", response_model=APIResponse)
+@i18n_error_handler
+async def export_workspace(request: Request, export_request: ExportWorkspaceRequest):
+    """导出工作区为ZIP文件"""
+    try:
+        result = WorkspaceService.export_workspace(
+            export_request.workspace_id, export_request.export_path
+        )
+        return APIResponse(success=True, data={"exported": result})
+    except FileNotFoundError as e:
+        # 装饰器会自动使用 error.file_not_found
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        # 装饰器会自动处理异常和本地化
+        raise
+
+
+@router.post("/import", response_model=APIResponse)
+@i18n_error_handler
+async def import_workspace(request: Request, import_request: ImportWorkspaceRequest):
+    """从ZIP导入工作区"""
+    try:
+        response_data = WorkspaceService.import_workspace(
+            import_request.zip_path, import_request.new_workspace_id
+        )
+        return APIResponse(success=True, data=response_data.dict())
+    except FileNotFoundError as e:
+        # 装饰器会自动使用 error.file_not_found
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        # 装饰器会自动处理异常和本地化
+        raise
+
+
+@router.post("/files-path", response_model=APIResponse)
+@i18n_error_handler
+async def get_workspace_files_path(request: Request, files_path_request: GetWorkspaceFilesPathRequest):
+    """获取工作区files目录路径（用于在资源管理器中打开）"""
+    try:
+        response_data = WorkspaceService.get_workspace_files_path(
+            files_path_request.workspace_id
+        )
+        return APIResponse(success=True, data=response_data.dict())
+    except FileNotFoundError as e:
+        # 装饰器会自动使用 error.file_not_found
+        raise
+    except Exception as e:
+        traceback.print_exc()
         # 装饰器会自动处理异常和本地化
         raise

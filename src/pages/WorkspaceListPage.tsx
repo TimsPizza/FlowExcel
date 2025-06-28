@@ -12,7 +12,7 @@ import {
   useWorkspaceListQuery,
 } from "@/hooks/workspaceQueries";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
-import { PlusCircledIcon } from "@radix-ui/react-icons";
+import { PlusCircledIcon, UploadIcon } from "@radix-ui/react-icons";
 import { Box, Flex, Heading, Text } from "@radix-ui/themes";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "react-query";
@@ -21,6 +21,8 @@ import { v4 as uuidv4 } from "uuid";
 import LanguageSelector from "@/components/ui/LanguageSelector";
 import { useTranslation } from "react-i18next";
 import AlertDelete from "@/components/workspace/AlertDelete";
+import { open } from "@tauri-apps/plugin-dialog";
+import { apiClient } from "@/lib/apiClient";
 
 type WorkspaceListItem = {
   id: string;
@@ -84,6 +86,31 @@ export function WorkspaceListPage() {
     }
   };
 
+  // 导入工作区功能
+  const handleImportWorkspace = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Excel Flow Package",
+            extensions: ["fxw", "zip"],
+          },
+        ],
+      });
+
+      if (selected) {
+        const result = await apiClient.importWorkspace(selected);
+        queryClient.invalidateQueries(["workspaces"]);
+        toast.success("workspace.importSuccess");
+        navigate(`/workspace/${result.workspace_id}`);
+      }
+    } catch (error) {
+      toast.error("workspace.importFailed");
+      console.error("Import workspace error:", error);
+    }
+  };
+
   if (isLoading)
     return (
       <Flex align="center" justify="center" style={{ height: "100vh" }}>
@@ -111,15 +138,26 @@ export function WorkspaceListPage() {
           <Heading size="6" className="mr-auto">
             FlowExcel
           </Heading>
-          <Button
-            size="3"
-            color="blue"
-            variant="soft"
-            onClick={handleCreateNew}
-            disabled={isSaving}
-          >
-            <PlusCircledIcon /> {t("workspace.createNew")}
-          </Button>
+          <Flex gap="2">
+            <Button
+              size="3"
+              color="green"
+              variant="soft"
+              onClick={handleImportWorkspace}
+              title={t("workspace.importTooltip")}
+            >
+              <UploadIcon /> {t("workspace.import")}
+            </Button>
+            <Button
+              size="3"
+              color="blue"
+              variant="soft"
+              onClick={handleCreateNew}
+              disabled={isSaving}
+            >
+              <PlusCircledIcon /> {t("workspace.createNew")}
+            </Button>
+          </Flex>
         </Flex>
 
         <Text size="2" color="gray">
@@ -167,18 +205,20 @@ export function WorkspaceListPage() {
             align="center"
             justify="center"
             gap="4"
-            className="h-[300px] flex-1 rounded-md border border-[var(--gray-5)]"
+            className="h-[300px] flex-1 rounded-md border border-dashed border-[var(--gray-5)]"
           >
             <Text size="5" color="gray">
               {t("workspace.noWorkspaces")}
             </Text>
             <Button
-              size="1"
+              size="3"
               color="green"
+              variant="outline"
               onClick={handleCreateNew}
               disabled={isSaving}
             >
-              <PlusCircledIcon /> {t("workspace.createFirst")}
+              <PlusCircledIcon className="h-5 w-5" />{" "}
+              {t("workspace.createFirst")}
             </Button>
           </Flex>
         )}

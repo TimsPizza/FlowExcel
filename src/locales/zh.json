@@ -56,7 +56,13 @@
     "exitDescription": "离开工作区后，您将丢失所有未保存的更改。",
     "deleteDescription": "确定要删除这个工作区吗？该操作不可撤销！",
     "delete_success": "工作区删除成功",
-    "delete_failed": "删除工作区失败"
+    "delete_failed": "删除工作区失败",
+    "import": "导入工作区",
+    "importTooltip": "从Excel流程包导入工作区",
+    "importSuccess": "工作区导入成功",
+    "importFailed": "导入工作区失败",
+    "exportSuccess": "工作区导出成功",
+    "exportFailed": "导出工作区失败"
   },
   "flow": {
     "execute": "执行流程",
@@ -153,7 +159,9 @@
     "test": "测试",
     "testResult": "测试运行结果",
     "addNextNode": "添加后续节点",
-    "selectNodeType": "选择节点类型"
+    "selectNodeType": "选择节点类型",
+    "exportWorkspace": "导出工作区",
+    "exportWorkspaceTooltip": "将工作区导出为Excel流程包"
   },
   "node": {
     "index_source": "索引源",
@@ -316,7 +324,10 @@
       "detectingHeader": "正在检测标题行...",
       "detectedHeader": "检测到的列",
       "noHeaderDetected": "未检测到标题行或当前设置不正确"
-    }
+    },
+    "openInExplorer": "在资源管理器中打开",
+    "openInExplorerSuccess": "成功打开工作区文件夹",
+    "openInExplorerFailed": "打开工作区文件夹失败"
   },
   "api": {
     "backend_not_started": "后端服务未启动，这可能是个bug",

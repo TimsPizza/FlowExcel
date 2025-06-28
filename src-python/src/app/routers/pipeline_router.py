@@ -29,7 +29,7 @@ pipeline_service = PipelineService()
 
 @router.post("/execute", response_model=APIResponse)
 @i18n_error_handler
-async def execute_pipeline_endpoint(request: PipelineRequest, headers: dict = Header(...)):
+async def execute_pipeline_endpoint(request: Request, req: PipelineRequest):
     """
     执行完整的数据处理pipeline（仅支持OUTPUT节点）
 
@@ -41,7 +41,7 @@ async def execute_pipeline_endpoint(request: PipelineRequest, headers: dict = He
     """
     try:
         # 参数验证
-        if not request.workspace_id and not request.workspace_config_json:
+        if not req.workspace_id and not req.workspace_config_json:
             # 直接使用翻译键，无需映射
             language = "zh"  # 默认语言，装饰器会处理实际语言检测
             return LocalizedAPIResponse.error(
@@ -50,8 +50,8 @@ async def execute_pipeline_endpoint(request: PipelineRequest, headers: dict = He
 
         # 执行pipeline
         response_data = pipeline_service.execute_pipeline_from_request(
-            workspace_id=request.workspace_id or None,
-            workspace_config_json=request.workspace_config_json or None,
+            workspace_id=req.workspace_id or None,
+            workspace_config_json=req.workspace_config_json or None,
             execution_mode="production",  # api端点对应的是生产模式
         )
 

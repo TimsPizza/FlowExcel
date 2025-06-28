@@ -225,3 +225,34 @@ class FileInfo(BaseModel):
 class FileInfoResponse(BaseModel):
     """文件信息响应模型"""
     file_info: FileInfo = Field(..., description="文件信息")
+
+
+# ============================================================================
+# 工作区导入导出相关的API请求/响应模型
+# ============================================================================
+
+class ExportWorkspaceRequest(BaseModel):
+    """导出工作区请求模型"""
+    workspace_id: str = Field(..., description="要导出的工作区ID")
+    export_path: str = Field(..., description="导出文件路径")
+
+
+class ImportWorkspaceRequest(BaseModel):
+    """导入工作区请求模型"""
+    zip_path: str = Field(..., description="要导入的ZIP文件路径")
+    new_workspace_id: Optional[str] = Field(None, description="新工作区ID（可选，不提供则自动生成）")
+
+
+class ImportWorkspaceResponse(BaseModel):
+    """导入工作区响应模型"""
+    workspace_id: str = Field(..., description="导入后的工作区ID")
+
+
+class GetWorkspaceFilesPathRequest(BaseModel):
+    """获取工作区文件目录路径请求模型"""
+    workspace_id: str = Field(..., description="工作区ID")
+
+
+class GetWorkspaceFilesPathResponse(BaseModel):
+    """获取工作区文件目录路径响应模型"""
+    files_path: str = Field(..., description="工作区files目录的绝对路径")

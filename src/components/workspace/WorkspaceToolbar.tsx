@@ -96,7 +96,7 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
         {isOutdated && (
           <Flex align="start" gap="1" direction="column">
             <Text size="1" color="red" className="ml-2">
-              {t("file.someFilesOutdated")}
+              {t("file.someFilesOutdatedDetailed")}
             </Text>
             <Text size="1" color="red" className="ml-2">
               {t("file.needFileManagerAction")}

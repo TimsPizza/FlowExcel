@@ -781,6 +781,10 @@ video {
   height: 100vh;
 }
 
+.h-5 {
+  height: 1.25rem;
+}
+
 .max-h-16 {
   max-height: 4rem;
 }
@@ -847,6 +851,14 @@ video {
 
 .\!w-full {
   width: 100% !important;
+}
+
+.w-8 {
+  width: 2rem;
+}
+
+.w-5 {
+  width: 1.25rem;
 }
 
 .min-w-\[200px\] {
@@ -1097,6 +1109,10 @@ video {
 
 .border-r {
   border-right-width: 1px;
+}
+
+.border-dashed {
+  border-style: dashed;
 }
 
 .\!border-red-300 {

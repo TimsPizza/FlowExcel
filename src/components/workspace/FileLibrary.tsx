@@ -12,6 +12,8 @@ import {
   fileSelector,
   useWorkspaceStore,
 } from "../../stores/useWorkspaceStore";
+import { FileIcon } from "@radix-ui/react-icons";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 const FileLibrary: React.FC = () => {
   const toast = useI18nToast();
@@ -19,6 +21,7 @@ const FileLibrary: React.FC = () => {
   const { files, removeFileFromWorkspace, updateFileMeta, upToDateFileInfo } =
     useWorkspaceStore(useShallow(fileSelector));
   const { outdatedFileIds } = useWorkspaceStore(useShallow(fileSelector));
+  const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
   const [syncingFileIds, setSyncingFileIds] = useState<string[]>([]);
 
   const handleSyncFile = async (fileId: string) => {
@@ -110,16 +113,47 @@ const FileLibrary: React.FC = () => {
     }
   };
 
+  const handleOpenInExplorer = async () => {
+    if (!currentWorkspace?.id) {
+      toast.error("workspace.no_workspace_loaded");
+      return;
+    }
+
+    try {
+      const response = await apiClient.getWorkspaceFilesPath(
+        currentWorkspace.id,
+      );
+      await revealItemInDir(response.files_path);
+      toast.success("file.openInExplorerSuccess");
+    } catch (error) {
+      toast.error("file.openInExplorerFailed");
+      console.error("Open in explorer error:", error);
+    }
+  };
+
   return (
     <Flex direction="column" gap="4" width={"100%"}>
       <Box p="4">
         <Flex direction="column" gap="5">
           <Box>
-            <Flex justify="start" align="baseline" gap="2">
-              <Text weight="medium" size="3" mb="2">
+            <Flex justify="start" align="center" gap="2">
+              <Text weight="medium" size="3" mr="2">
                 {t("file.libraryTitle")}
               </Text>
               <AddFileModal />
+              {/* Add "Open in Explorer" button */}
+              {currentWorkspace?.id && (
+                <Button
+                  size="2"
+                  variant="soft"
+                  color="blue"
+                  onClick={handleOpenInExplorer}
+                  title={t("file.openInExplorer")}
+                >
+                  <FileIcon className="h-4 w-4" />
+                  <Text size="2">{t("file.openInExplorer")}</Text>
+                </Button>
+              )}
             </Flex>
             {files?.length === 0 ? (
               <Text size="2" color="gray">
@@ -133,7 +167,7 @@ const FileLibrary: React.FC = () => {
                       key={file.id}
                       p="2"
                       className={cn(
-                        "border-gray-5 rounded-2 border",
+                        "border-gray-5 rounded-sm border",
                         outdatedFileIds.includes(file.id) && "!border-red-300",
                       )}
                     >
@@ -153,7 +187,7 @@ const FileLibrary: React.FC = () => {
                             >
                               {syncingFileIds.includes(file.id)
                                 ? t("file.syncing")
-                                : t("file.sync")}
+                                : t("file.sync.prompt")}
                             </Button>
                           )}
                           {/* Edit and delete buttons */}

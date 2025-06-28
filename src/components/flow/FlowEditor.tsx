@@ -9,7 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { FlowNodeData, NodeType } from "@/types/nodes";
-import { PlayIcon, PlusIcon, SizeIcon } from "@radix-ui/react-icons";
+import {
+  PlayIcon,
+  PlusIcon,
+  SizeIcon,
+  DownloadIcon,
+} from "@radix-ui/react-icons";
 import { Flex, Popover, Select, Text } from "@radix-ui/themes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -36,6 +41,9 @@ import ReactFlow, {
 import { v4 as uuidv4 } from "uuid";
 import { FlowValidationPanel } from "./FlowValidationPanel";
 import nodeTypes from "./nodes/NodeFactory";
+import { save } from "@tauri-apps/plugin-dialog";
+import { apiClient } from "@/lib/apiClient";
+import useI18nToast from "@/hooks/useI18nToast";
 
 function isNodePositionChange(
   change: NodeChange,
@@ -85,6 +93,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const { t } = useTranslation();
   const toast = useToast();
+  const i18nToast = useI18nToast();
   const NODE_TYPES = getNodeTypes(t);
   const addFlowNode = useWorkspaceStore((state) => state.addFlowNode);
   const updateNodeData = useWorkspaceStore((state) => state.updateNodeData);
@@ -109,6 +118,7 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
   const [layoutDirection, setLayoutDirection] = useState<"TB" | "LR">("LR");
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const activelyDraggedNodeId = useRef<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // 初始化或同步节点和边
   useEffect(() => {
@@ -187,6 +197,42 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
     },
     [nodes, edges, layoutDirection, setNodes, addFlowNode, fitView, toast],
   );
+
+  // 导出工作区功能
+  const handleExportWorkspace = useCallback(async () => {
+    if (!currentWorkspace?.id) {
+      i18nToast.error("workspace.no_workspace_loaded");
+      return;
+    }
+
+    if (isExporting) {
+      return; // Prevent duplicate clicks
+    }
+
+    setIsExporting(true);
+
+    try {
+      const filePath = await save({
+        filters: [
+          {
+            name: "Excel Flow Package",
+            extensions: ["fxw", "zip"],
+          },
+        ],
+        defaultPath: `${currentWorkspace.name || "workspace"}.fxw`,
+      });
+
+      if (filePath) {
+        await apiClient.exportWorkspace(currentWorkspace.id, filePath);
+        i18nToast.success("workspace.exportSuccess");
+      }
+    } catch (error) {
+      i18nToast.error("workspace.exportFailed");
+      console.error("Export workspace error:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [currentWorkspace, i18nToast, isExporting]);
 
   // 处理节点变更并同步到zustand store
   const handleOnNodesChange: OnNodesChange = useCallback(
@@ -420,6 +466,27 @@ export const FlowEditor: React.FC<FlowEditorProps> = ({ workspaceId }) => {
                         </Button>
                       </Popover.Close>
                     </Flex>
+                  </Flex>
+
+                  {/* 分隔线 */}
+                  <div style={{ height: "1px", background: "var(--gray-6)" }} />
+
+                  {/* 导出工作区控件 */}
+                  <Flex direction="column" gap="2">
+                    <Text weight="bold" size="2">
+                      {t("flow.exportWorkspace")}
+                    </Text>
+                    <Popover.Close>
+                      <Button
+                        variant="soft"
+                        color="blue"
+                        onClick={handleExportWorkspace}
+                        disabled={nodes.length === 0}
+                        title={t("flow.exportWorkspaceTooltip")}
+                      >
+                        <DownloadIcon /> {t("flow.exportWorkspace")}
+                      </Button>
+                    </Popover.Close>
                   </Flex>
                 </Flex>
               </Popover.Content>

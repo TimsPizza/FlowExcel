@@ -56,7 +56,13 @@
     "exitDescription": "You will lose all unsaved changes if you leave the workspace.",
     "delete_success": "Workspace deleted successfully",
     "delete_failed": "Failed to delete workspace",
-    "deleteDescription": "Are you sure you want to delete this workspace? This action cannot be undone!"
+    "deleteDescription": "Are you sure you want to delete this workspace? This action cannot be undone!",
+    "import": "Import Workspace",
+    "importTooltip": "Import workspace from Excel Flow Package",
+    "importSuccess": "Workspace imported successfully",
+    "importFailed": "Failed to import workspace",
+    "exportSuccess": "Workspace exported successfully",
+    "exportFailed": "Failed to export workspace"
   },
   "flow": {
     "execute": "Execute Flow",
@@ -153,7 +159,9 @@
     "test": "Test",
     "testResult": "Test Run Result",
     "addNextNode": "Add Next Node",
-    "selectNodeType": "Select Node Type"
+    "selectNodeType": "Select Node Type",
+    "exportWorkspace": "Export Workspace",
+    "exportWorkspaceTooltip": "Export workspace as Excel Flow Package"
   },
   "node": {
     "index_source": "Index Source",
@@ -297,6 +305,7 @@
       "generic": "An unknown error occurred while syncing the file."
     },
     "sync": {
+      "prompt": "sync",
       "sheetsAdded": "File '{{fileName}}' has new sheets: {{sheets}}",
       "sheetsRemoved": "Sheets removed from file '{{fileName}}': {{sheets}}"
     },
@@ -315,7 +324,10 @@
       "detectingHeader": "Detecting header row...",
       "detectedHeader": "Detected columns",
       "noHeaderDetected": "No header detected or current setting is incorrect"
-    }
+    },
+    "openInExplorer": "Open in Resource Explorer",
+    "openInExplorerSuccess": "Opened workspace folder successfully",
+    "openInExplorerFailed": "Failed to open workspace folder"
   },
   "api": {
     "backend_not_started": "Backend service not started, this might be a bug",

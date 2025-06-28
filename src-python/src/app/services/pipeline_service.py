@@ -314,6 +314,7 @@ class PipelineService:
                 "error": result.error,
                 "warnings": result.warnings,
             }
+            self.performance_analyzer.print_stats()
 
             return PipelineExecutionResponse(
                 result=response_data,
