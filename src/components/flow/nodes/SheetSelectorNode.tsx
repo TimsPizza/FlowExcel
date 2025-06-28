@@ -172,7 +172,7 @@ export const SheetSelectorNode: React.FC<FlowNodeProps> = ({ data }) => {
             value={nodeData.targetFileID || ""}
             onValueChange={(v) => handleSelectFile(v)}
           >
-            <Select.Trigger />
+            <Select.Trigger className="!max-w-[160px] !overflow-x-hidden" />
             <Select.Content>
               <Select.Group>
                 {files && files.length > 0 ? (

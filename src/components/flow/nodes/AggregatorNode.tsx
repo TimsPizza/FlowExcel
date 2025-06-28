@@ -184,7 +184,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
               value={nodeData.statColumn || ""}
               onValueChange={handleSelectColumn}
             >
-              <Select.Trigger />
+              <Select.Trigger className="!max-w-[200px] !overflow-x-hidden" />
               <Select.Content>
                 {availableColumns.map((column: string) => (
                   <Select.Item key={column} value={column}>
@@ -205,7 +205,7 @@ export const AggregatorNode: React.FC<FlowNodeProps> = ({ data }) => {
             value={nodeData.method || ""}
             onValueChange={handleSelectMethod}
           >
-            <Select.Trigger />
+            <Select.Trigger className="!max-w-[200px] !overflow-x-hidden" />
             <Select.Content>
               {AGGREGATION_METHODS.map((method) => (
                 <Select.Item key={method.value} value={method.value}>

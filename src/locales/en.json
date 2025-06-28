@@ -112,7 +112,8 @@
       },
       "excelOutput": {
         "noPath": "Excel Output node must specify an output file path"
-      }
+      },
+      "outputPathRequired": "Output node must specify an output file path"
     },
     "previewFailed": "Preview failed",
     "previewFailedWithError": "Preview failed: {{error}}",

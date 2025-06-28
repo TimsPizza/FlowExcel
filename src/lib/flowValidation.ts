@@ -49,7 +49,6 @@ export const NODE_TYPE_DESCRIPTIONS: Record<NodeType, string> = {
   [NodeType.OUTPUT]: "node.outputNode.help",
 };
 
-
 export const NODE_TYPE_NAMES: Record<NodeType, string> = {
   [NodeType.INDEX_SOURCE]: "索引源",
   [NodeType.SHEET_SELECTOR]: "工作表定位",
@@ -80,6 +79,8 @@ export function isValidConnection(
 
   const sourceType = sourceNode.data.nodeType as NodeType;
   const targetType = targetNode.data.nodeType as NodeType;
+
+  // 检查是否
 
   // 检查连接规则
   const allowedTargets = NODE_CONNECTION_RULES[sourceType];
@@ -287,6 +288,9 @@ export function validateFlow(
     errors.push(i18n.t("flow.validation.needOutput"));
   } else if (outputNodes.length > 1) {
     errors.push(i18n.t("flow.validation.singleOutputOnly"));
+  } else if (!outputNodes[0].data.outputPath) {
+    // 检查输出节点是否包含输出路径
+    errors.push(i18n.t("flow.validation.outputPathRequired"));
   }
 
   // 检查孤立节点

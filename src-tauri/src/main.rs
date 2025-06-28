@@ -197,7 +197,7 @@ fn main() {
                         }
                         CommandEvent::Terminated(payload) => {
                             log::warn!("Backend terminated with payload: {:?}", payload);
-                            break;
+                             break;
                         }
                         _ => {}
                     }

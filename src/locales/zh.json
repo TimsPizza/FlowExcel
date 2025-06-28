@@ -112,7 +112,8 @@
       },
       "excelOutput": {
         "noPath": "Excel输出节点必须指定一个输出文件路径"
-      }
+      },
+      "outputPathRequired": "输出节点必须指定一个输出文件路径"
     },
     "previewFailed": "预览失败",
     "previewFailedWithError": "预览失败: {{error}}",

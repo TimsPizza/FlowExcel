@@ -220,7 +220,8 @@ export const useWorkspaceStore = create<WorkspaceState>()((set, get) => ({
               return n;
             }),
           },
-          isDirty: markDirty,
+          // 如果已经是脏的，且markdirty为false，则不更新dirty状态
+          isDirty: state.isDirty || markDirty,
         };
       }
       return {};

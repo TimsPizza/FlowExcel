@@ -267,6 +267,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
               onValueChange={handleSelectFile}
             >
               <Select.Trigger
+                className="!max-w-[160px] !overflow-x-hidden"
                 placeholder={t("node.indexSourceNode.selectFile")}
               />
               <Select.Content>
@@ -320,6 +321,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   disabled={!nodeData.sourceFileID}
                 >
                   <Select.Trigger
+                    className="!max-w-[160px] !overflow-x-hidden"
                     placeholder={t("node.indexSourceNode.selectSheet")}
                   />
                   <Select.Content>
@@ -351,6 +353,7 @@ export const IndexSourceNode: React.FC<FlowNodeProps> = ({ data }) => {
                   disabled={!nodeData.sourceFileID || !nodeData.sheetName}
                 >
                   <Select.Trigger
+                    className="!max-w-[160px] !overflow-x-hidden"
                     placeholder={t("node.indexSourceNode.selectIndexColumn")}
                   />
                   <Select.Content>

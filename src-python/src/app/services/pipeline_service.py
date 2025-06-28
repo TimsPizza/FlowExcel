@@ -217,19 +217,21 @@ class PipelineService:
     def _normalize_pandas_data(data):
         """
         专门处理pandas DataFrame中的numpy数据类型，确保FastAPI可以正常序列化
-        
+
         Args:
             data: 包含DataFrame的数据结构
-            
+
         Returns:
             处理后的数据结构
         """
         import pandas as pd
         import numpy as np
-        
+
         if isinstance(data, dict):
             # 递归处理字典
-            return {k: PipelineService._normalize_pandas_data(v) for k, v in data.items()}
+            return {
+                k: PipelineService._normalize_pandas_data(v) for k, v in data.items()
+            }
         elif isinstance(data, list):
             # 递归处理列表
             return [PipelineService._normalize_pandas_data(item) for item in data]
@@ -247,7 +249,7 @@ class PipelineService:
                     normalized_df[col] = normalized_df[col].apply(
                         lambda x: float(x) if pd.notna(x) else None
                     )
-                elif normalized_df[col].dtype == 'bool':
+                elif normalized_df[col].dtype == "bool":
                     # 将numpy布尔值转为Python bool
                     normalized_df[col] = normalized_df[col].apply(
                         lambda x: bool(x) if pd.notna(x) else None
@@ -304,7 +306,6 @@ class PipelineService:
 
             # 执行pipeline
             result = execute_pipeline(request)
-
 
             #  不再返回执行结果dataframe，这没有意义
             response_data = {
@@ -792,9 +793,9 @@ class PipelineService:
                 except Exception as e:
                     continue
             final_result = branch_context.get_final_results()
-            final_output_col_name = (
-                node.data.get("method") + "_" + node.data.get("statColumn")
-            )
+            final_output_col_name = node.data.get("outputAs") or node.data.get(
+                "method"
+            ) + "_" + node.data.get("statColumn")
             final_columns = ["索引"] + [final_output_col_name]
             final_data = []
             for index_value, result in final_result.items():

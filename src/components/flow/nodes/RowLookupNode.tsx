@@ -137,7 +137,7 @@ export const RowLookupNode: React.FC<FlowNodeProps> = ({ data }) => {
             value={nodeData.matchColumn || ""}
             onValueChange={handleSelectMatchColumn}
           >
-            <Select.Trigger />
+            <Select.Trigger className="!max-w-[160px] !overflow-x-hidden" />
             <Select.Content>
               <Select.Group>
                 <ScrollArea className="max-h-60">

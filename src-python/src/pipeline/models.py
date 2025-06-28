@@ -41,7 +41,7 @@ class AggregationOperation(str, Enum):
 
     SUM = "sum"
     COUNT = "count"
-    AVERAGE = "average"
+    AVERAGE = "avg"
     MIN = "min"
     MAX = "max"
     FIRST = "first"
@@ -58,7 +58,7 @@ class DataFrame(BaseModel):
     """DataFrame封装 - 序列化友好的pandas DataFrame表示"""
 
     columns: List[str] = Field(..., description="列名列表")
-    data: List[List[Union[str, int, float, None]]] = Field(
+    data: List[List[Union[str, float, int, None]]] = Field(
         ..., description="数据行列表"
     )
     total_rows: int = Field(..., description="总行数")
@@ -79,7 +79,7 @@ class DataFrame(BaseModel):
                 """安全转换单个值"""
                 if pd.isna(value):
                     return None
-                elif hasattr(value, 'item'):  # pandas扩展类型或numpy标量
+                elif hasattr(value, "item"):  # pandas扩展类型或numpy标量
                     try:
                         converted = value.item()
                         if isinstance(converted, (int, float, str, bool)):
@@ -96,7 +96,7 @@ class DataFrame(BaseModel):
                     return float(value)
                 else:
                     return str(value)
-            
+
             # 使用numpy的向量化操作处理数据
             data_rows = []
             for i in range(len(df)):
@@ -106,9 +106,11 @@ class DataFrame(BaseModel):
                     converted_value = safe_convert_value(value)
                     row_data.append(converted_value)
                 data_rows.append(row_data)
-            
+
             result = cls(
-                columns=df.columns.astype(str).tolist(), data=data_rows, total_rows=len(df)
+                columns=df.columns.astype(str).tolist(),
+                data=data_rows,
+                total_rows=len(df),
             )
 
             if analyzer and conversion_id:
@@ -189,9 +191,7 @@ class SheetSelectorInput(NodeInput):
 class SheetSelectorOutput(NodeOutput):
     """表选择节点输出"""
 
-    dataframe: pd.DataFrame = Field(
-        ..., description="选中的DataFrame"
-    )
+    dataframe: pd.DataFrame = Field(..., description="选中的DataFrame")
     sheet_name: str = Field(..., description="实际使用的sheet名")
     index_value: IndexValue = Field(..., description="对应的索引值")
 
@@ -203,9 +203,7 @@ class SheetSelectorOutput(NodeOutput):
 class RowFilterInput(NodeInput):
     """行过滤节点输入"""
 
-    dataframe: pd.DataFrame = Field(
-        ..., description="待过滤的DataFrame"
-    )
+    dataframe: pd.DataFrame = Field(..., description="待过滤的DataFrame")
     index_value: IndexValue = Field(..., description="当前索引值")
 
     class Config:
@@ -215,9 +213,7 @@ class RowFilterInput(NodeInput):
 class RowFilterOutput(NodeOutput):
     """行过滤节点输出"""
 
-    dataframe: pd.DataFrame = Field(
-        ..., description="过滤后的DataFrame"
-    )
+    dataframe: pd.DataFrame = Field(..., description="过滤后的DataFrame")
     index_value: IndexValue = Field(..., description="对应的索引值")
     filtered_count: int = Field(..., description="过滤后的行数")
 
@@ -239,9 +235,7 @@ class RowLookupInput(NodeInput):
 class RowLookupOutput(NodeOutput):
     """行查找节点输出"""
 
-    dataframe: pd.DataFrame = Field(
-        ..., description="匹配的行组成的DataFrame"
-    )
+    dataframe: pd.DataFrame = Field(..., description="匹配的行组成的DataFrame")
     index_value: IndexValue = Field(..., description="对应的索引值")
     matched_count: int = Field(..., description="匹配的行数")
 
@@ -268,7 +262,8 @@ class AggregationResult(BaseModel):
     index_value: IndexValue = Field(..., description="索引值")
     column_name: str = Field(..., description="输出列名")
     operation: AggregationOperation = Field(..., description="聚合操作")
-    result_value: Union[int, float, str, None] = Field(..., description="聚合结果值")
+    # NOTE: pydantic v1会根据union顺序自动转换，不要更改类型顺序，否则精度会丢失
+    result_value: Union[float, int, str, None] = Field(..., description="聚合结果值")
 
 
 class AggregatorOutput(NodeOutput):
@@ -282,13 +277,16 @@ class OutputInput(NodeInput):
     """输出节点输入"""
 
     branch_aggregated_results: Dict[
-        str, Dict[IndexValue, Dict[str, Union[int, float, str, None]]]
+        str, Dict[IndexValue, Dict[str, Union[float, int, str, None]]]
     ] = Field(
         ..., description="按分支组织的聚合结果，格式为 {分支ID: {索引值: {列名: 值}}}"
     )
-    
-    branch_dataframes: Dict[str, Union[pd.DataFrame, Dict[IndexValue, pd.DataFrame]]] = Field(
-        default_factory=dict, description="按分支组织的非聚合 dataframe 结果，格式为 {分支ID: DataFrame} 或 {分支ID: {索引值: DataFrame}}"
+
+    branch_dataframes: Dict[
+        str, Union[pd.DataFrame, Dict[IndexValue, pd.DataFrame]]
+    ] = Field(
+        default_factory=dict,
+        description="按分支组织的非聚合 dataframe 结果，格式为 {分支ID: DataFrame} 或 {分支ID: {索引值: DataFrame}}",
     )
 
     class Config:
@@ -303,9 +301,9 @@ class SheetData(BaseModel):
     # dataframe: DataFrame = Field(..., description="Sheet内容")
     branch_id: str = Field(..., description="对应的分支ID")
     source_name: str = Field(..., description="索引源的易读名称")
+
     class Config:
         arbitrary_types_allowed = True  # 允许pandas DataFrame
-
 
 
 class OutputResult(NodeOutput):
@@ -375,7 +373,7 @@ class BranchContext(BaseModel):
     index_dataframes: Dict[IndexValue, pd.DataFrame] = Field(
         default_factory=dict, description="按索引值组织的非聚合节点DataFrame输出"
     )
-    
+
     class Config:
         arbitrary_types_allowed = True  # 允许pandas DataFrame
 
@@ -387,7 +385,7 @@ class BranchContext(BaseModel):
 
     def get_final_results(
         self,
-    ) -> Dict[IndexValue, Dict[str, Union[int, float, str, None]]]:
+    ) -> Dict[IndexValue, Dict[str, Union[float, int, str, None]]]:
         """获取最终聚合结果"""
         final_results = {}
         for index_value, results in self.aggregation_results.items():
@@ -452,7 +450,7 @@ class BranchExecutionResult(BaseModel):
 
     branch_id: str = Field(..., description="分支ID")
     success: bool = Field(..., description="执行是否成功")
-    final_aggregations: Dict[IndexValue, Dict[str, Union[int, float, str, None]]] = (
+    final_aggregations: Dict[IndexValue, Dict[str, Union[float, int, str, None]]] = (
         Field(..., description="最终聚合结果")
     )
     processed_indices: List[IndexValue] = Field(..., description="处理的索引值列表")
@@ -492,7 +490,6 @@ class PipelineExecutionResult(BaseModel):
     # 错误信息
     error: Optional[str] = Field(None, description="全局错误信息")
     warnings: List[str] = Field(default_factory=list, description="警告信息列表")
-
 
 
 # ==================== 工作区配置类型 ====================

@@ -57,11 +57,15 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
   const updateCondition = (index: number, field: string, value: any) => {
     const updatedConditions = [...(nodeData.conditions || [])];
     updatedConditions[index] = { ...updatedConditions[index], [field]: value };
-    updateRowFilterNodeDataInStore(nodeId, {
-      conditions: updatedConditions as any,
-      error: undefined,
-      testResult: undefined,
-    },true);
+    updateRowFilterNodeDataInStore(
+      nodeId,
+      {
+        conditions: updatedConditions as any,
+        error: undefined,
+        testResult: undefined,
+      },
+      true,
+    );
   };
 
   const addCondition = () => {
@@ -71,21 +75,29 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
       value: "",
       logic: "AND" as "AND" | "OR",
     };
-    updateRowFilterNodeDataInStore(nodeId, {
-      conditions: [...(nodeData.conditions || []), newCondition],
-      error: undefined,
-      testResult: undefined,
-    },true);
+    updateRowFilterNodeDataInStore(
+      nodeId,
+      {
+        conditions: [...(nodeData.conditions || []), newCondition],
+        error: undefined,
+        testResult: undefined,
+      },
+      true,
+    );
   };
 
   const removeCondition = (index: number) => {
     const updatedConditions = [...(nodeData.conditions || [])];
     updatedConditions.splice(index, 1);
-    updateRowFilterNodeDataInStore(nodeId, {
-      conditions: updatedConditions,
-      error: undefined,
-      testResult: undefined,
-    },true);
+    updateRowFilterNodeDataInStore(
+      nodeId,
+      {
+        conditions: updatedConditions,
+        error: undefined,
+        testResult: undefined,
+      },
+      true,
+    );
   };
 
   const handleCondValueChange = (index: number, field: string, value: any) => {
@@ -202,7 +214,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                     updateCondition(index, "logic", value)
                   }
                 >
-                  <Select.Trigger />
+                  <Select.Trigger className="!max-w-[160px] !overflow-x-hidden" />
                   <Select.Content>
                     <Select.Item value="AND">{t("flow.logicAnd")}</Select.Item>
                     <Select.Item value="OR">{t("flow.logicOr")}</Select.Item>
@@ -219,7 +231,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                     updateCondition(index, "column", value)
                   }
                 >
-                  <Select.Trigger />
+                  <Select.Trigger className="!max-w-[160px] !overflow-x-hidden" />
                   <Select.Content>
                     {availableColumns.map((column: string) => (
                       <Select.Item key={column} value={column}>
@@ -237,7 +249,7 @@ export const RowFilterNode: React.FC<FlowNodeProps> = ({ data }) => {
                     updateCondition(index, "operator", value)
                   }
                 >
-                  <Select.Trigger />
+                  <Select.Trigger className="!max-w-[160px] !overflow-x-hidden" />
                   <Select.Content>
                     {OPERATORS.map((op) => (
                       <Select.Item key={op.value} value={op.value}>
