@@ -1,6 +1,5 @@
 use std::env;
 use std::path::PathBuf;
-use std::process::Command;
 
 fn main() {
     // 告诉Cargo在源文件改变时重新运行
@@ -14,7 +13,7 @@ fn main() {
         let target = env::var("TARGET").unwrap_or_default();
         println!("cargo:warning=Building for target: {}", target);
 
-        // 检查Python后端是否存在
+        // 验证Python后端是否存在
         let backend_dir = PathBuf::from("binaries").join("flowexcel-backend");
 
         let exe_extension = if target.contains("windows") {
@@ -26,46 +25,10 @@ fn main() {
         println!("cargo:warning=Backend exe: {}", backend_exe.display());
 
         if !backend_exe.exists() {
-            println!(
-                "cargo:warning=Python backend not found at {}, building...",
+            panic!(
+                "Python backend not found at {}. Please run 'pnpm build:backend' first or ensure 'pnpm tauri build' was used.",
                 backend_exe.display()
             );
-
-            // 确定Python可执行文件名
-            let python_cmd = if cfg!(windows) {
-                "python.exe"
-            } else {
-                "python"
-            };
-
-            // 构建Python后端
-            let output = Command::new(python_cmd)
-                .args(&["build_binary.py"])
-                .current_dir("../src-python")
-                .output();
-
-            match output {
-                Ok(output) => {
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        println!("cargo:warning=Python build stdout: {}", stdout);
-                        println!("cargo:warning=Python build stderr: {}", stderr);
-                        panic!("Python backend build failed");
-                    } else {
-                        println!("cargo:warning=Python backend built successfully");
-
-                        // 验证构建的后端是否存在
-                        if !backend_exe.exists() {
-                            panic!("cargo:error=Backend still not found after build");
-                        }
-                    }
-                }
-                Err(e) => {
-                    println!("cargo:warning=Failed to execute Python build script: {}", e);
-                    // 在某些情况下我们可能没有Python环境，所以不要panic
-                }
-            }
         } else {
             println!(
                 "cargo:warning=Python backend already exists at: {}",
