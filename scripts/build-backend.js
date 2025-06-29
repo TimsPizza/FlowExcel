@@ -27,9 +27,26 @@ function log(message, color = 'reset') {
 
 function checkCommand(command) {
   try {
+    // Windows-specific command checking
+    const isWindows = process.platform === 'win32';
+    const testCmd = isWindows ? `where ${command}` : `which ${command}`;
+    
+    console.log(`🔍 Checking command: ${command}`);
+    
+    // First check if command exists in PATH
+    try {
+      execSync(testCmd, { stdio: 'pipe' });
+    } catch (e) {
+      console.log(`❌ Command not found in PATH: ${command}`);
+      return false;
+    }
+    
+    // Then check if it can run --version
     execSync(`${command} --version`, { stdio: 'pipe' });
+    console.log(`✅ Command verified: ${command}`);
     return true;
   } catch (error) {
+    console.log(`❌ Command check failed for ${command}: ${error.message}`);
     return false;
   }
 }
@@ -38,13 +55,27 @@ function runCommand(command, options = {}) {
   const defaultOptions = {
     stdio: 'inherit',
     cwd: projectRoot,
+    // Windows-specific shell options
+    shell: process.platform === 'win32' ? 'cmd.exe' : true,
     ...options
   };
   
+  console.log(`🔧 Running command: ${command}`);
+  console.log(`📂 Working directory: ${defaultOptions.cwd}`);
+  
   try {
     execSync(command, defaultOptions);
+    console.log(`✅ Command completed: ${command}`);
     return true;
   } catch (error) {
+    console.log(`❌ Command failed: ${command}`);
+    console.log(`❌ Error: ${error.message}`);
+    if (error.stdout) {
+      console.log(`📤 stdout: ${error.stdout.toString()}`);
+    }
+    if (error.stderr) {
+      console.log(`📤 stderr: ${error.stderr.toString()}`);
+    }
     log(`Command failed: ${command}`, 'red');
     log(`Error: ${error.message}`, 'red');
     return false;
@@ -52,12 +83,18 @@ function runCommand(command, options = {}) {
 }
 
 function main() {
+  // Immediate feedback that script is running
+  console.log('🚀 Starting backend build process...');
+  console.log(`🖥️  Platform: ${process.platform}`);
+  console.log(`📁 Project root: ${projectRoot}`);
+  
   log('🚀 Starting backend build process...', 'cyan');
   
   // Detect platform
   const isWindows = process.platform === 'win32';
   const exeExtension = isWindows ? '.exe' : '';
   log(`🖥️  Platform: ${process.platform}`, 'blue');
+  log(`📁 Working directory: ${projectRoot}`, 'blue');
   
   // Check if uv is available
   if (!checkCommand('uv')) {
@@ -124,8 +161,26 @@ function main() {
 }
 
 // Only run if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+// Windows-compatible check for direct execution
+function isMainModule() {
+  // Check if this script is being run directly
+  const scriptPath = fileURLToPath(import.meta.url);
+  const mainPath = process.argv[1];
+  
+  // Normalize paths for cross-platform compatibility
+  const normalizedScript = path.resolve(scriptPath);
+  const normalizedMain = path.resolve(mainPath);
+  
+  return normalizedScript === normalizedMain;
+}
+
+if (isMainModule()) {
+  try {
+    main();
+  } catch (error) {
+    console.error('🚨 Build script failed:', error.message);
+    process.exit(1);
+  }
 }
 
 export { main as buildBackend }; 
