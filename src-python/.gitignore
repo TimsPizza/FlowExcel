@@ -11,3 +11,4 @@ wheels/
 
 # src/workspace/*
 *.spec
+workspace/*
