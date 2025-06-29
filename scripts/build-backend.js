@@ -72,6 +72,20 @@ function main() {
   
   log('📁 Found Python backend directory', 'green');
   
+  // Install/sync dependencies first
+  log('📦 Installing Python dependencies...', 'yellow');
+  const syncSuccess = runCommand('uv sync', { 
+    cwd: pythonDir,
+    stdio: 'inherit'
+  });
+  
+  if (!syncSuccess) {
+    log('❌ Failed to install dependencies', 'red');
+    process.exit(1);
+  }
+  
+  log('✅ Dependencies installed successfully', 'green');
+  
   // Build the backend
   log('🔨 Building backend with uv...', 'yellow');
   const buildSuccess = runCommand('uv run python build_binary.py', { 
