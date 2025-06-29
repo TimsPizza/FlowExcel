@@ -54,6 +54,11 @@ function runCommand(command, options = {}) {
 function main() {
   log('🚀 Starting backend build process...', 'cyan');
   
+  // Detect platform
+  const isWindows = process.platform === 'win32';
+  const exeExtension = isWindows ? '.exe' : '';
+  log(`🖥️  Platform: ${process.platform}`, 'blue');
+  
   // Check if uv is available
   if (!checkCommand('uv')) {
     log('❌ uv is not installed or not in PATH', 'red');
@@ -100,12 +105,19 @@ function main() {
   
   log('✅ Backend build completed successfully', 'green');
   
-  // Check if the binary was created
-  const binaryDir = path.join(projectRoot, 'src-tauri', 'binaries');
+  // Verify the binary was created with correct platform-specific naming
+  const binaryDir = path.join(projectRoot, 'src-tauri', 'binaries', 'flowexcel-backend');
+  const expectedBinary = path.join(binaryDir, `flowexcel-backend${exeExtension}`);
+  
   if (!existsSync(binaryDir)) {
-    log('⚠️  Binary directory not found, but build completed', 'yellow');
+    log('❌ Binary directory not found', 'red');
+    process.exit(1);
+  } else if (!existsSync(expectedBinary)) {
+    log(`❌ Expected binary not found: ${expectedBinary}`, 'red');
+    process.exit(1);
   } else {
-    log('📦 Binary directory found', 'green');
+    log('📦 Binary verified successfully', 'green');
+    log(`✓ Binary location: ${expectedBinary}`, 'green');
   }
   
   log('🎉 Backend build process completed!', 'cyan');
