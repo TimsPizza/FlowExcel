@@ -150,33 +150,6 @@ def main():
     except Exception as e:
         print(f"⚠ Could not test executable: {e}")
 
-    # Copy example workspace data
-    print("\nCopying example workspace data...")
-    source_workspace_dir = src_dir / "workspace"
-    target_workspace_dir = target_base_dir / "_internal" / "workspace"
-
-    if source_workspace_dir.exists():
-        try:
-            # Remove existing workspace directory if it exists
-            if target_workspace_dir.exists():
-                shutil.rmtree(target_workspace_dir, ignore_errors=True)
-
-            # Copy the entire workspace directory
-            shutil.copytree(source_workspace_dir, target_workspace_dir)
-            print(f"✓ Copied example workspace: {target_workspace_dir}")
-
-            # Count files in the workspace
-            workspace_files = list(target_workspace_dir.rglob("*.xlsx"))
-            workspace_configs = list(target_workspace_dir.rglob("workspace.json"))
-            print(f"  - {len(workspace_configs)} example workspace(s)")
-            print(f"  - {len(workspace_files)} example Excel files")
-
-        except Exception as e:
-            print(f"⚠ Failed to copy workspace data: {e}")
-            print(f"  Application will still work, but without example data")
-    else:
-        print(f"⚠ Source workspace directory not found: {source_workspace_dir}")
-
 
 if __name__ == "__main__":
     main()
