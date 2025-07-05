@@ -1,7 +1,8 @@
 // src/hooks/useBackendEvents.ts
-import { useEffect } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { BackendInfo, BackendErrorEvent } from "@/types";
+import { invoke } from "@tauri-apps/api/core";
+import { BackendInfo, BackendStatus, BackendState } from "@/types";
 import { useBackendStore } from "@/stores/useBackendStore";
 
 export const useBackendEvents = () => {
@@ -17,57 +18,166 @@ export const useBackendEvents = () => {
     isDataFresh,
   } = useBackendStore();
 
+  const [connectionState, setConnectionState] = useState<
+    "disconnected" | "connecting" | "connected" | "reconnecting" | "failed"
+  >("disconnected");
+  const [lastHeartbeat, setLastHeartbeat] = useState<number | null>(null);
+  const [restartCount, setRestartCount] = useState(0);
+
+  // 主动检查后端状态
+  const checkBackendStatus = useCallback(async () => {
+    try {
+      const status = await invoke<BackendStatus>("get_backend_status");
+      console.log("Backend status:", status);
+
+      // 更新本地状态
+      setRestartCount(status.restart_count);
+      setLastHeartbeat(status.last_heartbeat || null);
+
+      // 处理不同的状态
+      if (typeof status.state === "object" && "Running" in status.state) {
+        const backendInfo = status.state.Running;
+        setBackendInfo(backendInfo);
+        setConnectionState("connected");
+        return backendInfo;
+      } else if (status.state === "Starting") {
+        setConnectionState("connecting");
+        return null;
+      } else if (status.state === "Restarting") {
+        setConnectionState("reconnecting");
+        return null;
+      } else if (typeof status.state === "object" && "Failed" in status.state) {
+        setBackendError(status.state.Failed);
+        setConnectionState("failed");
+        return null;
+      } else {
+        // NotStarted
+        setConnectionState("disconnected");
+        return null;
+      }
+    } catch (error) {
+      console.debug("Backend status check failed:", error);
+      setConnectionState("disconnected");
+      return null;
+    }
+  }, [setBackendInfo, setBackendError]);
+
+  // 启动后端
+  const startBackend = useCallback(async () => {
+    try {
+      setConnectionState("connecting");
+      await invoke("start_backend");
+      console.log("Backend start requested");
+    } catch (error) {
+      console.error("Failed to start backend:", error);
+      setBackendError(error as string);
+      setConnectionState("failed");
+    }
+  }, [setBackendError]);
+
+  // 重启后端
+  const restartBackend = useCallback(async () => {
+    try {
+      setConnectionState("reconnecting");
+      await invoke("restart_backend");
+      console.log("Backend restart requested");
+    } catch (error) {
+      console.error("Failed to restart backend:", error);
+      setBackendError(error as string);
+      setConnectionState("failed");
+    }
+  }, [setBackendError]);
+
+  // 初始化时检查状态并启动后端
+  const initializeBackend = useCallback(async () => {
+    console.log("Initializing backend...");
+
+    // 首先检查当前状态
+    const currentInfo = await checkBackendStatus();
+
+    if (!currentInfo) {
+      // 如果后端未运行，启动它
+      console.log("Backend not running, starting...");
+      await startBackend();
+    } else {
+      console.log("Backend already running");
+    }
+  }, [checkBackendStatus, startBackend]);
+
   useEffect(() => {
     console.log("useBackendEvents initialized");
 
     // 监听后端就绪事件
     const unlistenReady = listen<BackendInfo>("backend-ready", (event) => {
       console.log("Backend ready event received:", event.payload);
-
-      // 更新 zustand store（自动持久化到 localStorage）
       setBackendInfo(event.payload);
+      setConnectionState("connected");
     });
 
-    // 监听后端错误事件
-    const unlistenError = listen<BackendErrorEvent>(
-      "backend-error",
+    // 监听后端状态变化事件
+    const unlistenStatusChange = listen<BackendStatus>(
+      "backend-status-changed",
       (event) => {
-        console.error("Backend error event received:", event.payload.error);
-        // 更新 zustand store
-        setBackendError(event.payload.error);
+        console.log("Backend status changed:", event.payload);
+
+        const status = event.payload;
+        setRestartCount(status.restart_count);
+        setLastHeartbeat(status.last_heartbeat || null);
+
+        if (typeof status.state === "object" && "Running" in status.state) {
+          const backendInfo = status.state.Running;
+          setBackendInfo(backendInfo);
+          setConnectionState("connected");
+        } else if (status.state === "Starting") {
+          setConnectionState("connecting");
+        } else if (status.state === "Restarting") {
+          setConnectionState("reconnecting");
+        } else if (
+          typeof status.state === "object" &&
+          "Failed" in status.state
+        ) {
+          setBackendError(status.state.Failed);
+          setConnectionState("failed");
+        } else {
+          // NotStarted
+          setConnectionState("disconnected");
+        }
       },
     );
+
+    // 初始化后端
+    initializeBackend();
 
     // 清理函数
     return () => {
       unlistenReady.then((unlisten) => unlisten());
-      unlistenError.then((unlisten) => unlisten());
+      unlistenStatusChange.then((unlisten) => unlisten());
     };
-  }, []); // 去除依赖，因为 zustand actions 是稳定的
+  }, [initializeBackend, setBackendInfo, setBackendError]);
 
-  // 手动刷新方法（保持向后兼容的 API）
-  const refreshBackendStatus = () => {
-    console.log("Manual refresh requested - clearing backend status");
-    clearBackendInfo();
-  };
+  // 手动刷新方法
+  const refreshBackendStatus = useCallback(async () => {
+    console.log("Manual refresh requested");
+    await checkBackendStatus();
+  }, [checkBackendStatus]);
 
-  // 检查数据新鲜度，如果数据过期则标记为未就绪
+  // 检查数据新鲜度
   const isDataReady = isReady && isDataFresh();
-
-  // 如果数据过期，自动清理
-  useEffect(() => {
-    if (isReady && !isDataFresh()) {
-      console.warn("Backend data is stale, clearing...");
-      clearBackendInfo();
-    }
-  }, [isReady, isDataFresh, clearBackendInfo]);
 
   return {
     backendInfo,
     backendError,
-    isReady: isDataReady, // 使用带新鲜度检查的 ready 状态
-    getApiBaseUrl, // 直接使用 store 的方法
+    isReady: isDataReady,
+    getApiBaseUrl,
     refreshBackendStatus,
+    checkBackendStatus,
+    startBackend,
+    restartBackend,
+
+    // 新增的状态信息
+    connectionState,
+    lastHeartbeat,
+    restartCount,
 
     // 额外的调试和管理方法
     isDataFresh: () => isDataFresh(),

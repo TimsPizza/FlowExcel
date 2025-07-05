@@ -273,3 +273,21 @@ export interface FileInfo {
   file_size: number;
   file_hash: string;
 }
+
+// New backend state types
+export type BackendState = 
+  | "NotStarted"
+  | "Starting"
+  | { Running: BackendInfo }
+  | { Failed: string }
+  | "Restarting";
+
+export interface BackendStatus {
+  state: BackendState;
+  last_heartbeat?: number; // Unix timestamp
+  restart_count: number;
+}
+
+export interface BackendStatusChangeEvent {
+  status: BackendStatus;
+}

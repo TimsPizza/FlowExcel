@@ -26,9 +26,9 @@ export default function App() {
           <BackendStatus>
             <ReactFlowProvider>
               <RouterProvider router={router} />
-              <ToastContainer />
             </ReactFlowProvider>
           </BackendStatus>
+          <ToastContainer />
         </QueryClientProvider>
       </Theme>
     </ErrorBoundary>
