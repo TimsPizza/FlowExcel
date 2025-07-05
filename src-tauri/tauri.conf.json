@@ -14,12 +14,13 @@
       {
         "label": "main",
         "title": "FlowExcel",
-        "width": 800,
-        "height": 600,
+        "width": 1024,
+        "height": 768,
         "resizable": true,
         "fullscreen": false,
         "center": true,
-        "visible": true
+        "visible": true,
+        "devtools": true
       }
     ],
     "security": {

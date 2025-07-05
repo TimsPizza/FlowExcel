@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BackendEndpoints {
     pub health: String,
     pub shutdown: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HandshakePayload {
     pub host: String,
     pub port: u16,
@@ -14,7 +14,7 @@ pub struct HandshakePayload {
     pub endpoints: BackendEndpoints,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BackendState {
     NotStarted,
     Starting,
