@@ -53,9 +53,13 @@ pub async fn start_backend(manager: State<'_, SharedBackendManager>) -> Result<(
         let manager = manager.0.lock().unwrap();
         manager.as_ref().cloned()
     };
-    
+
     if let Some(backend_manager) = backend_manager {
-        backend_manager.start_backend().await
+        if let BackendState::Running(_) = backend_manager.get_status().state {
+            Ok(())
+        } else {
+            backend_manager.start_backend().await
+        }
     } else {
         Err("Backend manager not initialized".to_string())
     }
@@ -67,7 +71,7 @@ pub async fn restart_backend(manager: State<'_, SharedBackendManager>) -> Result
         let manager = manager.0.lock().unwrap();
         manager.as_ref().cloned()
     };
-    
+
     if let Some(backend_manager) = backend_manager {
         // Force restart by setting state to NotStarted
         {
@@ -79,4 +83,4 @@ pub async fn restart_backend(manager: State<'_, SharedBackendManager>) -> Result
     } else {
         Err("Backend manager not initialized".to_string())
     }
-} 
+}
