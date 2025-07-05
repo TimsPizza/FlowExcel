@@ -26,3 +26,4 @@ dist-ssr
 
 backend/*
 temp/*
+src/styles/tailwind.output.css
