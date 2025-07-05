@@ -9,7 +9,7 @@
     "dev": "vite",
     "build:frontend": "tsc -b && vite build",
     "build:backend": "node scripts/build-backend.js",
-    "build": "pnpm build:backend && pnpm build:frontend",
+    "build": "pnpm build:backend",
     "lint": "eslint .",
     "preview": "vite preview"
   },
