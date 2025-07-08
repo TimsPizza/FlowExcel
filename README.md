@@ -1,15 +1,26 @@
-# FlowExcel 📊
+<div align="left">
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/logo_light.png" alt="FlowExcel Logo" width="60" style="display: inline-block; vertical-align: middle; margin-right: 15px;"/>
+<h1 style="display: inline-block; vertical-align: middle; margin: 0;">FlowExcel</h1>
+</div>
 
 ### 让Excel数据处理变得像搭积木一样简单
 
-> 零编程门槛，拖拽式构建复杂数据处理流程
-
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/your-repo/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey.svg)](https://github.com/TimsPizza/FlowExcel/releases)
 
----
+## 💡 关于FlowExcel
 
-## 🎯 为什么选择FlowExcel？
+FlowExcel是一个专门为简化常规数据分析工作定制化的工具，让业务人员无需编程知识也能构建复杂的数据处理流程。
+
+### ✨ 核心特性
+
+🎯 **可视化流程编辑** - 拖拽式操作，智能连接，自动布局  
+📊 **实时数据预览** - 节点级预览，即时反馈，确保准确性  
+🗂️ **工作区管理** - 多项目支持，团队协作，配置复用  
+🔧 **灵活配置** - 工作表级配置，适配各种Excel格式  
+📈 **强大处理** - 索引驱动，多种聚合，复杂逻辑支持
+
+### 🎯 为什么选择FlowExcel？
 
 <table>
 <tr>
@@ -32,7 +43,7 @@
 <br><strong>数据安全</strong><br>
 完全本地运行<br>确保数据隐私
 </td><td align="center">
-<img src="https://img.icons8.com/?size=100&id=63766&format=png&color=000000" alt="安全"/>
+<img src="https://img.icons8.com/?size=100&id=63766&format=png&color=000000" alt="国际化"/>
 <br><strong>国际化支持</strong><br>
 多语言支持<br>完善的多语言支持
 </td>
@@ -41,85 +52,49 @@
 
 ---
 
-## ✨ 功能演示
-
-### 🎬 完整工作流程
-
-<!-- 插入：主流程演示GIF (15-20秒)
-内容：从导入Excel文件 → 拖拽构建流程 → 实时预览 → 导出结果
-重点：展示完整的用户体验，突出操作的流畅性和简单性 -->
-
-### 🎨 拖拽构建流程
-
-<!-- 插入：拖拽构建流程GIF (10-15秒)
-内容：展示拖拽节点、自动连接、智能布局的过程
-重点：强调操作的直观性和专业的界面设计 -->
-
-### 👁️ 实时预览效果
-
-<!-- 插入：实时预览功能GIF (8-10秒)
-内容：点击节点后立即显示预览数据，配置变更的即时反馈
-重点：展示"所见即所得"的核心价值 -->
-
----
-
 ## 🚀 快速开始
+
+### 🎯 三步上手
 
 只需三步，完成你的首个数据处理流程：
 
-1. **📁 导入Excel文件** - 支持多工作表，自动识别表头
-2. **🎯 拖拽构建流程** - 可视化节点，无需编程
-3. **📊 导出处理结果** - 生成新的Excel文件
+1. **📁 导入Excel文件** - 支持多工作表，工作表级表头配置，对非标准格式友好
+2. **🎯 拖拽构建流程** - 可视化节点，无需编程知识，边构建边预览
+3. **📊 导出处理结果** - 一键执行导出报表，可复用的流程配置
 
-### 主界面总览
+### 📦 示例工作区
 
-<!-- 插入：主界面总览截图
-内容：展示整体布局，包括文件库、流程编辑区、属性面板
-重点：突出界面的专业性和布局的合理性 -->
+想要快速体验FlowExcel的强大功能？我们提供了一个完整的示例工作区：
+
+📁 **[example.fxw](https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/example.fxw)** - 下载示例工作区文件，一键导入即可体验完整功能
 
 ---
 
-## 🎨 核心功能
+## ✨ 功能演示
 
-### 🎯 可视化流程编辑
+### 🎯 添加节点 & 🔧 自动布局
 
-- **拖拽式操作**: 像搭积木一样构建数据处理流程
-- **智能连接**: 只允许逻辑正确的节点连接
-- **自动布局**: 流程图自动排版，保持清晰美观
+<div align="center">
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/gifs/add_node_clipped_gif.gif" alt="添加节点演示" width="45%" style="display: inline-block; margin: 10px;"/>
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/gifs/auto_layout_clipped_gif.gif" alt="自动布局演示" width="45%" style="display: inline-block; margin: 10px;"/>
+<p><em>左：点击即可添加节点，配置简单直观 | 右：一键自动布局，让复杂流程图变得井然有序</em></p>
+</div>
 
-### 📊 实时数据预览
+### 👁️ 实时预览 & ⚡ 一键执行
 
-- **节点级预览**: 每个节点都能独立预览处理结果
-- **即时反馈**: 配置错误立即发现和修正
-- **数据限制**: 预览数据量智能控制，确保响应速度
+<div align="center">
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/gifs/per_node_preview_clipped_gif.gif" alt="节点预览演示" width="45%" style="display: inline-block; margin: 10px;"/>
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/gifs/execute_flow_clipped_gif.gif" alt="执行流程演示" width="45%" style="display: inline-block; margin: 10px;"/>
+<p><em>左：每个节点都能实时预览处理结果，确保数据准确性 | 右：构建完成后一键执行，快速获得处理结果</em></p>
+</div>
 
-### 🗂️ 工作区管理
+### 📁 文件管理 & 🤝 团队协作
 
-- **多项目支持**: 同时管理多个数据处理项目
-- **导入导出**: 支持团队协作，工作区配置连通文件一键分享
-
-<!-- 插入：工作区管理界面截图
-内容：展示多项目列表，突出导入导出功能
-重点：体现协作能力和项目管理功能 -->
-
-### 🔧 灵活配置
-
-- **工作表级配置**: 每个Sheet独立设置表头行
-- **多种数据源**: 支持不同格式的Excel文件
-- **智能识别**: 自动检测表头和数据类型
-
-### 📈 强大的数据处理能力
-
-- **索引驱动**: 基于索引值的智能数据分片处理
-- **多种聚合**: 求和、计数、平均值、最大值、最小值等
-- **灵活过滤**: 支持多条件组合，AND/OR逻辑操作
-- **精确查找**: 基于关键字的行匹配和数据提取
-
-### 复杂流程示例
-
-<!-- 插入：复杂流程示例截图
-内容：展示多节点连接的复杂数据处理流程
-重点：证明工具的强大处理能力和专业性 -->
+<div align="center">
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/gifs/add_file_edit_meta_clipped_gif.gif" alt="文件管理演示" width="45%" style="display: inline-block; margin: 10px;"/>
+<img src="https://raw.githubusercontent.com/TimsPizza/blob/flow-excel/flow-excel/gifs/ws_import_export_clipped_gif.gif" alt="工作区导入导出演示" width="45%" style="display: inline-block; margin: 10px;"/>
+<p><em>左：支持多文件管理，每个工作表可独立配置 | 右：工作区一键导入导出，团队协作更便捷</em></p>
+</div>
 
 ---
 
@@ -155,7 +130,7 @@
 
 - **🎨 现代化前端**: React 18 + TypeScript + Tailwind CSS
 - **⚡ 高性能后端**: Python FastAPI + Pandas
-- **🖥️ 跨平台桌面**: Tauri框架，支持Windows/macOS/Linux
+- **🖥️ 跨平台桌面**: Tauri框架，支持Windows/macOS
 - **🔒 安全可靠**: 本地化部署，数据不离开本地环境
 - **🚀 高性能**: 批量处理优化，大数据集流式处理
 
@@ -165,7 +140,7 @@
 
 ### 直接下载
 
-前往 [Releases](https://github.com/your-repo/releases) 页面下载对应平台的安装包。
+前往 [Releases](https://github.com/TimsPizza/FlowExcel/releases) 页面下载对应平台的安装包。
 
 ### 支持平台
 
@@ -187,7 +162,7 @@
 ### 克隆项目
 
 ```bash
-git clone https://github.com/your-username/FlowExcel.git
+git clone https://github.com/TimsPizza/FlowExcel.git
 cd FlowExcel
 ```
 
@@ -274,10 +249,12 @@ FlowExcel/
 
 Icons by [Icons8](https://icons8.com)
 
+Badges by [ShieldsIO](https://img.shields.io)
+
 ---
 
 <div align="center">
 <strong>FlowExcel - 让数据处理回归简单</strong><br>
 <a href="https://github.com/TimsPizza/FlowExcel/issues">报告问题</a> • 
-<a href="https://github.com/TimsPizza/FlowExceldiscussions">讨论交流</a> • 
+<a href="https://github.com/TimsPizza/FlowExcel/discussions">讨论交流</a>
 </div>
