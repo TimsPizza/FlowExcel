@@ -130,8 +130,8 @@ FlowExcel是一个专门为简化常规数据分析工作定制化的工具，�
 
 - **🎨 现代化前端**: React 18 + TypeScript + Tailwind CSS
 - **⚡ 高性能后端**: Python FastAPI + Pandas
-- **🖥️ 跨平台桌面**: Tauri框架，支持Windows/macOS
-- **🔒 安全可靠**: 本地化部署，数据不离开本地环境
+- **🖥️ 跨平台桌面**: Tauri框架，支持Windows/macOS/Linux
+- **🔒 安全可靠**: 本地化运行，数据不离开本地环境
 - **🚀 高性能**: 批量处理优化，大数据集流式处理
 
 ---
