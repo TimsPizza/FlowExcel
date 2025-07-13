@@ -31,7 +31,7 @@ class CleaningConfig:
     # 空值处理配置
     null_values: List[str] = field(default_factory=lambda: [
         "N/A", "NULL", "null", "Null", "空", "", "无", "None", "NONE",
-        "#N/A", "#NULL!", "#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!"
+        "#N/A", "#NULL!", "#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "nan"
     ])
     
     # 数值处理配置
@@ -186,7 +186,7 @@ class SmartDataCleaner:
         return cleaned
     
     def _standardize_nulls(self, series: pd.Series) -> int:
-        """标准化空值表示"""
+        """标准化空值表示, 并修改为None"""
         if series.dtype != 'object':
             return 0
         
@@ -200,7 +200,8 @@ class SmartDataCleaner:
             
             if mask.any():
                 count = mask.sum()
-                series.loc[mask] = np.nan
+                # series.loc[mask] = np.nan
+                series.loc[mask] = None
                 changes += count
         
         return changes
@@ -244,7 +245,7 @@ class SmartDataCleaner:
             return best_result.series
         else:
             # 没有合适的转换，保持为字符串
-            string_series = series.astype(str)
+            string_series = series.apply(lambda x: str(x) if x is not None else None)
             log['steps'].append({
                 'step': 'keep_as_string',
                 'action': '保持为字符串类型',

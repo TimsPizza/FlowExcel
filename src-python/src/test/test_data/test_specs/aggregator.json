@@ -1,0 +1,1011 @@
+{
+  "node_type": "aggregator",
+  "description": "aggregator节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 25,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_quantity_sum",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Quantity SUM",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Quantity列进行sum聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-sum",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-sum",
+          "nodeType": "aggregator",
+          "label": "Quantity SUM聚合",
+          "statColumn": "Quantity",
+          "method": "sum",
+          "outputAs": "SUM(Quantity)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "sum",
+        "aggregation_column": "Quantity",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 1016,
+          "Laptops": 1175,
+          "Smartphones": 889,
+          "Tablets": 972,
+          "Wearables": 983
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "sum",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 2,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_sales_amount_min",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Sales Amount MIN",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Sales Amount列进行min聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-min",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-min",
+          "nodeType": "aggregator",
+          "label": "Sales Amount MIN聚合",
+          "statColumn": "Sales Amount",
+          "method": "min",
+          "outputAs": "MIN(Sales Amount)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "min",
+        "aggregation_column": "Sales Amount",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 120,
+          "Keyboard Mechanical": 85,
+          "Laptop Pro": 1200,
+          "Monitor 27inch": 350,
+          "Mouse Wireless": 25,
+          "Webcam HD": 80
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "min",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 3,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_quantity_sold_sum",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Quantity Sold SUM",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Quantity Sold列进行sum聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-sum",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-sum",
+          "nodeType": "aggregator",
+          "label": "Quantity Sold SUM聚合",
+          "statColumn": "Quantity Sold",
+          "method": "sum",
+          "outputAs": "SUM(Quantity Sold)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "sum",
+        "aggregation_column": "Quantity Sold",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 5,
+          "Keyboard Mechanical": 5,
+          "Laptop Pro": 5,
+          "Monitor 27inch": 5,
+          "Mouse Wireless": 10,
+          "Webcam HD": 5
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "sum",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 4,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_final_amount_min",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Final Amount MIN",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Final Amount列进行min聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-min",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-min",
+          "nodeType": "aggregator",
+          "label": "Final Amount MIN聚合",
+          "statColumn": "Final Amount",
+          "method": "min",
+          "outputAs": "MIN(Final Amount)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "min",
+        "aggregation_column": "Final Amount",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 116.1,
+          "Laptops": 1039.2,
+          "Smartphones": 699.0,
+          "Tablets": 569.05,
+          "Wearables": 189.05
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "min",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 5,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_final_amount_max",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Final Amount MAX",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Final Amount列进行max聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-max",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-max",
+          "nodeType": "aggregator",
+          "label": "Final Amount MAX聚合",
+          "statColumn": "Final Amount",
+          "method": "max",
+          "outputAs": "MAX(Final Amount)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "max",
+        "aggregation_column": "Final Amount",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 7581.0,
+          "Laptops": 37981.0,
+          "Smartphones": 18981.0,
+          "Tablets": 19782.0,
+          "Wearables": 7633.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "max",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 6,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_quantity_count",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Quantity COUNT",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Quantity列进行count聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-count",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-count",
+          "nodeType": "aggregator",
+          "label": "Quantity COUNT聚合",
+          "statColumn": "Quantity",
+          "method": "count",
+          "outputAs": "COUNT(Quantity)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "count",
+        "aggregation_column": "Quantity",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 105,
+          "Laptops": 107,
+          "Smartphones": 89,
+          "Tablets": 97,
+          "Wearables": 102
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "count",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 7,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_sales_amount_max",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Sales Amount MAX",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Sales Amount列进行max聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-max",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-max",
+          "nodeType": "aggregator",
+          "label": "Sales Amount MAX聚合",
+          "statColumn": "Sales Amount",
+          "method": "max",
+          "outputAs": "MAX(Sales Amount)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "max",
+        "aggregation_column": "Sales Amount",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 120,
+          "Keyboard Mechanical": 85,
+          "Laptop Pro": 1200,
+          "Monitor 27inch": 350,
+          "Mouse Wireless": 25,
+          "Webcam HD": 80
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "max",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 8,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_final_amount_count",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Final Amount COUNT",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Final Amount列进行count聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-count",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-count",
+          "nodeType": "aggregator",
+          "label": "Final Amount COUNT聚合",
+          "statColumn": "Final Amount",
+          "method": "count",
+          "outputAs": "COUNT(Final Amount)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "count",
+        "aggregation_column": "Final Amount",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 105,
+          "Laptops": 107,
+          "Smartphones": 89,
+          "Tablets": 97,
+          "Wearables": 102
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "count",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 9,
+      "test_id": "aggregator_Sheet3_Moderately_Complex_salary_min",
+      "test_name": "Aggregator - Sheet3_Moderately_Complex Salary MIN",
+      "test_description": "测试Aggregator节点对Sheet3_Moderately_Complex中Salary列进行min聚合",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-min",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-min",
+          "nodeType": "aggregator",
+          "label": "Salary MIN聚合",
+          "statColumn": "Salary",
+          "method": "min",
+          "outputAs": "MIN(Salary)",
+          "groupByColumn": "Department"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "min",
+        "aggregation_column": "Salary",
+        "group_by_column": "Department",
+        "results": {
+          "Engineering": 85000.0,
+          "Finance": 60000.0,
+          "HR": 52000.0,
+          "Marketing": 53000.0,
+          "Sales": 48000.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "min",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 10,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_quantity_sold_avg",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Quantity Sold AVG",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Quantity Sold列进行avg聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-avg",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-avg",
+          "nodeType": "aggregator",
+          "label": "Quantity Sold AVG聚合",
+          "statColumn": "Quantity Sold",
+          "method": "avg",
+          "outputAs": "AVG(Quantity Sold)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "avg",
+        "aggregation_column": "Quantity Sold",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 1.0,
+          "Keyboard Mechanical": 1.0,
+          "Laptop Pro": 1.0,
+          "Monitor 27inch": 1.0,
+          "Mouse Wireless": 2.0,
+          "Webcam HD": 1.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "avg",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 11,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_quantity_sold_count",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Quantity Sold COUNT",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Quantity Sold列进行count聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-count",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-count",
+          "nodeType": "aggregator",
+          "label": "Quantity Sold COUNT聚合",
+          "statColumn": "Quantity Sold",
+          "method": "count",
+          "outputAs": "COUNT(Quantity Sold)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "count",
+        "aggregation_column": "Quantity Sold",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 5,
+          "Keyboard Mechanical": 5,
+          "Laptop Pro": 5,
+          "Monitor 27inch": 5,
+          "Mouse Wireless": 5,
+          "Webcam HD": 5
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "count",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 12,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_quantity_avg",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Quantity AVG",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Quantity列进行avg聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-avg",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-avg",
+          "nodeType": "aggregator",
+          "label": "Quantity AVG聚合",
+          "statColumn": "Quantity",
+          "method": "avg",
+          "outputAs": "AVG(Quantity)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "avg",
+        "aggregation_column": "Quantity",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 9.676190476190476,
+          "Laptops": 10.981308411214954,
+          "Smartphones": 9.98876404494382,
+          "Tablets": 10.02061855670103,
+          "Wearables": 9.637254901960784
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "avg",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 13,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_sales_amount_count",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Sales Amount COUNT",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Sales Amount列进行count聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-count",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-count",
+          "nodeType": "aggregator",
+          "label": "Sales Amount COUNT聚合",
+          "statColumn": "Sales Amount",
+          "method": "count",
+          "outputAs": "COUNT(Sales Amount)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "count",
+        "aggregation_column": "Sales Amount",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 5,
+          "Keyboard Mechanical": 5,
+          "Laptop Pro": 5,
+          "Monitor 27inch": 5,
+          "Mouse Wireless": 5,
+          "Webcam HD": 5
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "count",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 14,
+      "test_id": "aggregator_Sheet3_Moderately_Complex_salary_max",
+      "test_name": "Aggregator - Sheet3_Moderately_Complex Salary MAX",
+      "test_description": "测试Aggregator节点对Sheet3_Moderately_Complex中Salary列进行max聚合",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-max",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-max",
+          "nodeType": "aggregator",
+          "label": "Salary MAX聚合",
+          "statColumn": "Salary",
+          "method": "max",
+          "outputAs": "MAX(Salary)",
+          "groupByColumn": "Department"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "max",
+        "aggregation_column": "Salary",
+        "group_by_column": "Department",
+        "results": {
+          "Engineering": 92000.0,
+          "Finance": 64000.0,
+          "HR": 56000.0,
+          "Marketing": 57000.0,
+          "Sales": 52000.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "max",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 15,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_sales_amount_avg",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Sales Amount AVG",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Sales Amount列进行avg聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-avg",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-avg",
+          "nodeType": "aggregator",
+          "label": "Sales Amount AVG聚合",
+          "statColumn": "Sales Amount",
+          "method": "avg",
+          "outputAs": "AVG(Sales Amount)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "avg",
+        "aggregation_column": "Sales Amount",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 120.0,
+          "Keyboard Mechanical": 85.0,
+          "Laptop Pro": 1200.0,
+          "Monitor 27inch": 350.0,
+          "Mouse Wireless": 25.0,
+          "Webcam HD": 80.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "avg",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 16,
+      "test_id": "aggregator_Sheet3_Moderately_Complex_salary_sum",
+      "test_name": "Aggregator - Sheet3_Moderately_Complex Salary SUM",
+      "test_description": "测试Aggregator节点对Sheet3_Moderately_Complex中Salary列进行sum聚合",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-sum",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-sum",
+          "nodeType": "aggregator",
+          "label": "Salary SUM聚合",
+          "statColumn": "Salary",
+          "method": "sum",
+          "outputAs": "SUM(Salary)",
+          "groupByColumn": "Department"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "sum",
+        "aggregation_column": "Salary",
+        "group_by_column": "Department",
+        "results": {
+          "Engineering": 444000.0,
+          "Finance": 310000.0,
+          "HR": 270000.0,
+          "Marketing": 275000.0,
+          "Sales": 250000.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "sum",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 17,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_final_amount_avg",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Final Amount AVG",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Final Amount列进行avg聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-avg",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-avg",
+          "nodeType": "aggregator",
+          "label": "Final Amount AVG聚合",
+          "statColumn": "Final Amount",
+          "method": "avg",
+          "outputAs": "AVG(Final Amount)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "avg",
+        "aggregation_column": "Final Amount",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 2474.730476190476,
+          "Laptops": 15464.645327102804,
+          "Smartphones": 7906.398314606741,
+          "Tablets": 8381.309793814433,
+          "Wearables": 2974.6073529411765
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "avg",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 18,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_final_amount_sum",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Final Amount SUM",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Final Amount列进行sum聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-sum",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Final Amount-sum",
+          "nodeType": "aggregator",
+          "label": "Final Amount SUM聚合",
+          "statColumn": "Final Amount",
+          "method": "sum",
+          "outputAs": "SUM(Final Amount)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "sum",
+        "aggregation_column": "Final Amount",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 259846.7,
+          "Laptops": 1654717.05,
+          "Smartphones": 703669.45,
+          "Tablets": 812987.05,
+          "Wearables": 303409.95
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "sum",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 19,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_quantity_sold_min",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Quantity Sold MIN",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Quantity Sold列进行min聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-min",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-min",
+          "nodeType": "aggregator",
+          "label": "Quantity Sold MIN聚合",
+          "statColumn": "Quantity Sold",
+          "method": "min",
+          "outputAs": "MIN(Quantity Sold)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "min",
+        "aggregation_column": "Quantity Sold",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 1,
+          "Keyboard Mechanical": 1,
+          "Laptop Pro": 1,
+          "Monitor 27inch": 1,
+          "Mouse Wireless": 2,
+          "Webcam HD": 1
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "min",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 20,
+      "test_id": "aggregator_Sheet3_Moderately_Complex_salary_avg",
+      "test_name": "Aggregator - Sheet3_Moderately_Complex Salary AVG",
+      "test_description": "测试Aggregator节点对Sheet3_Moderately_Complex中Salary列进行avg聚合",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-avg",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-avg",
+          "nodeType": "aggregator",
+          "label": "Salary AVG聚合",
+          "statColumn": "Salary",
+          "method": "avg",
+          "outputAs": "AVG(Salary)",
+          "groupByColumn": "Department"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "avg",
+        "aggregation_column": "Salary",
+        "group_by_column": "Department",
+        "results": {
+          "Engineering": 88800.0,
+          "Finance": 62000.0,
+          "HR": 54000.0,
+          "Marketing": 55000.0,
+          "Sales": 50000.0
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "avg",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 21,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_sales_amount_sum",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Sales Amount SUM",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Sales Amount列进行sum聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-sum",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Sales Amount-sum",
+          "nodeType": "aggregator",
+          "label": "Sales Amount SUM聚合",
+          "statColumn": "Sales Amount",
+          "method": "sum",
+          "outputAs": "SUM(Sales Amount)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "sum",
+        "aggregation_column": "Sales Amount",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 600,
+          "Keyboard Mechanical": 425,
+          "Laptop Pro": 6000,
+          "Monitor 27inch": 1750,
+          "Mouse Wireless": 125,
+          "Webcam HD": 400
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "sum",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 22,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_quantity_min",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Quantity MIN",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Quantity列进行min聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-min",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-min",
+          "nodeType": "aggregator",
+          "label": "Quantity MIN聚合",
+          "statColumn": "Quantity",
+          "method": "min",
+          "outputAs": "MIN(Quantity)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "min",
+        "aggregation_column": "Quantity",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 1,
+          "Laptops": 1,
+          "Smartphones": 1,
+          "Tablets": 1,
+          "Wearables": 1
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "min",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 23,
+      "test_id": "aggregator_Sheet3_Moderately_Complex_salary_count",
+      "test_name": "Aggregator - Sheet3_Moderately_Complex Salary COUNT",
+      "test_description": "测试Aggregator节点对Sheet3_Moderately_Complex中Salary列进行count聚合",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-count",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet3_Moderately_Complex-Salary-count",
+          "nodeType": "aggregator",
+          "label": "Salary COUNT聚合",
+          "statColumn": "Salary",
+          "method": "count",
+          "outputAs": "COUNT(Salary)",
+          "groupByColumn": "Department"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "count",
+        "aggregation_column": "Salary",
+        "group_by_column": "Department",
+        "results": {
+          "Engineering": 5,
+          "Finance": 5,
+          "HR": 5,
+          "Marketing": 5,
+          "Sales": 5
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "count",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 24,
+      "test_id": "aggregator_Sheet7_Real_World_Sales_quantity_max",
+      "test_name": "Aggregator - Sheet7_Real_World_Sales Quantity MAX",
+      "test_description": "测试Aggregator节点对Sheet7_Real_World_Sales中Quantity列进行max聚合",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-max",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet7_Real_World_Sales-Quantity-max",
+          "nodeType": "aggregator",
+          "label": "Quantity MAX聚合",
+          "statColumn": "Quantity",
+          "method": "max",
+          "outputAs": "MAX(Quantity)",
+          "groupByColumn": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "max",
+        "aggregation_column": "Quantity",
+        "group_by_column": "Category",
+        "results": {
+          "Audio": 19,
+          "Laptops": 19,
+          "Smartphones": 19,
+          "Tablets": 19,
+          "Wearables": 19
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "max",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    },
+    {
+      "case_id": 25,
+      "test_id": "aggregator_Sheet1_Perfect_Clean_quantity_sold_max",
+      "test_name": "Aggregator - Sheet1_Perfect_Clean Quantity Sold MAX",
+      "test_description": "测试Aggregator节点对Sheet1_Perfect_Clean中Quantity Sold列进行max聚合",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-max",
+        "type": "aggregator",
+        "data": {
+          "id": "test-aggregator-Sheet1_Perfect_Clean-Quantity Sold-max",
+          "nodeType": "aggregator",
+          "label": "Quantity Sold MAX聚合",
+          "statColumn": "Quantity Sold",
+          "method": "max",
+          "outputAs": "MAX(Quantity Sold)",
+          "groupByColumn": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "aggregated_data",
+        "aggregation_method": "max",
+        "aggregation_column": "Quantity Sold",
+        "group_by_column": "Product Name",
+        "results": {
+          "Headphones Pro": 1,
+          "Keyboard Mechanical": 1,
+          "Laptop Pro": 1,
+          "Monitor 27inch": 1,
+          "Mouse Wireless": 2,
+          "Webcam HD": 1
+        }
+      },
+      "validation_rules": {
+        "check_aggregation_method": "max",
+        "expected_type": "dataframe",
+        "check_numeric_results": true
+      }
+    }
+  ],
+  "statistics": {
+    "total_cases": 25,
+    "sheets_covered": 3,
+    "aggregation_methods": [
+      "count",
+      "min",
+      "avg",
+      "max",
+      "sum"
+    ],
+    "method_distribution": {
+      "count": 5,
+      "min": 5,
+      "avg": 5,
+      "max": 5,
+      "sum": 5
+    }
+  }
+}

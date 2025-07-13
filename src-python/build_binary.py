@@ -27,6 +27,27 @@ def main():
     dist_dir = script_dir / "dist"
     dist_dir.mkdir(exist_ok=True)
 
+    # Test-only modules to exclude from the binary
+    test_modules_to_exclude = [
+        "pytest",
+        "pytest_html", 
+        "pytest_cov",
+        "pytest_benchmark",
+        "_pytest",
+        "coverage",
+        "mypy",
+        "flake8",
+        "Jinja2",  # 只在测试报告生成时使用
+        "jinja2",
+        # 其他测试工具模块
+        "py",
+        "pluggy",
+        "iniconfig",
+        "tomli",
+        "exceptiongroup",
+        "packaging",  # pytest依赖，如果运行时不需要可以排除
+    ]
+
     # Prepare PyInstaller command
     pyinstaller_cmd = [
         "pyinstaller",
@@ -38,7 +59,7 @@ def main():
         str(dist_dir),
         "--name",
         "flowexcel-backend",
-        # 添加隐藏导入以确保所有依赖都被包含
+        # 添加隐藏导入以确保所有运行时依赖都被包含
         "--hidden-import",
         "uvicorn",
         "--hidden-import",
@@ -55,11 +76,18 @@ def main():
         "xlrd",
         "--hidden-import",
         "networkx",
-        str(main_file),
     ]
+    
+    # 添加排除测试模块的参数
+    for module in test_modules_to_exclude:
+        pyinstaller_cmd.extend(["--exclude-module", module])
+    
+    # 添加主文件
+    pyinstaller_cmd.append(str(main_file))
 
     print("Building with PyInstaller...")
     print(f"Command: {' '.join(pyinstaller_cmd)}")
+    print(f"Excluding test modules: {', '.join(test_modules_to_exclude)}")
 
     # Run PyInstaller
     try:

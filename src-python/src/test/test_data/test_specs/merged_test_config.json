@@ -1,0 +1,135 @@
+{
+  "test_runner_config": {
+    "test_data_file": "test_case.xlsx",
+    "test_specs_dir": "tests/test_data/test_specs/merged",
+    "excel_files_dir": "tests/test_data/excel_files",
+    "output_dir": "tests/test_results",
+    "timeout_seconds": 300,
+    "parallel_execution": true,
+    "max_workers": 4
+  },
+  "merged_test_categories": {
+    "index_source": {
+      "description": "indexSource节点的完整测试套件",
+      "test_file": "index_source.json",
+      "total_cases": 14,
+      "statistics": {
+        "total_cases": 14,
+        "sheets_covered": 7,
+        "columns_covered": [
+          "Category",
+          "Status",
+          "Product Name",
+          "Region",
+          "Department"
+        ]
+      }
+    },
+    "sheet_selector": {
+      "description": "sheetSelector节点的完整测试套件",
+      "test_file": "sheet_selector.json",
+      "total_cases": 32,
+      "statistics": {
+        "total_cases": 32,
+        "sheets_covered": 8
+      }
+    },
+    "row_filter": {
+      "description": "rowFilter节点的完整测试套件",
+      "test_file": "row_filter.json",
+      "total_cases": 8,
+      "statistics": {
+        "total_cases": 8,
+        "sheets_covered": 3
+      }
+    },
+    "row_lookup": {
+      "description": "rowLookup节点的完整测试套件",
+      "test_file": "row_lookup.json",
+      "total_cases": 2,
+      "statistics": {
+        "total_cases": 2,
+        "sheets_covered": 2
+      }
+    },
+    "aggregator": {
+      "description": "aggregator节点的完整测试套件",
+      "test_file": "aggregator.json",
+      "total_cases": 25,
+      "statistics": {
+        "total_cases": 25,
+        "sheets_covered": 3,
+        "aggregation_methods": [
+          "count",
+          "min",
+          "avg",
+          "max",
+          "sum"
+        ],
+        "method_distribution": {
+          "count": 5,
+          "min": 5,
+          "avg": 5,
+          "max": 5,
+          "sum": 5
+        }
+      }
+    },
+    "output": {
+      "description": "output节点的完整测试套件",
+      "test_file": "output.json",
+      "total_cases": 3,
+      "statistics": {
+        "total_cases": 3,
+        "sheets_covered": 1
+      }
+    },
+    "integration": {
+      "description": "integration节点的完整测试套件",
+      "test_file": "integration.json",
+      "total_cases": 1,
+      "statistics": {
+        "total_cases": 1,
+        "sheets_covered": 1
+      }
+    }
+  },
+  "validation_settings": {
+    "numeric_precision": 0.0001,
+    "string_comparison": "exact",
+    "null_handling": "strict",
+    "type_checking": "strict"
+  },
+  "aggregation_methods": {
+    "sum": {
+      "description": "求和",
+      "numeric_only": true
+    },
+    "avg": {
+      "description": "平均值",
+      "numeric_only": true
+    },
+    "min": {
+      "description": "最小值",
+      "numeric_only": false
+    },
+    "max": {
+      "description": "最大值",
+      "numeric_only": false
+    },
+    "count": {
+      "description": "计数",
+      "numeric_only": false
+    }
+  },
+  "excluded_methods": [
+    "first",
+    "last"
+  ],
+  "merge_summary": {
+    "merge_date": "2024-01-01",
+    "total_merged_files": 7,
+    "original_file_count": 0,
+    "excluded_cases": 0
+  }
+}

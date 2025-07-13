@@ -1,0 +1,827 @@
+{
+  "node_type": "indexSource",
+  "description": "indexSource节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 14,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "indexsource_Sheet2_Slightly_Messy_category",
+      "test_name": "IndexSource - Sheet2_Slightly_Messy Category索引测试",
+      "test_description": "测试IndexSource节点从Sheet2_Slightly_Messy中提取Category唯一值",
+      "sheet_name": "Sheet2_Slightly_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet2_Slightly_Messy-Category",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet2_Slightly_Messy-Category",
+          "nodeType": "indexSource",
+          "label": "Category索引源",
+          "displayName": "Category",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet2_Slightly_Messy",
+          "byColumn": true,
+          "columnName": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Smartphones",
+          "Tablets",
+          "Laptops",
+          "Audio",
+          "Wearables"
+        ],
+        "count": 5
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 2,
+      "test_id": "indexsource_Sheet2_Slightly_Messy_product_name",
+      "test_name": "IndexSource - Sheet2_Slightly_Messy Product Name索引测试",
+      "test_description": "测试IndexSource节点从Sheet2_Slightly_Messy中提取Product Name唯一值",
+      "sheet_name": "Sheet2_Slightly_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet2_Slightly_Messy-Product Name",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet2_Slightly_Messy-Product Name",
+          "nodeType": "indexSource",
+          "label": "Product Name索引源",
+          "displayName": "Product Name",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet2_Slightly_Messy",
+          "byColumn": true,
+          "columnName": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "iPhone 15 Pro",
+          "Samsung Galaxy S24",
+          "Google Pixel 8",
+          "OnePlus 12",
+          "Xiaomi 14",
+          "iPad Pro 12.9",
+          "Surface Pro 9",
+          "MacBook Air M2",
+          "Dell XPS 13",
+          "HP Spectre x360",
+          "AirPods Pro",
+          "Sony WH-1000XM5",
+          "Bose QuietComfort",
+          "JBL Flip 6",
+          "Beats Studio3",
+          "Apple Watch Series 9",
+          "Samsung Galaxy Watch",
+          "Garmin Forerunner",
+          "Fitbit Versa 4",
+          "Amazfit GTR 4"
+        ],
+        "count": 20
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 3,
+      "test_id": "indexsource_Sheet4_Very_Messy_status",
+      "test_name": "IndexSource - Sheet4_Very_Messy Status索引测试",
+      "test_description": "测试IndexSource节点从Sheet4_Very_Messy中提取Status唯一值",
+      "sheet_name": "Sheet4_Very_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet4_Very_Messy-Status",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet4_Very_Messy-Status",
+          "nodeType": "indexSource",
+          "label": "Status索引源",
+          "displayName": "Status",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet4_Very_Messy",
+          "byColumn": true,
+          "columnName": "Status"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Completed",
+          "Pending",
+          "Failed"
+        ],
+        "count": 3
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 4,
+      "test_id": "indexsource_Sheet8_Inventory_Complex_status",
+      "test_name": "IndexSource - Sheet8_Inventory_Complex Status索引测试",
+      "test_description": "测试IndexSource节点从Sheet8_Inventory_Complex中提取Status唯一值",
+      "sheet_name": "Sheet8_Inventory_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet8_Inventory_Complex-Status",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet8_Inventory_Complex-Status",
+          "nodeType": "indexSource",
+          "label": "Status索引源",
+          "displayName": "Status",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet8_Inventory_Complex",
+          "byColumn": true,
+          "columnName": "Status"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Discontinued",
+          "Active",
+          "Inactive"
+        ],
+        "count": 3
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 5,
+      "test_id": "indexsource_Sheet7_Real_World_Sales_region",
+      "test_name": "IndexSource - Sheet7_Real_World_Sales Region索引测试",
+      "test_description": "测试IndexSource节点从Sheet7_Real_World_Sales中提取Region唯一值",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet7_Real_World_Sales-Region",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet7_Real_World_Sales-Region",
+          "nodeType": "indexSource",
+          "label": "Region索引源",
+          "displayName": "Region",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet7_Real_World_Sales",
+          "byColumn": true,
+          "columnName": "Region"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "North America",
+          "Asia Pacific",
+          "Middle East",
+          "Latin America",
+          "Europe"
+        ],
+        "count": 5
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 6,
+      "test_id": "indexsource_Sheet7_Real_World_Sales_category",
+      "test_name": "IndexSource - Sheet7_Real_World_Sales Category索引测试",
+      "test_description": "测试IndexSource节点从Sheet7_Real_World_Sales中提取Category唯一值",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet7_Real_World_Sales-Category",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet7_Real_World_Sales-Category",
+          "nodeType": "indexSource",
+          "label": "Category索引源",
+          "displayName": "Category",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet7_Real_World_Sales",
+          "byColumn": true,
+          "columnName": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Wearables",
+          "Smartphones",
+          "Laptops",
+          "Tablets",
+          "Audio"
+        ],
+        "count": 5
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 7,
+      "test_id": "indexsource_Sheet4_Very_Messy_category",
+      "test_name": "IndexSource - Sheet4_Very_Messy Category索引测试",
+      "test_description": "测试IndexSource节点从Sheet4_Very_Messy中提取Category唯一值",
+      "sheet_name": "Sheet4_Very_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet4_Very_Messy-Category",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet4_Very_Messy-Category",
+          "nodeType": "indexSource",
+          "label": "Category索引源",
+          "displayName": "Category",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet4_Very_Messy",
+          "byColumn": true,
+          "columnName": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Sales",
+          "Operations",
+          "Services",
+          "Marketing",
+          "Consulting",
+          "Equipment",
+          "Software",
+          "Travel",
+          "Training",
+          "Utilities",
+          "Subscriptions",
+          "Partnerships",
+          "Rent",
+          "Education",
+          "Insurance",
+          "Affiliates",
+          "Maintenance",
+          "Royalties",
+          "Legal",
+          "Commissions",
+          "Hosting",
+          "Advertising",
+          "Freelance",
+          "Merchandise",
+          "Accounting",
+          "Certifications"
+        ],
+        "count": 26
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 8,
+      "test_id": "indexsource_Sheet5_Extreme_Chaos_product_name",
+      "test_name": "IndexSource - Sheet5_Extreme_Chaos Product Name索引测试",
+      "test_description": "测试IndexSource节点从Sheet5_Extreme_Chaos中提取Product Name唯一值",
+      "sheet_name": "Sheet5_Extreme_Chaos",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet5_Extreme_Chaos-Product Name",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet5_Extreme_Chaos-Product Name",
+          "nodeType": "indexSource",
+          "label": "Product Name索引源",
+          "displayName": "Product Name",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet5_Extreme_Chaos",
+          "byColumn": true,
+          "columnName": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "MacBook Pro 14\"",
+          "iPhone 15 Pro Max",
+          "iPad Air 5th Gen",
+          "AirPods Pro 2nd Gen",
+          "Samsung Galaxy S24 Ultra",
+          "Google Pixel 8 Pro",
+          "OnePlus 12",
+          "Xiaomi 14 Pro",
+          "Bose QuietComfort 45",
+          "JBL Flip 6",
+          "Beats Studio3",
+          "Apple Watch Series 9",
+          "Samsung Galaxy Watch6",
+          "Nintendo Switch OLED",
+          "PlayStation 5",
+          "Xbox Series X",
+          "Steam Deck",
+          "Dell XPS 13 Plus",
+          "HP Spectre x360",
+          "Sony WH-1000XM5",
+          "Mercedes EQS",
+          "Surface Pro 9",
+          "Lenovo ThinkPad X1",
+          "Sony A7R V",
+          "Nikon Z9",
+          "Tesla Model S",
+          "BMW i4"
+        ],
+        "count": 27
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 9,
+      "test_id": "indexsource_Sheet1_Perfect_Clean_category",
+      "test_name": "IndexSource - Sheet1_Perfect_Clean Category索引测试",
+      "test_description": "测试IndexSource节点从Sheet1_Perfect_Clean中提取Category唯一值",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet1_Perfect_Clean-Category",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet1_Perfect_Clean-Category",
+          "nodeType": "indexSource",
+          "label": "Category索引源",
+          "displayName": "Category",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet1_Perfect_Clean",
+          "byColumn": true,
+          "columnName": "Category"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Electronics",
+          "Accessories"
+        ],
+        "count": 2
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 10,
+      "test_id": "indexsource_Sheet7_Real_World_Sales_product_name",
+      "test_name": "IndexSource - Sheet7_Real_World_Sales Product Name索引测试",
+      "test_description": "测试IndexSource节点从Sheet7_Real_World_Sales中提取Product Name唯一值",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet7_Real_World_Sales-Product Name",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet7_Real_World_Sales-Product Name",
+          "nodeType": "indexSource",
+          "label": "Product Name索引源",
+          "displayName": "Product Name",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet7_Real_World_Sales",
+          "byColumn": true,
+          "columnName": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Garmin Forerunner",
+          "OnePlus 12",
+          "Apple Watch Series 9",
+          "HP Spectre x360",
+          "Samsung Galaxy Tab S9",
+          "Samsung Galaxy S24",
+          "MacBook Pro 14\"",
+          "Google Pixel 8",
+          "Samsung Galaxy Watch6",
+          "AirPods Pro",
+          "iPhone 15 Pro",
+          "Surface Pro 9",
+          "JBL Flip 6",
+          "Dell XPS 13",
+          "iPad Air",
+          "Sony WH-1000XM5",
+          "Bose QuietComfort",
+          "Lenovo ThinkPad",
+          "iPad Pro 12.9\"",
+          "Fitbit Versa"
+        ],
+        "count": 20
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 11,
+      "test_id": "indexsource_Sheet3_Moderately_Complex_department",
+      "test_name": "IndexSource - Sheet3_Moderately_Complex Department索引测试",
+      "test_description": "测试IndexSource节点从Sheet3_Moderately_Complex中提取Department唯一值",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet3_Moderately_Complex-Department",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet3_Moderately_Complex-Department",
+          "nodeType": "indexSource",
+          "label": "Department索引源",
+          "displayName": "Department",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet3_Moderately_Complex",
+          "byColumn": true,
+          "columnName": "Department"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Sales",
+          "Marketing",
+          "Engineering",
+          "HR",
+          "Finance"
+        ],
+        "count": 5
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 12,
+      "test_id": "indexsource_Sheet1_Perfect_Clean_product_name",
+      "test_name": "IndexSource - Sheet1_Perfect_Clean Product Name索引测试",
+      "test_description": "测试IndexSource节点从Sheet1_Perfect_Clean中提取Product Name唯一值",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet1_Perfect_Clean-Product Name",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet1_Perfect_Clean-Product Name",
+          "nodeType": "indexSource",
+          "label": "Product Name索引源",
+          "displayName": "Product Name",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet1_Perfect_Clean",
+          "byColumn": true,
+          "columnName": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Laptop Pro",
+          "Mouse Wireless",
+          "Keyboard Mechanical",
+          "Monitor 27inch",
+          "Headphones Pro",
+          "Webcam HD"
+        ],
+        "count": 6
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 13,
+      "test_id": "indexsource_Sheet8_Inventory_Complex_product_name",
+      "test_name": "IndexSource - Sheet8_Inventory_Complex Product Name索引测试",
+      "test_description": "测试IndexSource节点从Sheet8_Inventory_Complex中提取Product Name唯一值",
+      "sheet_name": "Sheet8_Inventory_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet8_Inventory_Complex-Product Name",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet8_Inventory_Complex-Product Name",
+          "nodeType": "indexSource",
+          "label": "Product Name索引源",
+          "displayName": "Product Name",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet8_Inventory_Complex",
+          "byColumn": true,
+          "columnName": "Product Name"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "Smartwatches Product 1",
+          "Cases Product 2",
+          "Desktops Product 3",
+          "Controllers Product 4",
+          "Televisions Product 5",
+          "Consoles Product 6",
+          "Cameras Product 7",
+          "Cases Product 8",
+          "Monitors Product 9",
+          "Smartphones Product 10",
+          "Tablets Product 11",
+          "Laptops Product 12",
+          "Games Product 13",
+          "Smart Home Product 14",
+          "Microphones Product 15",
+          "Microphones Product 16",
+          "Cases Product 17",
+          "Controllers Product 18",
+          "Tablets Product 19",
+          "VR Equipment Product 20",
+          "Televisions Product 21",
+          "Televisions Product 22",
+          "Headphones Product 23",
+          "Televisions Product 24",
+          "Games Product 25",
+          "Monitors Product 26",
+          "Smartwatches Product 27",
+          "Controllers Product 28",
+          "Cameras Product 29",
+          "Monitors Product 30",
+          "Desktops Product 31",
+          "Games Product 32",
+          "Smart Home Product 33",
+          "Monitors Product 34",
+          "Speakers Product 35",
+          "Consoles Product 36",
+          "VR Equipment Product 37",
+          "Tablets Product 38",
+          "VR Equipment Product 39",
+          "Laptops Product 40",
+          "Desktops Product 41",
+          "Games Product 42",
+          "Consoles Product 43",
+          "Amplifiers Product 44",
+          "Speakers Product 45",
+          "Cases Product 46",
+          "Controllers Product 47",
+          "Controllers Product 48",
+          "Controllers Product 49",
+          "Consoles Product 50",
+          "Smartphones Product 51",
+          "Desktops Product 52",
+          "Peripherals Product 53",
+          "Accessories Product 54",
+          "Amplifiers Product 55",
+          "Accessories Product 56",
+          "Cases Product 57",
+          "Headphones Product 58",
+          "VR Equipment Product 59",
+          "Laptops Product 60",
+          "Speakers Product 61",
+          "Accessories Product 62",
+          "Cameras Product 63",
+          "Speakers Product 64",
+          "Controllers Product 65",
+          "Laptops Product 66",
+          "Amplifiers Product 67",
+          "Monitors Product 68",
+          "Desktops Product 69",
+          "Smart Home Product 70",
+          "Games Product 71",
+          "Consoles Product 72",
+          "VR Equipment Product 73",
+          "Monitors Product 74",
+          "Smart Home Product 75",
+          "Cameras Product 76",
+          "Cameras Product 77",
+          "VR Equipment Product 78",
+          "Cameras Product 79",
+          "Headphones Product 80",
+          "Desktops Product 81",
+          "VR Equipment Product 82",
+          "Cameras Product 83",
+          "Cases Product 84",
+          "Televisions Product 85",
+          "Speakers Product 86",
+          "VR Equipment Product 87",
+          "Televisions Product 88",
+          "Controllers Product 89",
+          "Amplifiers Product 90",
+          "Consoles Product 91",
+          "Tablets Product 92",
+          "Smartphones Product 93",
+          "Peripherals Product 94",
+          "Tablets Product 95",
+          "Smartwatches Product 96",
+          "Microphones Product 97",
+          "Amplifiers Product 98",
+          "Controllers Product 99",
+          "Peripherals Product 100",
+          "Smart Home Product 101",
+          "Cameras Product 102",
+          "Headphones Product 103",
+          "Cameras Product 104",
+          "Televisions Product 105",
+          "Smart Home Product 106",
+          "Tablets Product 107",
+          "Monitors Product 108",
+          "Smart Home Product 109",
+          "Accessories Product 110",
+          "Peripherals Product 111",
+          "Amplifiers Product 112",
+          "Peripherals Product 113",
+          "Tablets Product 114",
+          "Cases Product 115",
+          "Accessories Product 116",
+          "Laptops Product 117",
+          "Smart Home Product 118",
+          "VR Equipment Product 119",
+          "Games Product 120",
+          "Televisions Product 121",
+          "Tablets Product 122",
+          "Speakers Product 123",
+          "Monitors Product 124",
+          "Smartwatches Product 125",
+          "Games Product 126",
+          "Headphones Product 127",
+          "Amplifiers Product 128",
+          "Games Product 129",
+          "Peripherals Product 130",
+          "Microphones Product 131",
+          "Microphones Product 132",
+          "Monitors Product 133",
+          "Games Product 134",
+          "Televisions Product 135",
+          "Cameras Product 136",
+          "Televisions Product 137",
+          "Monitors Product 138",
+          "Cases Product 139",
+          "Games Product 140",
+          "VR Equipment Product 141",
+          "Cases Product 142",
+          "Accessories Product 143",
+          "Peripherals Product 144",
+          "VR Equipment Product 145",
+          "Controllers Product 146",
+          "Smartphones Product 147",
+          "Microphones Product 148",
+          "Speakers Product 149",
+          "Controllers Product 150",
+          "Desktops Product 151",
+          "Amplifiers Product 152",
+          "Smart Home Product 153",
+          "Amplifiers Product 154",
+          "Smartwatches Product 155",
+          "Amplifiers Product 156",
+          "Smartphones Product 157",
+          "Controllers Product 158",
+          "Cameras Product 159",
+          "Tablets Product 160",
+          "Smartwatches Product 161",
+          "Laptops Product 162",
+          "Smartphones Product 163",
+          "Games Product 164",
+          "Accessories Product 165",
+          "Speakers Product 166",
+          "Smartphones Product 167",
+          "Tablets Product 168",
+          "Smartphones Product 169",
+          "Peripherals Product 170",
+          "Speakers Product 171",
+          "Games Product 172",
+          "Monitors Product 173",
+          "Games Product 174",
+          "Games Product 175",
+          "Smart Home Product 176",
+          "Cases Product 177",
+          "Consoles Product 178",
+          "Tablets Product 179",
+          "Peripherals Product 180",
+          "Cases Product 181",
+          "Microphones Product 182",
+          "Controllers Product 183",
+          "Peripherals Product 184",
+          "Televisions Product 185",
+          "Controllers Product 186",
+          "Desktops Product 187",
+          "Desktops Product 188",
+          "Speakers Product 189",
+          "Games Product 190",
+          "Desktops Product 191",
+          "Microphones Product 192",
+          "Consoles Product 193",
+          "Amplifiers Product 194",
+          "Smartphones Product 195",
+          "Desktops Product 196",
+          "Consoles Product 197",
+          "Peripherals Product 198",
+          "Speakers Product 199",
+          "Microphones Product 200"
+        ],
+        "count": 200
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    },
+    {
+      "case_id": 14,
+      "test_id": "indexsource_Sheet1_Perfect_Clean_region",
+      "test_name": "IndexSource - Sheet1_Perfect_Clean Region索引测试",
+      "test_description": "测试IndexSource节点从Sheet1_Perfect_Clean中提取Region唯一值",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-indexsource-Sheet1_Perfect_Clean-Region",
+        "type": "indexSource",
+        "data": {
+          "id": "test-indexsource-Sheet1_Perfect_Clean-Region",
+          "nodeType": "indexSource",
+          "label": "Region索引源",
+          "displayName": "Region",
+          "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "bySheetName": false,
+          "sheetName": "Sheet1_Perfect_Clean",
+          "byColumn": true,
+          "columnName": "Region"
+        }
+      },
+      "expected_result": {
+        "type": "index_list",
+        "data": [
+          "North",
+          "South",
+          "East",
+          "West",
+          "Central"
+        ],
+        "count": 5
+      },
+      "validation_rules": {
+        "check_unique": true,
+        "check_not_null": true,
+        "expected_type": "list"
+      }
+    }
+  ],
+  "statistics": {
+    "total_cases": 14,
+    "sheets_covered": 7,
+    "columns_covered": [
+      "Category",
+      "Status",
+      "Product Name",
+      "Region",
+      "Department"
+    ]
+  }
+}

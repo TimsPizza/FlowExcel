@@ -1,0 +1,165 @@
+{
+  "test_runner_config": {
+    "test_data_file": "test_case.xlsx",
+    "test_specs_dir": "tests/test_data/test_specs",
+    "excel_files_dir": "tests/test_data/excel_files",
+    "output_dir": "tests/test_results",
+    "timeout_seconds": 300,
+    "parallel_execution": true,
+    "max_workers": 4
+  },
+  "test_categories": {
+    "indexSource": {
+      "description": "indexSource节点测试",
+      "test_files": [
+        "indexsource_Sheet1_Perfect_Clean_product_name.json",
+        "indexsource_Sheet1_Perfect_Clean_category.json",
+        "indexsource_Sheet1_Perfect_Clean_region.json",
+        "indexsource_Sheet2_Slightly_Messy_product_name.json",
+        "indexsource_Sheet2_Slightly_Messy_category.json",
+        "indexsource_Sheet3_Moderately_Complex_department.json",
+        "indexsource_Sheet4_Very_Messy_category.json",
+        "indexsource_Sheet4_Very_Messy_status.json",
+        "indexsource_Sheet5_Extreme_Chaos_product_name.json",
+        "indexsource_Sheet7_Real_World_Sales_product_name.json",
+        "indexsource_Sheet7_Real_World_Sales_category.json",
+        "indexsource_Sheet7_Real_World_Sales_region.json",
+        "indexsource_Sheet8_Inventory_Complex_product_name.json",
+        "indexsource_Sheet8_Inventory_Complex_status.json"
+      ]
+    },
+    "sheetSelector": {
+      "description": "sheetSelector节点测试",
+      "test_files": [
+        "sheetselector_manual_Sheet1_Perfect_Clean.json",
+        "sheetselector_auto_0.json",
+        "sheetselector_manual_Sheet2_Slightly_Messy.json",
+        "sheetselector_auto_1.json",
+        "sheetselector_manual_Sheet3_Moderately_Complex.json",
+        "sheetselector_auto_2.json",
+        "sheetselector_manual_Sheet4_Very_Messy.json",
+        "sheetselector_auto_3.json",
+        "sheetselector_manual_Sheet5_Extreme_Chaos.json",
+        "sheetselector_auto_4.json",
+        "sheetselector_manual_Sheet6_Edge_Cases.json",
+        "sheetselector_auto_5.json",
+        "sheetselector_manual_Sheet7_Real_World_Sales.json",
+        "sheetselector_auto_6.json",
+        "sheetselector_manual_Sheet8_Inventory_Complex.json",
+        "sheetselector_auto_7.json"
+      ]
+    },
+    "rowFilter": {
+      "description": "rowFilter节点测试",
+      "test_files": [
+        "rowfilter_Sheet1_Perfect_Clean_region_equals.json",
+        "rowfilter_Sheet1_Perfect_Clean_region_equals.json",
+        "rowfilter_Sheet1_Perfect_Clean_category_equals.json",
+        "rowfilter_Sheet1_Perfect_Clean_sales_amount_greater_than.json",
+        "rowfilter_Sheet3_Moderately_Complex_department_equals.json",
+        "rowfilter_Sheet3_Moderately_Complex_department_equals.json",
+        "rowfilter_Sheet3_Moderately_Complex_performance_rating_equals.json",
+        "rowfilter_Sheet7_Real_World_Sales_category_equals.json",
+        "rowfilter_Sheet7_Real_World_Sales_region_equals.json",
+        "rowfilter_Sheet7_Real_World_Sales_order_status_equals.json"
+      ]
+    },
+    "rowLookup": {
+      "description": "rowLookup节点测试",
+      "test_files": [
+        "rowlookup_Sheet1_Perfect_Clean_Sheet2_Slightly_Messy_product_name.json",
+        "rowlookup_Sheet7_Real_World_Sales_Sheet8_Inventory_Complex_product_name.json"
+      ]
+    },
+    "aggregator": {
+      "description": "aggregator节点测试",
+      "test_files": [
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_sum.json",
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_avg.json",
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_min.json",
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_max.json",
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_count.json",
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_first.json",
+        "aggregator_Sheet1_Perfect_Clean_sales_amount_last.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_sum.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_avg.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_min.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_max.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_count.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_first.json",
+        "aggregator_Sheet1_Perfect_Clean_quantity_sold_last.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_sum.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_avg.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_min.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_max.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_count.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_first.json",
+        "aggregator_Sheet3_Moderately_Complex_salary_last.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_sum.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_avg.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_min.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_max.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_count.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_first.json",
+        "aggregator_Sheet7_Real_World_Sales_quantity_last.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_sum.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_avg.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_min.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_max.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_count.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_first.json",
+        "aggregator_Sheet7_Real_World_Sales_final_amount_last.json"
+      ]
+    },
+    "output": {
+      "description": "output节点测试",
+      "test_files": [
+        "output_table.json",
+        "output_json.json",
+        "output_csv.json"
+      ]
+    },
+    "integration": {
+      "description": "integration节点测试",
+      "test_files": [
+        "integration_complex_001.json"
+      ]
+    }
+  },
+  "validation_settings": {
+    "numeric_precision": 0.0001,
+    "string_comparison": "exact",
+    "null_handling": "strict",
+    "type_checking": "strict"
+  },
+  "aggregation_methods": {
+    "sum": {
+      "description": "求和",
+      "numeric_only": true
+    },
+    "avg": {
+      "description": "平均值",
+      "numeric_only": true
+    },
+    "min": {
+      "description": "最小值",
+      "numeric_only": false
+    },
+    "max": {
+      "description": "最大值",
+      "numeric_only": false
+    },
+    "count": {
+      "description": "计数",
+      "numeric_only": false
+    },
+    "first": {
+      "description": "第一个值",
+      "numeric_only": false
+    },
+    "last": {
+      "description": "最后一个值",
+      "numeric_only": false
+    }
+  }
+}

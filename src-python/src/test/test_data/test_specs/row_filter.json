@@ -1,0 +1,268 @@
+{
+  "node_type": "rowFilter",
+  "description": "rowFilter节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 8,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "rowfilter_Sheet3_Moderately_Complex_performance_rating_equals",
+      "test_name": "RowFilter - Sheet3_Moderately_Complex Performance Rating equals",
+      "test_description": "测试RowFilter节点过滤Sheet3_Moderately_Complex中Performance Rating列",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet3_Moderately_Complex-Performance Rating-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet3_Moderately_Complex-Performance Rating-equals",
+          "nodeType": "rowFilter",
+          "label": "Performance Rating过滤器",
+          "filterColumn": "Performance Rating",
+          "filterOperator": "equals",
+          "filterValue": "Excellent"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 10,
+        "column_count": 7,
+        "filter_column": "Performance Rating",
+        "filter_value": "Excellent"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "Excellent"
+      }
+    },
+    {
+      "case_id": 2,
+      "test_id": "rowfilter_Sheet1_Perfect_Clean_region_equals",
+      "test_name": "RowFilter - Sheet1_Perfect_Clean Region equals",
+      "test_description": "测试RowFilter节点过滤Sheet1_Perfect_Clean中Region列",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet1_Perfect_Clean-Region-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet1_Perfect_Clean-Region-equals",
+          "nodeType": "rowFilter",
+          "label": "Region过滤器",
+          "filterColumn": "Region",
+          "filterOperator": "equals",
+          "filterValue": "South"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 6,
+        "column_count": 6,
+        "filter_column": "Region",
+        "filter_value": "South"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "South"
+      }
+    },
+    {
+      "case_id": 3,
+      "test_id": "rowfilter_Sheet7_Real_World_Sales_order_status_equals",
+      "test_name": "RowFilter - Sheet7_Real_World_Sales Order Status equals",
+      "test_description": "测试RowFilter节点过滤Sheet7_Real_World_Sales中Order Status列",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet7_Real_World_Sales-Order Status-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet7_Real_World_Sales-Order Status-equals",
+          "nodeType": "rowFilter",
+          "label": "Order Status过滤器",
+          "filterColumn": "Order Status",
+          "filterOperator": "equals",
+          "filterValue": "Completed"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 411,
+        "column_count": 13,
+        "filter_column": "Order Status",
+        "filter_value": "Completed"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "Completed"
+      }
+    },
+    {
+      "case_id": 4,
+      "test_id": "rowfilter_Sheet1_Perfect_Clean_sales_amount_greater_than",
+      "test_name": "RowFilter - Sheet1_Perfect_Clean Sales Amount greater_than",
+      "test_description": "测试RowFilter节点过滤Sheet1_Perfect_Clean中Sales Amount列",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet1_Perfect_Clean-Sales Amount-greater_than",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet1_Perfect_Clean-Sales Amount-greater_than",
+          "nodeType": "rowFilter",
+          "label": "Sales Amount过滤器",
+          "filterColumn": "Sales Amount",
+          "filterOperator": "greater_than",
+          "filterValue": "100"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 15,
+        "column_count": 6,
+        "filter_column": "Sales Amount",
+        "filter_value": "100"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "100"
+      }
+    },
+    {
+      "case_id": 5,
+      "test_id": "rowfilter_Sheet7_Real_World_Sales_category_equals",
+      "test_name": "RowFilter - Sheet7_Real_World_Sales Category equals",
+      "test_description": "测试RowFilter节点过滤Sheet7_Real_World_Sales中Category列",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet7_Real_World_Sales-Category-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet7_Real_World_Sales-Category-equals",
+          "nodeType": "rowFilter",
+          "label": "Category过滤器",
+          "filterColumn": "Category",
+          "filterOperator": "equals",
+          "filterValue": "Smartphones"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 89,
+        "column_count": 13,
+        "filter_column": "Category",
+        "filter_value": "Smartphones"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "Smartphones"
+      }
+    },
+    {
+      "case_id": 6,
+      "test_id": "rowfilter_Sheet1_Perfect_Clean_category_equals",
+      "test_name": "RowFilter - Sheet1_Perfect_Clean Category equals",
+      "test_description": "测试RowFilter节点过滤Sheet1_Perfect_Clean中Category列",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet1_Perfect_Clean-Category-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet1_Perfect_Clean-Category-equals",
+          "nodeType": "rowFilter",
+          "label": "Category过滤器",
+          "filterColumn": "Category",
+          "filterOperator": "equals",
+          "filterValue": "Electronics"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 15,
+        "column_count": 6,
+        "filter_column": "Category",
+        "filter_value": "Electronics"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "Electronics"
+      }
+    },
+    {
+      "case_id": 7,
+      "test_id": "rowfilter_Sheet3_Moderately_Complex_department_equals",
+      "test_name": "RowFilter - Sheet3_Moderately_Complex Department equals",
+      "test_description": "测试RowFilter节点过滤Sheet3_Moderately_Complex中Department列",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet3_Moderately_Complex-Department-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet3_Moderately_Complex-Department-equals",
+          "nodeType": "rowFilter",
+          "label": "Department过滤器",
+          "filterColumn": "Department",
+          "filterOperator": "equals",
+          "filterValue": "Engineering"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 5,
+        "column_count": 7,
+        "filter_column": "Department",
+        "filter_value": "Engineering"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "Engineering"
+      }
+    },
+    {
+      "case_id": 8,
+      "test_id": "rowfilter_Sheet7_Real_World_Sales_region_equals",
+      "test_name": "RowFilter - Sheet7_Real_World_Sales Region equals",
+      "test_description": "测试RowFilter节点过滤Sheet7_Real_World_Sales中Region列",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowfilter-Sheet7_Real_World_Sales-Region-equals",
+        "type": "rowFilter",
+        "data": {
+          "id": "test-rowfilter-Sheet7_Real_World_Sales-Region-equals",
+          "nodeType": "rowFilter",
+          "label": "Region过滤器",
+          "filterColumn": "Region",
+          "filterOperator": "equals",
+          "filterValue": "North America"
+        }
+      },
+      "expected_result": {
+        "type": "filtered_data",
+        "row_count": 99,
+        "column_count": 13,
+        "filter_column": "Region",
+        "filter_value": "North America"
+      },
+      "validation_rules": {
+        "check_filter_applied": true,
+        "expected_type": "dataframe",
+        "filter_match_value": "North America"
+      }
+    }
+  ],
+  "statistics": {
+    "total_cases": 8,
+    "sheets_covered": 3
+  }
+}

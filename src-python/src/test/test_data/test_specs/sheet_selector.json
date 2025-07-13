@@ -1,0 +1,988 @@
+{
+  "node_type": "sheetSelector",
+  "description": "sheetSelector节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 32,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "sheetselector_auto_1",
+      "test_name": "SheetSelector - 自动选择索引1",
+      "test_description": "测试SheetSelector节点根据索引1自动选择sheet",
+      "sheet_name": "Sheet2_Slightly_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-1",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-1",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引1",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 1
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet2_Slightly_Messy",
+        "row_count": 20,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 2,
+      "test_id": "sheetselector_manual_Sheet2_Slightly_Messy",
+      "test_name": "SheetSelector - 手动选择Sheet2_Slightly_Messy",
+      "test_description": "测试SheetSelector节点手动选择Sheet2_Slightly_Messy",
+      "sheet_name": "Sheet2_Slightly_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet2_Slightly_Messy",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet2_Slightly_Messy",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet2_Slightly_Messy",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet2_Slightly_Messy"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet2_Slightly_Messy",
+        "row_count": 20,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet2_Slightly_Messy",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 3,
+      "test_id": "sheetselector_manual_Sheet5_Extreme_Chaos",
+      "test_name": "SheetSelector - 手动选择Sheet5_Extreme_Chaos",
+      "test_description": "测试SheetSelector节点手动选择Sheet5_Extreme_Chaos",
+      "sheet_name": "Sheet5_Extreme_Chaos",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet5_Extreme_Chaos",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet5_Extreme_Chaos",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet5_Extreme_Chaos",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet5_Extreme_Chaos"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet5_Extreme_Chaos",
+        "row_count": 30,
+        "column_count": 10
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet5_Extreme_Chaos",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 4,
+      "test_id": "sheetselector_auto_0",
+      "test_name": "SheetSelector - 自动选择索引0",
+      "test_description": "测试SheetSelector节点根据索引0自动选择sheet",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-0",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-0",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引0",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 0
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet1_Perfect_Clean",
+        "row_count": 30,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 5,
+      "test_id": "sheetselector_manual_Sheet6_Edge_Cases",
+      "test_name": "SheetSelector - 手动选择Sheet6_Edge_Cases",
+      "test_description": "测试SheetSelector节点手动选择Sheet6_Edge_Cases",
+      "sheet_name": "Sheet6_Edge_Cases",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet6_Edge_Cases",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet6_Edge_Cases",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet6_Edge_Cases",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet6_Edge_Cases"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet6_Edge_Cases",
+        "row_count": 21,
+        "column_count": 8
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet6_Edge_Cases",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 6,
+      "test_id": "sheetselector_manual_Sheet8_Inventory_Complex",
+      "test_name": "SheetSelector - 手动选择Sheet8_Inventory_Complex",
+      "test_description": "测试SheetSelector节点手动选择Sheet8_Inventory_Complex",
+      "sheet_name": "Sheet8_Inventory_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet8_Inventory_Complex",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet8_Inventory_Complex",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet8_Inventory_Complex",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet8_Inventory_Complex"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet8_Inventory_Complex",
+        "row_count": 200,
+        "column_count": 20
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet8_Inventory_Complex",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 7,
+      "test_id": "sheetselector_auto_7",
+      "test_name": "SheetSelector - 自动选择索引7",
+      "test_description": "测试SheetSelector节点根据索引7自动选择sheet",
+      "sheet_name": "Sheet8_Inventory_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-7",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-7",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引7",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 7
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet8_Inventory_Complex",
+        "row_count": 200,
+        "column_count": 20
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 8,
+      "test_id": "sheetselector_auto_6",
+      "test_name": "SheetSelector - 自动选择索引6",
+      "test_description": "测试SheetSelector节点根据索引6自动选择sheet",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-6",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-6",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引6",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 6
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet7_Real_World_Sales",
+        "row_count": 500,
+        "column_count": 13
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 9,
+      "test_id": "sheetselector_manual_Sheet1_Perfect_Clean",
+      "test_name": "SheetSelector - 手动选择Sheet1_Perfect_Clean",
+      "test_description": "测试SheetSelector节点手动选择Sheet1_Perfect_Clean",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet1_Perfect_Clean",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet1_Perfect_Clean",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet1_Perfect_Clean",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet1_Perfect_Clean"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet1_Perfect_Clean",
+        "row_count": 30,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet1_Perfect_Clean",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 10,
+      "test_id": "sheetselector_manual_Sheet3_Moderately_Complex",
+      "test_name": "SheetSelector - 手动选择Sheet3_Moderately_Complex",
+      "test_description": "测试SheetSelector节点手动选择Sheet3_Moderately_Complex",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet3_Moderately_Complex",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet3_Moderately_Complex",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet3_Moderately_Complex",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet3_Moderately_Complex"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet3_Moderately_Complex",
+        "row_count": 25,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet3_Moderately_Complex",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 11,
+      "test_id": "sheetselector_auto_5",
+      "test_name": "SheetSelector - 自动选择索引5",
+      "test_description": "测试SheetSelector节点根据索引5自动选择sheet",
+      "sheet_name": "Sheet6_Edge_Cases",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-5",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-5",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引5",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 5
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet6_Edge_Cases",
+        "row_count": 21,
+        "column_count": 8
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 12,
+      "test_id": "sheetselector_manual_Sheet4_Very_Messy",
+      "test_name": "SheetSelector - 手动选择Sheet4_Very_Messy",
+      "test_description": "测试SheetSelector节点手动选择Sheet4_Very_Messy",
+      "sheet_name": "Sheet4_Very_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet4_Very_Messy",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet4_Very_Messy",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet4_Very_Messy",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet4_Very_Messy"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet4_Very_Messy",
+        "row_count": 30,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet4_Very_Messy",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 13,
+      "test_id": "sheetselector_auto_4",
+      "test_name": "SheetSelector - 自动选择索引4",
+      "test_description": "测试SheetSelector节点根据索引4自动选择sheet",
+      "sheet_name": "Sheet5_Extreme_Chaos",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-4",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-4",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引4",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 4
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet5_Extreme_Chaos",
+        "row_count": 30,
+        "column_count": 10
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 14,
+      "test_id": "sheetselector_auto_3",
+      "test_name": "SheetSelector - 自动选择索引3",
+      "test_description": "测试SheetSelector节点根据索引3自动选择sheet",
+      "sheet_name": "Sheet4_Very_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-3",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-3",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引3",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 3
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet4_Very_Messy",
+        "row_count": 30,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 15,
+      "test_id": "sheetselector_manual_Sheet7_Real_World_Sales",
+      "test_name": "SheetSelector - 手动选择Sheet7_Real_World_Sales",
+      "test_description": "测试SheetSelector节点手动选择Sheet7_Real_World_Sales",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet7_Real_World_Sales",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet7_Real_World_Sales",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet7_Real_World_Sales",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet7_Real_World_Sales"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet7_Real_World_Sales",
+        "row_count": 500,
+        "column_count": 13
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet7_Real_World_Sales",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 16,
+      "test_id": "sheetselector_auto_2",
+      "test_name": "SheetSelector - 自动选择索引2",
+      "test_description": "测试SheetSelector节点根据索引2自动选择sheet",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-2",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-2",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引2",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 2
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet3_Moderately_Complex",
+        "row_count": 25,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 17,
+      "test_id": "sheetselector_auto_1",
+      "test_name": "SheetSelector - 自动选择索引1",
+      "test_description": "测试SheetSelector节点根据索引1自动选择sheet",
+      "sheet_name": "Sheet2_Slightly_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-1",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-1",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引1",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 1
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet2_Slightly_Messy",
+        "row_count": 20,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 18,
+      "test_id": "sheetselector_manual_Sheet2_Slightly_Messy",
+      "test_name": "SheetSelector - 手动选择Sheet2_Slightly_Messy",
+      "test_description": "测试SheetSelector节点手动选择Sheet2_Slightly_Messy",
+      "sheet_name": "Sheet2_Slightly_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet2_Slightly_Messy",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet2_Slightly_Messy",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet2_Slightly_Messy",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet2_Slightly_Messy"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet2_Slightly_Messy",
+        "row_count": 20,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet2_Slightly_Messy",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 19,
+      "test_id": "sheetselector_manual_Sheet5_Extreme_Chaos",
+      "test_name": "SheetSelector - 手动选择Sheet5_Extreme_Chaos",
+      "test_description": "测试SheetSelector节点手动选择Sheet5_Extreme_Chaos",
+      "sheet_name": "Sheet5_Extreme_Chaos",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet5_Extreme_Chaos",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet5_Extreme_Chaos",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet5_Extreme_Chaos",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet5_Extreme_Chaos"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet5_Extreme_Chaos",
+        "row_count": 30,
+        "column_count": 10
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet5_Extreme_Chaos",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 20,
+      "test_id": "sheetselector_auto_0",
+      "test_name": "SheetSelector - 自动选择索引0",
+      "test_description": "测试SheetSelector节点根据索引0自动选择sheet",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-0",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-0",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引0",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 0
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet1_Perfect_Clean",
+        "row_count": 30,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 21,
+      "test_id": "sheetselector_manual_Sheet6_Edge_Cases",
+      "test_name": "SheetSelector - 手动选择Sheet6_Edge_Cases",
+      "test_description": "测试SheetSelector节点手动选择Sheet6_Edge_Cases",
+      "sheet_name": "Sheet6_Edge_Cases",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet6_Edge_Cases",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet6_Edge_Cases",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet6_Edge_Cases",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet6_Edge_Cases"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet6_Edge_Cases",
+        "row_count": 21,
+        "column_count": 8
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet6_Edge_Cases",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 22,
+      "test_id": "sheetselector_manual_Sheet8_Inventory_Complex",
+      "test_name": "SheetSelector - 手动选择Sheet8_Inventory_Complex",
+      "test_description": "测试SheetSelector节点手动选择Sheet8_Inventory_Complex",
+      "sheet_name": "Sheet8_Inventory_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet8_Inventory_Complex",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet8_Inventory_Complex",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet8_Inventory_Complex",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet8_Inventory_Complex"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet8_Inventory_Complex",
+        "row_count": 200,
+        "column_count": 20
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet8_Inventory_Complex",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 23,
+      "test_id": "sheetselector_auto_7",
+      "test_name": "SheetSelector - 自动选择索引7",
+      "test_description": "测试SheetSelector节点根据索引7自动选择sheet",
+      "sheet_name": "Sheet8_Inventory_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-7",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-7",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引7",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 7
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet8_Inventory_Complex",
+        "row_count": 200,
+        "column_count": 20
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 24,
+      "test_id": "sheetselector_auto_6",
+      "test_name": "SheetSelector - 自动选择索引6",
+      "test_description": "测试SheetSelector节点根据索引6自动选择sheet",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-6",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-6",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引6",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 6
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet7_Real_World_Sales",
+        "row_count": 500,
+        "column_count": 13
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 25,
+      "test_id": "sheetselector_manual_Sheet1_Perfect_Clean",
+      "test_name": "SheetSelector - 手动选择Sheet1_Perfect_Clean",
+      "test_description": "测试SheetSelector节点手动选择Sheet1_Perfect_Clean",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet1_Perfect_Clean",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet1_Perfect_Clean",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet1_Perfect_Clean",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet1_Perfect_Clean"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet1_Perfect_Clean",
+        "row_count": 30,
+        "column_count": 6
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet1_Perfect_Clean",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 26,
+      "test_id": "sheetselector_manual_Sheet3_Moderately_Complex",
+      "test_name": "SheetSelector - 手动选择Sheet3_Moderately_Complex",
+      "test_description": "测试SheetSelector节点手动选择Sheet3_Moderately_Complex",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet3_Moderately_Complex",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet3_Moderately_Complex",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet3_Moderately_Complex",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet3_Moderately_Complex"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet3_Moderately_Complex",
+        "row_count": 25,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet3_Moderately_Complex",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 27,
+      "test_id": "sheetselector_auto_5",
+      "test_name": "SheetSelector - 自动选择索引5",
+      "test_description": "测试SheetSelector节点根据索引5自动选择sheet",
+      "sheet_name": "Sheet6_Edge_Cases",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-5",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-5",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引5",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 5
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet6_Edge_Cases",
+        "row_count": 21,
+        "column_count": 8
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 28,
+      "test_id": "sheetselector_manual_Sheet4_Very_Messy",
+      "test_name": "SheetSelector - 手动选择Sheet4_Very_Messy",
+      "test_description": "测试SheetSelector节点手动选择Sheet4_Very_Messy",
+      "sheet_name": "Sheet4_Very_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet4_Very_Messy",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet4_Very_Messy",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet4_Very_Messy",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet4_Very_Messy"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet4_Very_Messy",
+        "row_count": 30,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet4_Very_Messy",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 29,
+      "test_id": "sheetselector_auto_4",
+      "test_name": "SheetSelector - 自动选择索引4",
+      "test_description": "测试SheetSelector节点根据索引4自动选择sheet",
+      "sheet_name": "Sheet5_Extreme_Chaos",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-4",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-4",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引4",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 4
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet5_Extreme_Chaos",
+        "row_count": 30,
+        "column_count": 10
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 30,
+      "test_id": "sheetselector_auto_3",
+      "test_name": "SheetSelector - 自动选择索引3",
+      "test_description": "测试SheetSelector节点根据索引3自动选择sheet",
+      "sheet_name": "Sheet4_Very_Messy",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-3",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-3",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引3",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 3
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet4_Very_Messy",
+        "row_count": 30,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 31,
+      "test_id": "sheetselector_manual_Sheet7_Real_World_Sales",
+      "test_name": "SheetSelector - 手动选择Sheet7_Real_World_Sales",
+      "test_description": "测试SheetSelector节点手动选择Sheet7_Real_World_Sales",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-manual-Sheet7_Real_World_Sales",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-manual-Sheet7_Real_World_Sales",
+          "nodeType": "sheetSelector",
+          "label": "选择Sheet7_Real_World_Sales",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "manual",
+          "manualSheetName": "Sheet7_Real_World_Sales"
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet7_Real_World_Sales",
+        "row_count": 500,
+        "column_count": 13
+      },
+      "validation_rules": {
+        "check_sheet_name": "Sheet7_Real_World_Sales",
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    },
+    {
+      "case_id": 32,
+      "test_id": "sheetselector_auto_2",
+      "test_name": "SheetSelector - 自动选择索引2",
+      "test_description": "测试SheetSelector节点根据索引2自动选择sheet",
+      "sheet_name": "Sheet3_Moderately_Complex",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-sheetselector-auto-2",
+        "type": "sheetSelector",
+        "data": {
+          "id": "test-sheetselector-auto-2",
+          "nodeType": "sheetSelector",
+          "label": "自动选择索引2",
+          "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+          "mode": "auto_by_index",
+          "sheetIndex": 2
+        }
+      },
+      "expected_result": {
+        "type": "sheet_data",
+        "sheet_name": "Sheet3_Moderately_Complex",
+        "row_count": 25,
+        "column_count": 7
+      },
+      "validation_rules": {
+        "check_data_not_empty": true,
+        "expected_type": "dataframe"
+      }
+    }
+  ],
+  "statistics": {
+    "total_cases": 32,
+    "sheets_covered": 8
+  }
+}
