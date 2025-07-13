@@ -1,0 +1,102 @@
+{
+  "node_type": "output",
+  "description": "output节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 3,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "output_table",
+      "test_name": "Output - TABLE输出测试",
+      "test_description": "测试Output节点输出table格式数据",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-output-table",
+        "type": "output",
+        "data": {
+          "id": "test-output-table",
+          "nodeType": "output",
+          "label": "TABLE输出",
+          "outputFormat": "table",
+          "outputPath": ""
+        }
+      },
+      "expected_result": {
+        "type": "output_data",
+        "output_format": "table",
+        "has_data": true,
+        "output_type": "table"
+      },
+      "validation_rules": {
+        "check_output_format": "table",
+        "expected_type": "dataframe",
+        "check_data_not_empty": true
+      }
+    },
+    {
+      "case_id": 2,
+      "test_id": "output_json",
+      "test_name": "Output - JSON输出测试",
+      "test_description": "测试Output节点输出json格式数据",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-output-json",
+        "type": "output",
+        "data": {
+          "id": "test-output-json",
+          "nodeType": "output",
+          "label": "JSON输出",
+          "outputFormat": "json",
+          "outputPath": ""
+        }
+      },
+      "expected_result": {
+        "type": "output_data",
+        "output_format": "json",
+        "has_data": true,
+        "output_type": "json"
+      },
+      "validation_rules": {
+        "check_output_format": "json",
+        "expected_type": "dataframe",
+        "check_data_not_empty": true
+      }
+    },
+    {
+      "case_id": 3,
+      "test_id": "output_csv",
+      "test_name": "Output - CSV输出测试",
+      "test_description": "测试Output节点输出csv格式数据",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-output-csv",
+        "type": "output",
+        "data": {
+          "id": "test-output-csv",
+          "nodeType": "output",
+          "label": "CSV输出",
+          "outputFormat": "csv",
+          "outputPath": ""
+        }
+      },
+      "expected_result": {
+        "type": "output_data",
+        "output_format": "csv",
+        "has_data": true,
+        "output_type": "csv"
+      },
+      "validation_rules": {
+        "check_output_format": "csv",
+        "expected_type": "dataframe",
+        "check_data_not_empty": true
+      }
+    }
+  ],
+  "statistics": {
+    "total_cases": 3,
+    "sheets_covered": 1
+  }
+}

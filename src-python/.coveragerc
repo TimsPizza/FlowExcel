@@ -1,0 +1,42 @@
+# Coverage配置文件
+
+[run]
+source = src/
+omit = 
+    src/test/*
+    src/*/test_*
+    src/*/__pycache__/*
+    */venv/*
+    */env/*
+    src/main.py
+    src/config.py
+
+[report]
+# 排除不需要测试的代码行
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+    class .*\bProtocol\):
+    @(abc\.)?abstractmethod
+
+# 显示缺失的行号
+show_missing = True
+
+# 精度保留两位小数
+precision = 2
+
+# 忽略空文件
+skip_empty = True
+
+[html]
+directory = src/test/test_results/coverage_html
+title = FlowExcel Coverage Report
+
+[xml]
+output = src/test/test_results/coverage.xml 

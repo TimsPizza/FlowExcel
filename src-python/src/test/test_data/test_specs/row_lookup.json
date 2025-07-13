@@ -1,0 +1,74 @@
+{
+  "node_type": "rowLookup",
+  "description": "rowLookup节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 2,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "rowlookup_Sheet1_Perfect_Clean_Sheet2_Slightly_Messy_product_name",
+      "test_name": "RowLookup - Sheet1_Perfect_Clean -> Sheet2_Slightly_Messy Product Name",
+      "test_description": "测试RowLookup节点在Sheet1_Perfect_Clean和Sheet2_Slightly_Messy间匹配Product Name",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowlookup-Sheet1_Perfect_Clean-Sheet2_Slightly_Messy-Product Name",
+        "type": "rowLookup",
+        "data": {
+          "id": "test-rowlookup-Sheet1_Perfect_Clean-Sheet2_Slightly_Messy-Product Name",
+          "nodeType": "rowLookup",
+          "label": "Product Name匹配查找",
+          "matchColumn": "Product Name",
+          "lookupType": "exact_match"
+        }
+      },
+      "expected_result": {
+        "type": "lookup_result",
+        "matched_count": 0,
+        "match_column": "Product Name",
+        "common_values": []
+      },
+      "validation_rules": {
+        "check_matches_exist": true,
+        "expected_type": "dataframe",
+        "check_match_column": "Product Name"
+      },
+      "target_sheet": "Sheet2_Slightly_Messy"
+    },
+    {
+      "case_id": 2,
+      "test_id": "rowlookup_Sheet7_Real_World_Sales_Sheet8_Inventory_Complex_product_name",
+      "test_name": "RowLookup - Sheet7_Real_World_Sales -> Sheet8_Inventory_Complex Product Name",
+      "test_description": "测试RowLookup节点在Sheet7_Real_World_Sales和Sheet8_Inventory_Complex间匹配Product Name",
+      "sheet_name": "Sheet7_Real_World_Sales",
+      "header_row": 0,
+      "node_config": {
+        "id": "test-rowlookup-Sheet7_Real_World_Sales-Sheet8_Inventory_Complex-Product Name",
+        "type": "rowLookup",
+        "data": {
+          "id": "test-rowlookup-Sheet7_Real_World_Sales-Sheet8_Inventory_Complex-Product Name",
+          "nodeType": "rowLookup",
+          "label": "Product Name匹配查找",
+          "matchColumn": "Product Name",
+          "lookupType": "exact_match"
+        }
+      },
+      "expected_result": {
+        "type": "lookup_result",
+        "matched_count": 0,
+        "match_column": "Product Name",
+        "common_values": []
+      },
+      "validation_rules": {
+        "check_matches_exist": true,
+        "expected_type": "dataframe",
+        "check_match_column": "Product Name"
+      },
+      "target_sheet": "Sheet8_Inventory_Complex"
+    }
+  ],
+  "statistics": {
+    "total_cases": 2,
+    "sheets_covered": 2
+  }
+}

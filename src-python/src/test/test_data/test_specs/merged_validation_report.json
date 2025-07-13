@@ -1,0 +1,91 @@
+{
+  "total_files": 7,
+  "valid_files": 7,
+  "total_test_cases": 85,
+  "aggregation_methods": [
+    "sum",
+    "min",
+    "count",
+    "max",
+    "avg"
+  ],
+  "excluded_methods_found": [],
+  "file_details": {
+    "row_lookup.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 2,
+      "aggregation_methods": [],
+      "excluded_methods_found": []
+    },
+    "output.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 3,
+      "aggregation_methods": [],
+      "excluded_methods_found": []
+    },
+    "row_filter.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 8,
+      "aggregation_methods": [],
+      "excluded_methods_found": []
+    },
+    "aggregator.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 25,
+      "aggregation_methods": [
+        "sum",
+        "min",
+        "sum",
+        "min",
+        "max",
+        "count",
+        "max",
+        "count",
+        "min",
+        "avg",
+        "count",
+        "avg",
+        "count",
+        "max",
+        "avg",
+        "sum",
+        "avg",
+        "sum",
+        "min",
+        "avg",
+        "sum",
+        "min",
+        "count",
+        "max",
+        "max"
+      ],
+      "excluded_methods_found": []
+    },
+    "sheet_selector.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 32,
+      "aggregation_methods": [],
+      "excluded_methods_found": []
+    },
+    "integration.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 1,
+      "aggregation_methods": [],
+      "excluded_methods_found": []
+    },
+    "index_source.json": {
+      "valid": true,
+      "errors": [],
+      "test_cases": 14,
+      "aggregation_methods": [],
+      "excluded_methods_found": []
+    }
+  },
+  "validation_errors": []
+}

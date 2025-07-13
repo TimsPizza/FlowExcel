@@ -1,0 +1,106 @@
+{
+  "node_type": "integration",
+  "description": "integration节点的完整测试套件",
+  "test_data_file": "test_case.xlsx",
+  "total_test_cases": 1,
+  "test_cases": [
+    {
+      "case_id": 1,
+      "test_id": "integration_complex_001",
+      "test_name": "Integration - 复杂多层聚合分析",
+      "test_description": "测试IndexSource -> SheetSelector -> RowFilter -> Aggregator -> Output的复杂流程",
+      "sheet_name": "Sheet1_Perfect_Clean",
+      "header_row": 0,
+      "node_config": null,
+      "expected_result": {
+        "type": "integration_result",
+        "workflow_completed": true,
+        "final_output": {}
+      },
+      "validation_rules": {
+        "check_workflow_completion": true,
+        "check_data_flow": true,
+        "expected_type": "dataframe"
+      },
+      "workflow": [
+        {
+          "step": 1,
+          "node_type": "indexSource",
+          "node_config": {
+            "id": "test-indexsource-integration",
+            "type": "indexSource",
+            "data": {
+              "id": "test-indexsource-integration",
+              "nodeType": "indexSource",
+              "sourceFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+              "columnName": "Product Name",
+              "sheetName": "Sheet1_Perfect_Clean"
+            }
+          }
+        },
+        {
+          "step": 2,
+          "node_type": "sheetSelector",
+          "node_config": {
+            "id": "test-sheetselector-integration",
+            "type": "sheetSelector",
+            "data": {
+              "id": "test-sheetselector-integration",
+              "nodeType": "sheetSelector",
+              "targetFileID": "test-file-93fac9a3-f4b3-410a-932c-32620bd11122",
+              "mode": "manual",
+              "manualSheetName": "Sheet1_Perfect_Clean"
+            }
+          }
+        },
+        {
+          "step": 3,
+          "node_type": "rowFilter",
+          "node_config": {
+            "id": "test-rowfilter-integration",
+            "type": "rowFilter",
+            "data": {
+              "id": "test-rowfilter-integration",
+              "nodeType": "rowFilter",
+              "filterColumn": "Category",
+              "filterOperator": "equals",
+              "filterValue": "Electronics"
+            }
+          }
+        },
+        {
+          "step": 4,
+          "node_type": "aggregator",
+          "node_config": {
+            "id": "test-aggregator-integration",
+            "type": "aggregator",
+            "data": {
+              "id": "test-aggregator-integration",
+              "nodeType": "aggregator",
+              "statColumn": "Sales Amount",
+              "method": "sum",
+              "groupByColumn": "Product Name"
+            }
+          }
+        },
+        {
+          "step": 5,
+          "node_type": "output",
+          "node_config": {
+            "id": "test-output-integration",
+            "type": "output",
+            "data": {
+              "id": "test-output-integration",
+              "nodeType": "output",
+              "outputFormat": "table"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "total_cases": 1,
+    "sheets_covered": 1
+  }
+}

@@ -12,3 +12,9 @@ wheels/
 # src/workspace/*
 *.spec
 workspace/*
+
+src/test/test_results/*
+src/test/.benchmarks/*
+src/test/.pytest_cache/*
+.coverage
+
