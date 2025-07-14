@@ -341,7 +341,7 @@ class BaseTestFramework:
         total_time = 0.0
         
         for suite_result in suite_results:
-            print(f"\n📊 {suite_result.get_summary()}")
+            print(f"\n[INFO] {suite_result.get_summary()}")
             
             total_tests += suite_result.total_tests
             total_passed += suite_result.passed_tests
@@ -351,18 +351,18 @@ class BaseTestFramework:
             # 显示失败的测试
             failed_tests = [r for r in suite_result.test_results if not r.success]
             if failed_tests:
-                print(f"   ❌ 失败的测试:")
+                print(f"    [ERROR] 失败的测试:")
                 for failed_test in failed_tests:
                     print(f"      - {failed_test.test_id}: {failed_test.error}")
         
         print("\n" + "-"*80)
         success_rate = (total_passed / total_tests * 100) if total_tests > 0 else 0
-        print(f"🎯 总计: {total_passed}/{total_tests} 通过 ({success_rate:.1f}%)")
-        print(f"⏱️  总耗时: {total_time:.2f}s")
+        print(f"[INFO] 总计: {total_passed}/{total_tests} 通过 ({success_rate:.1f}%)")
+        print(f"[INFO] 总耗时: {total_time:.2f}s")
         
         if total_failed == 0:
-            print("🎉 所有测试通过!")
+            print("[OK] 所有测试通过!")
         else:
-            print(f"⚠️  {total_failed} 个测试失败")
+            print(f"[ERROR]  {total_failed} 个测试失败")
         
         print("="*80) 

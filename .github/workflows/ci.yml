@@ -1,4 +1,4 @@
-name: 🔄 Continuous Integration
+name: Continuous Integration
 
 on:
   push:
@@ -18,7 +18,7 @@ env:
 jobs:
   # 前端代码检查
   frontend-check:
-    name: 🎨 Frontend Check
+    name: Frontend Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -46,7 +46,7 @@ jobs:
 
   # 后端代码检查和测试
   backend-check:
-    name: 🐍 Backend Check
+    name: Backend Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -80,7 +80,7 @@ jobs:
 
   # 快速构建测试（仅Linux）
   build-test:
-    name: 🚀 Quick Build Test
+    name: Quick Build Test
     runs-on: ubuntu-20.04
     needs: [frontend-check, backend-check]
     steps:
@@ -138,7 +138,7 @@ jobs:
 
   # 安全检查
   security-check:
-    name: 🔒 Security Check
+    name: Security Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

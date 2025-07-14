@@ -13,23 +13,23 @@ from pathlib import Path
 
 def check_python_version():
     """检查Python版本"""
-    print("🐍 检查Python版本...")
+    print("[INFO] 检查Python版本...")
     if sys.version_info < (3, 8):
-        print("❌ Python版本过低，需要Python 3.8+")
+        print("[ERROR] Python版本过低，需要Python 3.8+")
         return False
-    print(f"✅ Python版本: {sys.version}")
+    print(f"[INFO] Python版本: {sys.version}")
     return True
 
 
 def check_dependencies():
     """检查并安装依赖"""
-    print("\n📦 检查测试依赖...")
+    print("\n[INFO] 检查测试依赖...")
     
     # 检查是否有uv命令
     try:
         subprocess.run(["uv", "--version"], capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("❌ 未找到uv命令，请先安装uv: pip install uv")
+        print("[ERROR] 未找到uv命令，请先安装uv: pip install uv")
         return False
     
     try:
@@ -38,31 +38,31 @@ def check_dependencies():
             "uv", "sync", "--group", "test"
         ], capture_output=True, text=True, check=True)
         
-        print("✅ 测试依赖安装成功")
+        print("[INFO] 测试依赖安装成功")
         return True
         
     except subprocess.CalledProcessError as e:
-        print(f"❌ 依赖安装失败: {e}")
-        print(f"错误输出: {e.stderr}")
-        print("💡 提示: 请确保在项目根目录运行，或先执行 'uv sync' 安装基础依赖")
+        print(f"[ERROR] 依赖安装失败: {e}")
+        print(f"[ERROR] 错误输出: {e.stderr}")
+        print("[INFO] 提示: 请确保在项目根目录运行，或先执行 'uv sync' 安装基础依赖")
         return False
 
 
 def check_test_data():
     """检查测试数据文件"""
-    print("\n📊 检查测试数据...")
+    print("\n[INFO] 检查测试数据...")
     
     # 检查Excel测试文件
     excel_file = Path("test_data/excel_files/test_case.xlsx")
     if not excel_file.exists():
-        print(f"❌ 测试Excel文件不存在: {excel_file}")
+        print(f"[ERROR] 测试Excel文件不存在: {excel_file}")
         return False
-    print(f"✅ 测试Excel文件: {excel_file}")
+    print(f"[INFO] 测试Excel文件: {excel_file}")
     
     # 检查JSON规范文件
     specs_dir = Path("test_data/test_specs")
     if not specs_dir.exists():
-        print(f"❌ 测试规范目录不存在: {specs_dir}")
+        print(f"[ERROR] 测试规范目录不存在: {specs_dir}")
         return False
     
     required_specs = [
@@ -81,10 +81,10 @@ def check_test_data():
         if not spec_path.exists():
             missing_specs.append(spec_file)
         else:
-            print(f"✅ 测试规范: {spec_file}")
+            print(f"[INFO] 测试规范: {spec_file}")
     
     if missing_specs:
-        print(f"❌ 缺少测试规范文件: {missing_specs}")
+        print(f"[ERROR] 缺少测试规范文件: {missing_specs}")
         return False
     
     return True
@@ -92,7 +92,7 @@ def check_test_data():
 
 def create_directories():
     """创建必要的目录结构"""
-    print("\n📁 创建目录结构...")
+    print("\n[INFO] 创建目录结构...")
     
     directories = [
         "test_results",
@@ -104,16 +104,16 @@ def create_directories():
         dir_path = Path(directory)
         if not dir_path.exists():
             dir_path.mkdir(parents=True, exist_ok=True)
-            print(f"✅ 创建目录: {directory}")
+            print(f"[INFO] 创建目录: {directory}")
         else:
-            print(f"✅ 目录已存在: {directory}")
+            print(f"[INFO] 目录已存在: {directory}")
     
     return True
 
 
 def validate_test_specs():
     """验证测试规范文件格式"""
-    print("\n🔍 验证测试规范格式...")
+    print("\n[INFO] 验证测试规范格式...")
     
     specs_dir = Path("test_data/test_specs")
     json_files = list(specs_dir.glob("*.json"))
@@ -130,17 +130,17 @@ def validate_test_specs():
             if "test_cases" in data and isinstance(data["test_cases"], list):
                 test_cases_count = len(data["test_cases"])
                 total_test_cases += test_cases_count
-                print(f"✅ {json_file.name}: {test_cases_count} 个测试用例")
+                print(f"[INFO] {json_file.name}: {test_cases_count} 个测试用例")
                 valid_files += 1
             else:
-                print(f"⚠️  {json_file.name}: 格式可能有问题")
+                print(f"[INFO]  {json_file.name}: 格式可能有问题")
                 
         except json.JSONDecodeError as e:
-            print(f"❌ {json_file.name}: JSON格式错误 - {e}")
+            print(f"[ERROR] {json_file.name}: JSON格式错误 - {e}")
         except Exception as e:
-            print(f"❌ {json_file.name}: 读取错误 - {e}")
+            print(f"[ERROR] {json_file.name}: 读取错误 - {e}")
     
-    print(f"\n📊 验证结果:")
+    print(f"\n[INFO] 验证结果:")
     print(f"   有效规范文件: {valid_files}/{len(json_files)}")
     print(f"   总测试用例数: {total_test_cases}")
     
@@ -149,7 +149,7 @@ def validate_test_specs():
 
 def run_sample_test():
     """运行一个简单的示例测试"""
-    print("\n🧪 运行示例测试...")
+    print("\n[INFO] 运行示例测试...")
     
     try:
         # 添加src到Python路径
@@ -166,20 +166,20 @@ def run_sample_test():
         # 尝试设置全局上下文
         global_context = test_framework.setup_global_context()
         
-        print("✅ 测试框架初始化成功")
+        print("[INFO] 测试框架初始化成功")
         print(f"   文件数量: {len(global_context.files)}")
         print(f"   执行模式: {global_context.execution_mode}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 示例测试失败: {e}")
+        print(f"[ERROR] 示例测试失败: {e}")
         return False
 
 
 def main():
     """主函数"""
-    print("🚀 FlowExcel 测试环境设置")
+    print("[INFO] FlowExcel 测试环境设置")
     print("="*50)
     
     # 检查步骤
@@ -200,20 +200,20 @@ def main():
     
     # 显示总结
     print("\n" + "="*50)
-    print("🎯 环境设置总结")
+    print("[INFO] 环境设置总结")
     print("="*50)
     
     if not failed_checks:
-        print("✅ 所有检查通过！测试环境已就绪")
-        print("\n💡 现在可以运行测试:")
+        print("[INFO] 所有检查通过！测试环境已就绪")
+        print("\n[INFO] 现在可以运行测试:")
         print("   python run_all_tests.py")
         print("   python test_index_source.py")
         print("   pytest test_*.py")
     else:
-        print(f"❌ {len(failed_checks)} 个检查失败:")
+        print(f"[ERROR] {len(failed_checks)} 个检查失败:")
         for failed_check in failed_checks:
             print(f"   - {failed_check}")
-        print("\n💡 请修复上述问题后重新运行此脚本")
+        print("\n[INFO] 请修复上述问题后重新运行此脚本")
     
     print("="*50)
 

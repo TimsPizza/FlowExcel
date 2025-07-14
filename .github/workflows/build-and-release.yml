@@ -1,4 +1,4 @@
-name: 🚀 Build and Release
+name: Build and Release
 
 on:
   push:
@@ -29,7 +29,7 @@ env:
 jobs:
   # 代码质量检查
   quality:
-    name: 🔍 Code Quality
+    name: Code Quality
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,7 +71,7 @@ jobs:
 
   # 多平台构建
   build:
-    name: 🔨 Build ${{ matrix.platform }}
+    name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     needs: quality
     strategy:
@@ -163,19 +163,19 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'FlowExcel v${{ github.ref_name }}'
           releaseBody: |
-            ## 🎉 FlowExcel ${{ github.ref_name }} 发布
+            ## FlowExcel ${{ github.ref_name }} 发布
             
-            ### 📦 支持平台
+            ### 支持平台
             - Windows x64
             - macOS Intel (x64)  
             - macOS Apple Silicon (ARM64)
             - Linux x64
             
-            ### 📋 更新内容
+            ### 更新内容
             请查看 [提交历史](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) 了解详细更新。
             
             ---
-            **⚠️ 首次使用请查看 [使用说明](https://github.com/${{ github.repository }}#readme)**
+            ** 首次使用请查看 [使用说明](https://github.com/${{ github.repository }}#readme)**
           releaseDraft: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'draft') || github.event_name == 'push' }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'prerelease' }}
           includeDebug: false
@@ -183,12 +183,12 @@ jobs:
 
   # 发布通知
   notify:
-    name: 📢 Release Notification
+    name: Release Notification
     runs-on: ubuntu-latest
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Send notification
         run: |
-          echo "🎉 FlowExcel ${{ github.ref_name }} 已成功构建和发布！"
-          echo "📦 下载地址: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" 
+          echo "FlowExcel ${{ github.ref_name }} 已成功构建和发布！"
+          echo "下载地址: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" 

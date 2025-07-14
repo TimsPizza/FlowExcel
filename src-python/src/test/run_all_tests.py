@@ -54,7 +54,7 @@ class FlowExcelTestRunner:
         # 运行每个测试套件，即使某个失败也继续执行
         for suite_name, test_suite in self.test_suites.items():
             try:
-                print(f"\n🔧 正在执行 {suite_name} 测试套件...")
+                print(f"\n[INFO] 正在执行 {suite_name} 测试套件...")
                 
                 suite_result = test_suite.run_tests()
                 self.suite_results.append(suite_result)
@@ -87,7 +87,7 @@ class FlowExcelTestRunner:
     
     def generate_test_report(self):
         """生成详细的测试报告"""
-        print("\n📊 生成测试报告...")
+        print("\n[INFO] 生成测试报告...")
         
         report_dir = Path("test_results")
         report_dir.mkdir(exist_ok=True)
@@ -129,7 +129,7 @@ class FlowExcelTestRunner:
         with open(report_file, 'w', encoding='utf-8') as f:
             json.dump(report_data, f, indent=2, ensure_ascii=False)
         
-        print(f"   💾 测试报告已保存: {report_file}")
+        print(f"   [INFO] 测试报告已保存: {report_file}")
         
         # 生成简要的文本报告
         txt_report_file = report_dir / "latest_test_summary.txt"
@@ -157,18 +157,18 @@ class FlowExcelTestRunner:
                         f.write(f"    - {failed_test.test_id}: {failed_test.error}\n")
                 f.write("\n")
         
-        print(f"   📄 简要报告已保存: {txt_report_file}")
+        print(f"   [INFO] 简要报告已保存: {txt_report_file}")
     
     def generate_coverage_report(self):
         """生成代码覆盖率报告"""
-        print("\n📈 生成代码覆盖率报告...")
+        print("\n[INFO] 生成代码覆盖率报告...")
         
         try:
             # 检查是否安装了coverage
             subprocess.run(["coverage", "--version"], check=True, capture_output=False)
             
             # 运行coverage分析
-            print("   🔍 执行代码覆盖率分析...")
+            print("   [INFO] 执行代码覆盖率分析...")
             
             # 执行coverage运行
             coverage_cmd = [
@@ -187,7 +187,7 @@ class FlowExcelTestRunner:
             result = subprocess.run(coverage_cmd, capture_output=True, text=True)
             
             # 生成coverage报告
-            print("   📊 生成覆盖率报告...")
+            print("   [INFO] 生成覆盖率报告...")
             
             # 文本报告
             subprocess.run(["coverage", "report", "--rcfile=.coveragerc"], check=True, capture_output=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -199,7 +199,7 @@ class FlowExcelTestRunner:
             )
             
             if html_result.returncode == 0:
-                print("   🌐 HTML覆盖率报告已生成: test_results/coverage_html/index.html")
+                print("   [INFO] HTML覆盖率报告已生成: test_results/coverage_html/index.html")
 
         except subprocess.CalledProcessError as e:
             print(f"   [WARN] Coverage报告生成失败: {e}")
