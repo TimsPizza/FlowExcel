@@ -82,8 +82,8 @@ class FlowExcelTestRunner:
         if enable_coverage:
             self.generate_coverage_report()
         
-        # 显示最终总结
-        self.print_final_summary()
+        # 显示最终总结并返回结果
+        return self.print_final_summary()
     
     def generate_test_report(self):
         """生成详细的测试报告"""
@@ -251,6 +251,8 @@ class FlowExcelTestRunner:
         print("   - test_results/coverage_html/index.html  (覆盖率报告)")
         
         print("="*80)
+        
+        return summary['failed_tests'] == 0  # 返回是否所有测试都通过
 
 
 def main():
@@ -261,7 +263,15 @@ def main():
     
     # 创建测试运行器并执行
     runner = FlowExcelTestRunner()
-    runner.run_all_tests(enable_coverage=True)
+    all_tests_passed = runner.run_all_tests(enable_coverage=True)
+    
+    # 根据测试结果设置退出码
+    if all_tests_passed:
+        print("\n✅ 所有测试通过，exit with 0")
+        sys.exit(0)  # 成功
+    else:
+        print("\n❌ 有测试失败，exit with 1")
+        sys.exit(1)  # 失败
 
 
 if __name__ == "__main__":
