@@ -86,7 +86,6 @@ pnpm build:frontend
 | 平台 | 架构 | Runner | 状态 |
 |------|------|--------|------|
 | Windows | x64 | `windows-latest` | ✅ 已测试 |
-| macOS | Intel (x64) | `macos-13` | ✅ 已测试 |
 | macOS | Apple Silicon (ARM64) | `macos-14` | ✅ 已测试 |
 | Linux | x64 | `ubuntu-20.04` | ⚠️ 未物理测试 |
 
@@ -193,7 +192,6 @@ node scripts/release.js 1.0.0 release
 
 ### 📦 支持平台
 - Windows x64
-- macOS Intel (x64)
 - macOS Apple Silicon (ARM64)  
 - Linux x64
 
@@ -202,7 +200,6 @@ node scripts/release.js 1.0.0 release
 
 ### 📁 包含文件
 - flowexcel_windows-x64.exe
-- flowexcel_macos-x64.dmg
 - flowexcel_macos-arm64.dmg
 - flowexcel_linux-x64.deb
 - flowexcel_linux-x64.AppImage
