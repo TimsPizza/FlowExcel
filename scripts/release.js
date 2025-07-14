@@ -126,7 +126,7 @@ function createRelease(version, releaseType = 'draft') {
   
   log('\n[INFO] 发布流程完成！', 'green');
   log(`[INFO] GitHub Actions 将自动构建并发布 v${version}`, 'green');
-  log(`[INFO] 查看构建状态: https://github.com/YOUR_USERNAME/YOUR_REPO/actions`, 'cyan');
+  log(`[INFO] 查看构建状态: https://github.com/TimsPizza/FlowExcel/actions`, 'cyan');
 }
 
 function showUsage() {
