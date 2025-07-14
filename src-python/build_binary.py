@@ -28,6 +28,7 @@ def main():
     dist_dir.mkdir(exist_ok=True)
 
     # Test-only modules to exclude from the binary
+    # 只排除明确的测试工具，避免排除可能被运行时依赖使用的模块
     test_modules_to_exclude = [
         "pytest",
         "pytest_html", 
@@ -37,15 +38,12 @@ def main():
         "coverage",
         "mypy",
         "flake8",
-        "Jinja2",  # 只在测试报告生成时使用
-        "jinja2",
-        # 其他测试工具模块
-        "py",
-        "pluggy",
-        "iniconfig",
-        "tomli",
-        "exceptiongroup",
-        "packaging",  # pytest依赖，如果运行时不需要可以排除
+        "py_cpuinfo",  # pytest-benchmark的依赖
+        "pycodestyle",  # flake8的依赖
+        "pyflakes",    # flake8的依赖
+        "mccabe",      # flake8的依赖
+        "mypy_extensions",  # mypy的依赖
+        "pytest_metadata",  # pytest-html的依赖
     ]
 
     # Prepare PyInstaller command
