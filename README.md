@@ -142,7 +142,16 @@ FlowExcel是一个专门为简化常规数据分析工作定制化的工具，�
 
 ### 直接下载
 
-前往 [Releases](https://github.com/TimsPizza/FlowExcel/releases) 页面下载对应平台的安装包。
+前往 [Releases](https://github.com/TimsPizza/FlowExcel/releases) 页面下载对应平台的安装包：
+
+#### 📦 安装包（推荐）
+- **Windows**: `.msi` 安装包，自动配置系统集成
+- **macOS**: `.dmg` 磁盘映像，拖拽即可安装
+- **Linux**: `.deb` 包或 `AppImage` 文件
+
+#### 💼 便携版
+- **Windows**: `.zip` 压缩包，解压即用
+
 
 ### 支持平台
 
