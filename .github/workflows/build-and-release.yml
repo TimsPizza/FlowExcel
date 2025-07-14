@@ -53,7 +53,7 @@ jobs:
         run: pnpm lint
 
       - name: Type check
-        run: pnpm run build:frontend
+        run: pnpm exec tsc --noEmit
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -150,11 +150,7 @@ jobs:
           uv sync
           uv run python build_binary.py
 
-      # Build frontend
-      - name: Build frontend
-        run: pnpm build:frontend
-
-      # Build Tauri app
+      # Build Tauri app (automatically includes frontend build)
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:

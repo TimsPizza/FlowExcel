@@ -42,7 +42,7 @@ jobs:
         run: pnpm lint
 
       - name: Type check
-        run: pnpm run build:frontend
+        run: pnpm exec tsc --noEmit
 
   # 后端代码检查和测试
   backend-check:
@@ -128,13 +128,10 @@ jobs:
           uv sync
           uv run python build_binary.py
 
-      - name: Build frontend
-        run: pnpm build:frontend
-
-      - name: Build Tauri (development)
+      - name: Build Tauri (includes frontend)
         run: |
           cd src-tauri
-          cargo build
+          cargo tauri build --debug
 
   # 安全检查
   security-check:
