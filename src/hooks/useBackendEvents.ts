@@ -1,9 +1,9 @@
 // src/hooks/useBackendEvents.ts
-import { useEffect, useCallback, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/core";
-import { BackendInfo, BackendStatus, BackendState } from "@/types";
 import { useBackendStore } from "@/stores/useBackendStore";
+import { BackendInfo, BackendStatus } from "@/types";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { useCallback, useEffect, useState } from "react";
 
 export const useBackendEvents = () => {
   // 使用 zustand store
@@ -13,7 +13,6 @@ export const useBackendEvents = () => {
     isReady,
     setBackendInfo,
     setBackendError,
-    clearBackendInfo,
     getApiBaseUrl,
     isDataFresh,
   } = useBackendStore();

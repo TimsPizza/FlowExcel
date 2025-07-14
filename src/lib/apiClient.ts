@@ -3,6 +3,7 @@
  * Replaces Tauri invoke calls with HTTP requests
  */
 
+import { useBackendStore } from "@/stores/useBackendStore";
 import {
   ApiResponse,
   FileInfoResponse,
@@ -10,7 +11,6 @@ import {
   TryReadHeaderRowResponse,
 } from "@/types";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { useBackendStore } from "@/stores/useBackendStore";
 import { getCurrentLanguage } from "./i18n";
 
 // API Response types matching the Python server
@@ -145,10 +145,10 @@ class ApiClient {
         const baseURL = this.getBaseUrl();
         console.log("Using API base URL:", baseURL);
         config.baseURL = baseURL;
-        
+
         // 添加语言头
-        config.headers['Accept-Language'] = getCurrentLanguage();
-        
+        config.headers["Accept-Language"] = getCurrentLanguage();
+
         return config;
       },
       (error) => Promise.reject(error),
@@ -192,7 +192,7 @@ class ApiClient {
     try {
       const response = await this.client.get("/health");
       return response.status === 200;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -389,7 +389,7 @@ class ApiClient {
   async shutdown(): Promise<void> {
     try {
       await this.client.post("/shutdown");
-    } catch (error) {
+    } catch {
       // Ignore errors during shutdown as the server will close the connection
     }
   }
@@ -408,7 +408,9 @@ class ApiClient {
   }
 
   // Get workspace files directory path (for opening in explorer)
-  async getWorkspaceFilesPath(workspaceId: string): Promise<{files_path: string}> {
+  async getWorkspaceFilesPath(
+    workspaceId: string,
+  ): Promise<{ files_path: string }> {
     const response: AxiosResponse<APIResponse> = await this.client.post(
       `/workspace/files-path`,
       {
@@ -417,14 +419,19 @@ class ApiClient {
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.error || "api.get_workspace_files_path_failed");
+      throw new Error(
+        response.data.error || "api.get_workspace_files_path_failed",
+      );
     }
 
     return response.data.data;
   }
 
   // Export workspace as ZIP file
-  async exportWorkspace(workspaceId: string, exportPath: string): Promise<{exported: boolean}> {
+  async exportWorkspace(
+    workspaceId: string,
+    exportPath: string,
+  ): Promise<{ exported: boolean }> {
     const response: AxiosResponse<APIResponse> = await this.client.post(
       `/workspace/export`,
       {
@@ -441,7 +448,10 @@ class ApiClient {
   }
 
   // Import workspace from ZIP file
-  async importWorkspace(zipPath: string, newWorkspaceId?: string): Promise<{workspace_id: string}> {
+  async importWorkspace(
+    zipPath: string,
+    newWorkspaceId?: string,
+  ): Promise<{ workspace_id: string }> {
     const response: AxiosResponse<APIResponse> = await this.client.post(
       `/workspace/import`,
       {

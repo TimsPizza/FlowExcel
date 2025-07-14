@@ -1,6 +1,11 @@
-import { Node, Edge } from "reactflow";
-import { FlowNodeData, NodeType, IndexSourceNodeDataContext, SheetSelectorNodeDataContext } from "@/types/nodes";
-import { WorkspaceConfig, FileMeta } from "@/types";
+import { WorkspaceConfig } from "@/types";
+import {
+  FlowNodeData,
+  IndexSourceNodeDataContext,
+  NodeType,
+  SheetSelectorNodeDataContext,
+} from "@/types/nodes";
+import { Edge, Node } from "reactflow";
 
 export interface DataSourceInfo {
   filePath: string;
@@ -13,44 +18,46 @@ export interface DataSourceInfo {
  * 追溯节点的数据源信息，找到最近的数据源（IndexSource + SheetSelector组合）
  */
 export function traceNodeDataSource(
-  nodeId: string, 
-  nodes: Node<FlowNodeData>[], 
-  edges: Edge[], 
-  workspace: WorkspaceConfig
+  nodeId: string,
+  nodes: Node<FlowNodeData>[],
+  edges: Edge[],
+  workspace: WorkspaceConfig,
 ): DataSourceInfo | null {
   // 构建反向图（从target指向source）
   const reverseGraph = new Map<string, string[]>();
-  
-  edges.forEach(edge => {
+
+  edges.forEach((edge) => {
     if (!reverseGraph.has(edge.target)) {
       reverseGraph.set(edge.target, []);
     }
     reverseGraph.get(edge.target)!.push(edge.source);
   });
-  
+
   // 创建节点映射
-  const nodeMap = new Map(nodes.map(node => [node.id, node]));
-  
+  const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+
   // BFS追溯，寻找数据源路径
   const visited = new Set<string>();
-  const queue: Array<{ nodeId: string; path: string[] }> = [{ nodeId, path: [nodeId] }];
-  
+  const queue: Array<{ nodeId: string; path: string[] }> = [
+    { nodeId, path: [nodeId] },
+  ];
+
   let indexSourceNode: Node<IndexSourceNodeDataContext> | null = null;
   let sheetSelectorNode: Node<SheetSelectorNodeDataContext> | null = null;
-  
+
   while (queue.length > 0) {
     const { nodeId: currentNodeId, path } = queue.shift()!;
-    
+
     if (visited.has(currentNodeId)) continue;
     visited.add(currentNodeId);
-    
+
     const currentNode = nodeMap.get(currentNodeId);
     if (!currentNode) continue;
-    
+
     // 检查是否找到了IndexSource
     if (currentNode.type === NodeType.INDEX_SOURCE) {
       indexSourceNode = currentNode as Node<IndexSourceNodeDataContext>;
-      
+
       // 在路径中寻找SheetSelector
       for (const pathNodeId of path) {
         const pathNode = nodeMap.get(pathNodeId);
@@ -61,7 +68,7 @@ export function traceNodeDataSource(
       }
       break;
     }
-    
+
     // 继续向上追溯
     const predecessors = reverseGraph.get(currentNodeId) || [];
     for (const pred of predecessors) {
@@ -70,20 +77,20 @@ export function traceNodeDataSource(
       }
     }
   }
-  
+
   // 如果没找到完整的数据源路径，返回null
   if (!indexSourceNode || !sheetSelectorNode) {
     return null;
   }
-  
+
   // 解析数据源信息
   const indexData = indexSourceNode.data;
   const sheetData = sheetSelectorNode.data;
-  
+
   // 获取文件信息
   let targetFileId: string;
   let sheetName: string;
-  
+
   if (sheetData.mode === "manual" && sheetData.manualSheetName) {
     targetFileId = sheetData.targetFileID!;
     sheetName = sheetData.manualSheetName;
@@ -95,28 +102,30 @@ export function traceNodeDataSource(
   } else {
     return null;
   }
-  
+
   // 查找文件信息
-  const fileInfo = workspace.files.find(f => f.id === targetFileId);
+  const fileInfo = workspace.files.find((f) => f.id === targetFileId);
   if (!fileInfo) {
     return null;
   }
-  
+
   // 获取header_row
   let headerRow = 0;
   if (sheetName) {
-    const sheetMeta = fileInfo.sheet_metas.find(sm => sm.sheet_name === sheetName);
+    const sheetMeta = fileInfo.sheet_metas.find(
+      (sm) => sm.sheet_name === sheetName,
+    );
     headerRow = sheetMeta?.header_row || 0;
   } else {
     // auto_by_index模式，使用第一个sheet的header_row作为默认值
     headerRow = fileInfo.sheet_metas[0]?.header_row || 0;
   }
-  
+
   return {
     filePath: fileInfo.path,
     sheetName: sheetName || fileInfo.sheet_metas[0]?.sheet_name || "",
     headerRow,
-    fileId: targetFileId
+    fileId: targetFileId,
   };
 }
 
@@ -129,14 +138,16 @@ export function getAvailableColumns(
   nodeId: string,
   nodes: Node<FlowNodeData>[],
   edges: Edge[],
-  workspace: WorkspaceConfig
+  workspace: WorkspaceConfig,
 ): string[] {
   const dataSource = traceNodeDataSource(nodeId, nodes, edges, workspace);
-  
+
   if (!dataSource) {
     return [];
   }
-  
+
   // 这里返回一个标识，实际的列名需要通过useTryReadHeaderRow获取
-  return [`__DATA_SOURCE_${dataSource.fileId}_${dataSource.sheetName}_${dataSource.headerRow}__`];
-} 
+  return [
+    `__DATA_SOURCE_${dataSource.fileId}_${dataSource.sheetName}_${dataSource.headerRow}__`,
+  ];
+}
