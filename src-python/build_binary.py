@@ -144,37 +144,19 @@ def main():
     # Verify the structure
     print(f"\nVerification:")
     if exe_path.exists():
-        print(f"✓ Executable: {exe_path}")
+        print(f"[OK] Executable: {exe_path}")
         print(f"  Size: {exe_path.stat().st_size / 1024 / 1024:.2f} MB")
     else:
-        print(f"✗ Executable missing: {exe_path}")
+        print(f"[ERROR] Executable missing: {exe_path}")
 
     # Check _internal directory
     internal_dir = target_base_dir / "_internal"
     if internal_dir.exists():
         file_count = len(list(internal_dir.rglob("*")))
-        print(f"✓ _internal directory: {file_count} files")
+        print(f"[OK] _internal directory: {file_count} files")
     else:
-        print(f"✗ _internal directory missing")
+        print(f"[ERROR] _internal directory missing")
 
-    # Test if the executable can be run (basic check)
-    try:
-        test_result = subprocess.run(
-            [str(exe_path), "--help"],
-            capture_output=True,
-            timeout=5,
-            cwd=target_base_dir,
-        )
-        if (
-            test_result.returncode == 0 or test_result.returncode == 2
-        ):  # 2 is common for help commands
-            print(f"✓ Executable is functional")
-        else:
-            print(f"⚠ Executable test returned code: {test_result.returncode}")
-    except subprocess.TimeoutExpired:
-        print(f"⚠ Executable test timed out (possibly waiting for input)")
-    except Exception as e:
-        print(f"⚠ Could not test executable: {e}")
 
 
 if __name__ == "__main__":

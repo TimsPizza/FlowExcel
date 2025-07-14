@@ -46,7 +46,7 @@ class FlowExcelTestRunner:
     
     def run_all_tests(self, enable_coverage=True):
         """运行所有测试套件"""
-        print("🚀 FlowExcel 测试框架启动")
+        print("[START] FlowExcel 测试框架启动")
         print("="*80)
         
         self.start_time = time.time()
@@ -60,11 +60,11 @@ class FlowExcelTestRunner:
                 self.suite_results.append(suite_result)
                 
                 # 显示套件结果简要信息
-                status = "✅" if suite_result.failed_tests == 0 else "❌"
+                status = "[OK]" if suite_result.failed_tests == 0 else "[FAIL]"
                 print(f"   {status} {suite_result.get_summary()}")
                 
             except Exception as e:
-                print(f"   ❌ {suite_name} 测试套件执行失败: {e}")
+                print(f"   [ERROR] {suite_name} 测试套件执行失败: {e}")
                 
                 # 创建失败的套件结果
                 failed_result = TestSuiteResult(f"{suite_name} (执行失败)")
@@ -202,11 +202,11 @@ class FlowExcelTestRunner:
                 print("   🌐 HTML覆盖率报告已生成: test_results/coverage_html/index.html")
 
         except subprocess.CalledProcessError as e:
-            print(f"   ⚠️ Coverage报告生成失败: {e}")
-            print("   💡 请确保已安装coverage: pip install coverage")
+            print(f"   [WARN] Coverage报告生成失败: {e}")
+            print("   [INFO] 请确保已安装coverage: pip install coverage")
         except FileNotFoundError:
-            print("   ⚠️ 未找到coverage工具")
-            print("   💡 请安装coverage: pip install coverage")
+            print("   [WARN] 未找到coverage工具")
+            print("   [INFO] 请安装coverage: pip install coverage")
     
     def _get_overall_summary(self):
         """获取总体测试摘要"""
@@ -227,25 +227,25 @@ class FlowExcelTestRunner:
         summary = self._get_overall_summary()
         
         print("\n" + "="*80)
-        print("🎯 FlowExcel 测试框架执行完成")
+        print("[COMPLETE] FlowExcel 测试框架执行完成")
         print("="*80)
-        print(f"⏱️  总耗时: {self.end_time - self.start_time:.2f}秒")
-        print(f"📊 测试套件数: {len(self.suite_results)}")
-        print(f"🔢 总测试数: {summary['total_tests']}")
-        print(f"✅ 通过: {summary['passed_tests']}")
-        print(f"❌ 失败: {summary['failed_tests']}")
-        print(f"📈 成功率: {summary['success_rate']:.1f}%")
+        print(f"[TIME] 总耗时: {self.end_time - self.start_time:.2f}秒")
+        print(f"[SUITES] 测试套件数: {len(self.suite_results)}")
+        print(f"[TOTAL] 总测试数: {summary['total_tests']}")
+        print(f"[PASS] 通过: {summary['passed_tests']}")
+        print(f"[FAIL] 失败: {summary['failed_tests']}")
+        print(f"[RATE] 成功率: {summary['success_rate']:.1f}%")
         
         # 显示失败的套件
         failed_suites = [s for s in self.suite_results if s.failed_tests > 0]
         if failed_suites:
-            print(f"\n⚠️  有 {len(failed_suites)} 个测试套件包含失败的测试:")
+            print(f"\n[WARN] 有 {len(failed_suites)} 个测试套件包含失败的测试:")
             for suite in failed_suites:
                 print(f"   - {suite.suite_name}: {suite.failed_tests} 个失败")
         else:
-            print("\n🎉 所有测试套件都通过了!")
+            print("\n[SUCCESS] 所有测试套件都通过了!")
         
-        print("\n📁 测试结果文件:")
+        print("\n[FILES] 测试结果文件:")
         print("   - test_results/test_report_*.json  (详细测试报告)")
         print("   - test_results/latest_test_summary.txt  (简要摘要)")
         print("   - test_results/coverage_html/index.html  (覆盖率报告)")
@@ -267,10 +267,10 @@ def main():
     
     # 根据测试结果设置退出码
     if all_tests_passed:
-        print("\n✅ 所有测试通过，exit with 0")
+        print("\n[OK] 所有测试通过，exit with 0")
         sys.exit(0)  # 成功
     else:
-        print("\n❌ 有测试失败，exit with 1")
+        print("\n[ERROR] 有测试失败，exit with 1")
         sys.exit(1)  # 失败
 
 
