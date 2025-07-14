@@ -47,12 +47,12 @@ const PaginationLink = React.forwardRef<HTMLButtonElement, PaginationLinkProps>(
 PaginationLink.displayName = "PaginationLink";
 
 const PaginationPrevious = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, ...props }, ref) => <Button {...props}>上一页</Button>,
+  ({ className: _className, ...props }, _ref) => <Button {...props}>上一页</Button>,
 );
 PaginationPrevious.displayName = "PaginationPrevious";
 
 const PaginationNext = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, ...props }, ref) => <Button {...props}>下一页</Button>,
+  ({ className: _className, ...props }, _ref) => <Button {...props}>下一页</Button>,
 );
 PaginationNext.displayName = "PaginationNext";
 

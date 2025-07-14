@@ -2,7 +2,6 @@ import useToast from "@/hooks/useToast";
 import { apiClient } from "@/lib/apiClient";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import {
-  FileMeta,
   FilePreviewResponse,
   IndexValues,
   PipelineExecutionResult,
@@ -19,10 +18,10 @@ import {
   RowLookupNodeDataContext,
   SheetSelectorNodeDataContext,
 } from "@/types/nodes";
-import { useMutation, useQueries, useQuery, UseQueryResult } from "react-query";
+import { useTranslation } from "react-i18next";
+import { useMutation, useQuery, UseQueryResult } from "react-query";
 import { Node as ReactFlowNode } from "reactflow";
 import { v4 as uuidv4 } from "uuid";
-import { useTranslation } from "react-i18next";
 
 /* List workspaces */
 
@@ -158,7 +157,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
     // This primarily involves checking for properties that are mandatory for a given node type
     // but might have been missed during creation or if the types were out of sync.
     switch (sanitizedNode.data.nodeType) {
-      case NodeType.INDEX_SOURCE:
+      case NodeType.INDEX_SOURCE: {
         const indexData = sanitizedNode.data as IndexSourceNodeDataContext;
         sanitizedNode.data = {
           ...indexData,
@@ -169,7 +168,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
             indexData.displayName || "DataSource-" + uuidv4().slice(0, 4),
         };
         break;
-      case NodeType.SHEET_SELECTOR:
+      }
+      case NodeType.SHEET_SELECTOR: {
         const sheetData = sanitizedNode.data as SheetSelectorNodeDataContext;
         sanitizedNode.data = {
           ...sheetData,
@@ -179,7 +179,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           // targetFileID, manualSheetName are optional
         };
         break;
-      case NodeType.ROW_FILTER:
+      }
+      case NodeType.ROW_FILTER: {
         const filterData = sanitizedNode.data as RowFilterNodeDataContext;
         sanitizedNode.data = {
           ...filterData,
@@ -188,7 +189,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           testResult: undefined, // 过滤掉 testResult
         };
         break;
-      case NodeType.ROW_LOOKUP:
+      }
+      case NodeType.ROW_LOOKUP: {
         const lookupData = sanitizedNode.data as RowLookupNodeDataContext;
         sanitizedNode.data = {
           ...lookupData,
@@ -197,7 +199,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           // matchColumn is optional
         };
         break;
-      case NodeType.AGGREGATOR:
+      }
+      case NodeType.AGGREGATOR: {
         const aggData = sanitizedNode.data as AggregatorNodeDataContext;
         sanitizedNode.data = {
           ...aggData,
@@ -207,7 +210,8 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           // statColumn is optional
         };
         break;
-      case NodeType.OUTPUT:
+      }
+      case NodeType.OUTPUT: {
         const outputData = sanitizedNode.data as OutputNodeDataContext;
         sanitizedNode.data = {
           ...outputData,
@@ -217,6 +221,7 @@ function sanitizeWorkspaceData(workspace: WorkspaceConfig): WorkspaceConfig {
           testResult: undefined, // 过滤掉 testResult
         };
         break;
+      }
       default:
         // If node_type is unknown, keep data as is but log a warning
         console.warn(

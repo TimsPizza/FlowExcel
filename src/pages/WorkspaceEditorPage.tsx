@@ -114,11 +114,17 @@ export default function WorkspaceEditorPage() {
         .map((file) => file.id);
 
       // 重置过期文件列表，然后添加当前过期的文件
-      useWorkspaceStore.setState((state) => ({
+      useWorkspaceStore.setState(() => ({
         outdatedFileIds: outdatedFileIds,
       }));
     }
-  }, [currentWorkspace, newestFileInfo, isFileInfoLoading, fileInfoError, toast]);
+  }, [
+    currentWorkspace,
+    newestFileInfo,
+    isFileInfoLoading,
+    fileInfoError,
+    toast,
+  ]);
 
   useEffect(() => {
     revalidateWorkspaceFiles();

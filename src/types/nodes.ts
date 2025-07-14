@@ -1,4 +1,4 @@
-import { SimpleDataframe, SheetInfo } from "@/types";
+import { SheetInfo } from "@/types";
 import { NodeProps } from "reactflow";
 
 export enum NodeType {

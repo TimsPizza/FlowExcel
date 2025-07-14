@@ -1,8 +1,8 @@
 // src/components/BackendStatus.tsx
 import useToast from "@/hooks/useToast";
-import { useBackendEvents } from "../hooks/useBackendEvents";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useBackendEvents } from "../hooks/useBackendEvents";
 
 interface BackendStatusProps {
   children: React.ReactNode;

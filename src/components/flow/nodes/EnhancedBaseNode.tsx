@@ -3,7 +3,6 @@ import {
   getAvailableNextNodeTypes,
   getInitialNodeData,
   NODE_TYPE_DESCRIPTIONS,
-  NODE_TYPE_NAMES,
 } from "@/lib/flowValidation";
 import TestRunModal from "@/components/flow/TestRunModal";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";

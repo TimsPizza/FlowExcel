@@ -1,9 +1,9 @@
-import { createBrowserRouter } from "react-router-dom";
-import { WorkspaceListPage } from "@/pages/WorkspaceListPage";
-import WorkspaceEditorPage from "@/pages/WorkspaceEditorPage";
-import FileLibrary from "@/components/workspace/FileLibrary";
 import { FlowEditor } from "@/components/flow/FlowEditor";
-import ErrorBoundary, { RouteErrorElement } from "@/routes/ErrorBoundary";
+import FileLibrary from "@/components/workspace/FileLibrary";
+import WorkspaceEditorPage from "@/pages/WorkspaceEditorPage";
+import { WorkspaceListPage } from "@/pages/WorkspaceListPage";
+import { RouteErrorElement } from "@/routes/ErrorBoundary";
+import { createBrowserRouter } from "react-router-dom";
 
 export const router = createBrowserRouter([
   {

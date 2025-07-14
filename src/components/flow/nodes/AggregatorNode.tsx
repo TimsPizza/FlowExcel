@@ -5,7 +5,7 @@ import { convertPreviewToSheets, isAggregationPreview } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/useWorkspaceStore";
 import { AggregatorNodeDataContext, FlowNodeProps } from "@/types/nodes";
 import { Flex, Select, Text, TextField } from "@radix-ui/themes";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useNodeId } from "reactflow";
 import { BadgeConfig, EnhancedBaseNode } from "./EnhancedBaseNode";
 import { useTranslation } from "react-i18next";

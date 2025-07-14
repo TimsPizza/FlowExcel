@@ -7,10 +7,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Table } from "@radix-ui/themes";
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 
 interface DataFrameViewerProps {
   columns?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any[][];
   pagination?: boolean;
   pageSize?: number;
