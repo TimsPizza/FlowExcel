@@ -6,7 +6,9 @@
 ### 让Excel数据处理变得像搭积木一样简单
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey.svg)](https://github.com/TimsPizza/FlowExcel/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/TimsPizza/FlowExcel/releases)
+[![CI](https://github.com/TimsPizza/FlowExcel/workflows/CI/badge.svg)](https://github.com/TimsPizza/FlowExcel/actions)
+[![Release](https://github.com/TimsPizza/FlowExcel/workflows/Build%20and%20Release/badge.svg)](https://github.com/TimsPizza/FlowExcel/releases)
 
 ## 💡 关于FlowExcel
 
@@ -243,6 +245,54 @@ FlowExcel/
 
 ---
 
+## 🚀 开发和发布
+
+### 开发环境设置
+
+```bash
+# 克隆项目
+git clone https://github.com/TimsPizza/FlowExcel.git
+cd FlowExcel
+
+# 安装前端依赖
+pnpm install
+
+# 安装后端依赖
+cd src-python && uv sync
+
+# 运行开发服务器
+pnpm start
+```
+
+### 快速命令
+
+```bash
+# 开发
+pnpm dev                 # 启动开发服务器
+pnpm test               # 运行所有测试
+pnpm lint               # 代码检查
+
+# 构建
+pnpm build              # 构建前端和后端
+pnpm build:full         # 完整构建（包含Tauri）
+
+# 发布
+pnpm release:draft      # 创建草稿发布
+pnpm release:prerelease # 创建预发布
+pnpm release:stable     # 创建正式发布
+```
+
+### CI/CD 流程
+
+- ✅ **持续集成**: 每次推送代码自动运行测试和代码检查
+- 🚀 **多平台构建**: 自动构建 Windows、macOS、Linux 版本
+- 📦 **自动发布**: 推送版本标签自动发布到 GitHub Releases
+- 🔒 **安全审计**: 自动检查依赖安全性
+
+详细说明请查看 [部署指南](docs/deployment-guide.md)
+
+---
+
 ## 🙏 致谢
 
 感谢所有为FlowExcel贡献代码和建议的开发者！
@@ -256,5 +306,6 @@ Badges by [ShieldsIO](https://img.shields.io)
 <div align="center">
 <strong>FlowExcel - 让数据处理回归简单</strong><br>
 <a href="https://github.com/TimsPizza/FlowExcel/issues">报告问题</a> • 
-<a href="https://github.com/TimsPizza/FlowExcel/discussions">讨论交流</a>
+<a href="https://github.com/TimsPizza/FlowExcel/discussions">讨论交流</a> • 
+<a href="docs/deployment-guide.md">部署指南</a>
 </div>
