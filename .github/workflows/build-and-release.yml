@@ -170,6 +170,11 @@ jobs:
             - 便携版仅提供Windows版本，无需安装，解压后可直接运行
             - Windows: 解压 `.zip` 文件，双击 `FlowExcel.exe`
             
+            ### macOS 用户注意事项
+            - 首次运行可能会出现"已损坏"的安全警告，这是正常现象
+            - 解决方案：在终端中运行 `sudo xattr -cr /Applications/FlowExcel.app`
+            - 或者参考详细的 [macOS安全指南](https://github.com/${{ github.repository }}/blob/main/docs/macos-security-guide.md)
+            
             ### 更新内容
             请查看 [提交历史](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) 了解详细更新。
             
@@ -179,6 +184,26 @@ jobs:
           prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'prerelease' }}
           includeDebug: false
           includeRelease: true
+
+      # Fix macOS app signing to prevent "damaged" error
+      - name: Fix macOS app signing
+        if: matrix.platform == 'macos-arm64'
+        run: |
+          # Find the .app bundle
+          APP_PATH=$(find src-tauri/target/release/bundle/macos -name "*.app" | head -1)
+          if [ -n "$APP_PATH" ]; then
+            echo "[INFO] Found app at: $APP_PATH"
+            
+            # Remove quarantine attribute and re-sign with ad-hoc signature
+            xattr -cr "$APP_PATH"
+            codesign --force --deep --sign - "$APP_PATH"
+            
+            # Verify signing
+            codesign --verify --deep --strict "$APP_PATH"
+            echo "[INFO] macOS app successfully signed with ad-hoc signature"
+          else
+            echo "[ERROR] Could not find .app bundle"
+          fi
 
       # Create portable packages for Windows only
       - name: Create portable packages

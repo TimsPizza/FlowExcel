@@ -39,7 +39,12 @@
     ],
     "resources": [
       "binaries/flowexcel-backend/**/*"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
+    }
   },
   "plugins": {
     "shell": {

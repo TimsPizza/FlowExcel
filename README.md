@@ -156,8 +156,10 @@ FlowExcel是一个专门为简化常规数据分析工作定制化的工具，�
 ### 支持平台
 
 - Windows 10/11 (x64)
-- macOS 10.15+ (Apple Silicon)
+- macOS 10.15+ (Apple Silicon) 
 - Linux (x64)
+
+> ⚠️ **macOS用户注意**: 首次运行可能会出现安全警告，这是正常现象。请参考 [macOS安全指南](docs/macos-security-guide.md) 了解如何解决。
 
 ---
 
