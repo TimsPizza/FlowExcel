@@ -87,7 +87,7 @@ jobs:
             rust_target: x86_64-pc-windows-msvc
             
           - platform: macos-arm64
-            os: macos-14  # Apple Silicon Mac
+            os: [self-hosted, macOS, ARM64]
             rust_target: aarch64-apple-darwin
             
           - platform: linux-x64
