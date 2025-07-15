@@ -137,6 +137,8 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+          # 为self-hosted runner添加特定的cache key避免权限冲突
+          key: ${{ matrix.platform }}-${{ hashFiles('**/Cargo.lock') }}
 
       # Linux specific dependencies
       - name: Install Linux dependencies
@@ -215,6 +217,32 @@ jobs:
           else
             echo "[ERROR] Could not find .app bundle"
           fi
+
+      # Fix file permissions before cache cleanup (macOS only)
+      - name: Fix file permissions for cleanup
+        if: matrix.platform == 'macos-arm64' && always()
+        run: |
+          echo "[INFO] Fixing file permissions for cleanup..."
+          
+          # Reset ownership and permissions for target directory
+          if [ -d "src-tauri/target" ]; then
+            chown -R $(whoami):staff src-tauri/target || true
+            chmod -R u+w src-tauri/target || true
+            echo "[INFO] Fixed src-tauri/target permissions"
+          fi
+          
+          # Reset permissions for any Python related files created by uv
+          if [ -d "$HOME/.local/share/uv" ]; then
+            chown -R $(whoami):staff "$HOME/.local/share/uv" || true
+            chmod -R u+w "$HOME/.local/share/uv" || true
+            echo "[INFO] Fixed uv cache permissions"
+          fi
+          
+          # Reset permissions for any files created during build
+          find . -type f -not -perm -u+w -exec chmod u+w {} \; 2>/dev/null || true
+          find . -type d -not -perm -u+w -exec chmod u+w {} \; 2>/dev/null || true
+          
+          echo "[INFO] File permissions cleanup completed"
 
       # Create portable packages for Windows only
       - name: Create portable packages
