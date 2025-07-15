@@ -183,65 +183,67 @@ jobs:
       # Create portable packages for Windows only
       - name: Create portable packages
         if: matrix.platform == 'windows-x64'
+        shell: pwsh
         run: |
           # Create output directory
-          mkdir -p portable-packages
+          New-Item -ItemType Directory -Force -Path "portable-packages"
           
           # Set version name
-          VERSION=${{ github.ref_name }}
-          if [[ "$VERSION" == "refs/heads/"* ]]; then
-            VERSION="dev-$(git rev-parse --short HEAD)"
-          fi
-          VERSION=${VERSION#v}  # Remove 'v' prefix if present
+          $VERSION = "${{ github.ref_name }}"
+          if ($VERSION -like "refs/heads/*") {
+            $gitHash = git rev-parse --short HEAD
+            $VERSION = "dev-$gitHash"
+          }
+          $VERSION = $VERSION -replace '^v', ''  # Remove 'v' prefix if present
           
-          echo "Creating Windows portable package, version: ${VERSION}"
+          Write-Host "Creating Windows portable package, version: $VERSION"
           
           # Windows: Create ZIP with executable and dependencies
-          cd src-tauri/target/release
+          Set-Location "src-tauri/target/release"
           
-          echo "Current directory: $(pwd)"
-          echo "Contents of current directory:"
-          ls -la
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Contents of current directory:"
+          Get-ChildItem -Force
           
           # Create temporary directory for packaging
-          mkdir -p FlowExcel-portable
+          New-Item -ItemType Directory -Force -Path "FlowExcel-portable"
           
           # Copy main executable
-          if [ -f "FlowExcel.exe" ]; then
-            cp FlowExcel.exe FlowExcel-portable/
-            echo "[INFO] Copied FlowExcel.exe"
-          elif [ -f "flowexcel.exe" ]; then
-            cp flowexcel.exe FlowExcel-portable/FlowExcel.exe
-            echo "[INFO] Copied flowexcel.exe as FlowExcel.exe"
-          else
-            echo "[ERROR] FlowExcel.exe not found!"
+          if (Test-Path "FlowExcel.exe") {
+            Copy-Item "FlowExcel.exe" "FlowExcel-portable/"
+            Write-Host "[INFO] Copied FlowExcel.exe"
+          } elseif (Test-Path "flowexcel.exe") {
+            Copy-Item "flowexcel.exe" "FlowExcel-portable/FlowExcel.exe"
+            Write-Host "[INFO] Copied flowexcel.exe as FlowExcel.exe"
+          } else {
+            Write-Host "[ERROR] FlowExcel.exe not found!"
             exit 1
-          fi
+          }
           
           # Copy backend binaries directory (must be at same level as executable)
-          if [ -d "../../binaries" ]; then
-            cp -r ../../binaries FlowExcel-portable/
-            echo "[INFO] Copied binaries directory"
-            echo "Contents of binaries directory:"
-            ls -la ../../binaries/
-          else
-            echo "[ERROR] binaries directory not found at ../../binaries"
+          if (Test-Path "../../binaries") {
+            Copy-Item "../../binaries" "FlowExcel-portable/" -Recurse
+            Write-Host "[INFO] Copied binaries directory"
+            Write-Host "Contents of binaries directory:"
+            Get-ChildItem "../../binaries" -Force
+          } else {
+            Write-Host "[ERROR] binaries directory not found at ../../binaries"
             exit 1
-          fi
+          }
           
           # Show final structure
-          echo "Final portable structure:"
-          find FlowExcel-portable -type f | head -20
+          Write-Host "Final portable structure:"
+          Get-ChildItem "FlowExcel-portable" -Recurse -File | Select-Object -First 20 | ForEach-Object { $_.FullName }
           
           # Create ZIP
-          zip -r "../../../portable-packages/FlowExcel-${VERSION}-windows-x64-portable.zip" FlowExcel-portable/
+          Compress-Archive -Path "FlowExcel-portable/*" -DestinationPath "../../../portable-packages/FlowExcel-$VERSION-windows-x64-portable.zip" -Force
           
           # Cleanup
-          rm -rf FlowExcel-portable
+          Remove-Item "FlowExcel-portable" -Recurse -Force
           
           # List created packages
-          echo "Created packages:"
-          ls -la portable-packages/
+          Write-Host "Created packages:"
+          Get-ChildItem "../../../portable-packages" -Force
 
       # Upload portable packages as artifacts (Windows only)
       - name: Upload portable packages
