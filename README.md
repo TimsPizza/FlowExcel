@@ -3,6 +3,8 @@
 <h1 style="display: inline-block; vertical-align: middle; margin: 0;">FlowExcel</h1>
 </div>
 
+**🌍 Language / 语言**: [English](README_EN.md) | **中文**
+
 ### 让Excel数据处理变得像搭积木一样简单
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
