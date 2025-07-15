@@ -1,6 +1,6 @@
 [project]
 name = "flowexcel-backend"
-version = "0.1.1"
+version = "0.1.2"
 description = "The backend of FlowExcel"
 readme = "README.md"
 requires-python = ">=3.11"
