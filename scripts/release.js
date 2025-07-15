@@ -131,34 +131,76 @@ function createRelease(version, releaseType = 'draft') {
 
 function showUsage() {
   log('\n[INFO] 使用说明:', 'cyan');
-  log('  node scripts/release.js <version> [type]', 'white');
+  log('  node scripts/release.js --version <version> [--type <type>]', 'white');
+  log('  node scripts/release.js <version> [type]  # 向后兼容', 'white');
   log('\n[INFO] 参数:', 'cyan');
-  log('  version  版本号 (例如: 1.0.0)', 'white');
-  log('  type     发布类型 (draft|prerelease|release，默认: draft)', 'white');
+  log('  --version, -v  版本号 (必需，例如: 1.0.0)', 'white');
+  log('  --type, -t     发布类型 (draft|prerelease|release，默认: draft)', 'white');
+  log('  --help, -h     显示帮助信息', 'white');
   log('\n[INFO] 示例:', 'cyan');
-  log('  node scripts/release.js 1.0.0 draft      # 创建草稿发布', 'white');
-  log('  node scripts/release.js 1.0.1 prerelease # 创建预发布', 'white');
-  log('  node scripts/release.js 1.1.0 release    # 创建正式发布', 'white');
+  log('  node scripts/release.js --version 1.0.0 --type draft', 'white');
+  log('  node scripts/release.js --version 1.0.1 --type prerelease', 'white');
+  log('  node scripts/release.js --version 1.1.0 --type release', 'white');
+  log('  node scripts/release.js 1.0.0 draft      # 向后兼容格式', 'white');
+}
+
+function parseArgs(args) {
+  const parsed = {
+    version: null,
+    type: 'draft',
+    help: false
+  };
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg === '--help' || arg === '-h') {
+      parsed.help = true;
+    } else if (arg === '--version' || arg === '-v') {
+      parsed.version = args[++i];
+    } else if (arg === '--type' || arg === '-t') {
+      parsed.type = args[++i];
+    } else if (!arg.startsWith('-')) {
+      // 如果不是以-开头，可能是位置参数（向后兼容）
+      if (!parsed.version) {
+        parsed.version = arg;
+      } else if (parsed.type === 'draft') {
+        parsed.type = arg;
+      }
+    }
+  }
+  
+  return parsed;
 }
 
 function main() {
   const args = process.argv.slice(2);
   
-  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+  if (args.length === 0) {
     showUsage();
     return;
   }
   
-  const version = args[0];
-  const releaseType = args[1] || 'draft';
+  const options = parseArgs(args);
   
-  if (!['draft', 'prerelease', 'release'].includes(releaseType)) {
+  if (options.help) {
+    showUsage();
+    return;
+  }
+  
+  if (!options.version) {
+    log('[ERROR] 必须指定版本号', 'red');
+    showUsage();
+    return;
+  }
+  
+  if (!['draft', 'prerelease', 'release'].includes(options.type)) {
     log('[ERROR] 发布类型必须是 draft、prerelease 或 release', 'red');
     return;
   }
   
   try {
-    createRelease(version, releaseType);
+    createRelease(options.version, options.type);
   } catch (error) {
     log(`[ERROR] 发布失败: ${error.message}`, 'red');
     process.exit(1);

@@ -15,9 +15,9 @@
     "preview": "vite preview",
     "test:backend": "cd src-python && uv run python src/test/run_all_tests.py",
     "test": "pnpm lint && pnpm test:backend",
-    "release:draft": "node scripts/release.js",
-    "release:prerelease": "node scripts/release.js --type prerelease",
-    "release:stable": "node scripts/release.js --type release"
+    "release:draft": "node scripts/release.js --type draft --version",
+    "release:prerelease": "node scripts/release.js --type prerelease --version",
+    "release:stable": "node scripts/release.js --type release --version"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
