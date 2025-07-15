@@ -109,13 +109,24 @@ jobs:
           node-version: '21'
           cache: 'pnpm'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
       - name: Install uv
+        if: ${{ !contains(matrix.os, 'self-hosted') }}
         uses: astral-sh/setup-uv@v3
+
+      - name: Verify uv (self-hosted)
+        if: ${{ contains(matrix.os, 'self-hosted') }}
+        run: |
+          echo "Using pre-installed uv:"
+          uv --version
+          which uv
+
+      - name: Setup Python with uv
+        run: |
+          echo "Setting up Python 3.11 with uv..."
+          # uv will automatically install Python 3.11 if needed, no sudo required
+          uv python install 3.11
+          echo "Python 3.11 installed via uv:"
+          uv run --python 3.11 python --version
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
